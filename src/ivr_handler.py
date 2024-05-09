@@ -14,27 +14,27 @@ cardio_data = {'heart_rate': None,
 
 def cardio_data_collector():
     if cardio_data['heart_rate'] is None:
-        with open('standard_responses/heart_rate.xml') as f:
+        with open('ivr_standard_responses/heart_rate.xml') as f:
             response = f.read()
         return response
     elif cardio_data['systolic_blood_pressure'] is None:
-        with open('standard_responses/systolic_blood_pressure.xml') as f:
+        with open('ivr_standard_responses/systolic_blood_pressure.xml') as f:
             response = f.read()
         return response
     elif cardio_data['diastolic_blood_pressure'] is None:
-        with open('standard_responses/diastolic_blood_pressure.xml') as f:
+        with open('ivr_standard_responses/diastolic_blood_pressure.xml') as f:
             response = f.read()
         return response
     elif cardio_data['collection_position'] is None:
-        with open('standard_responses/collection_position.xml') as f:
+        with open('ivr_standard_responses/collection_position.xml') as f:
             response = f.read()
         return response
     elif cardio_data['collection_location'] is None:
-        with open('standard_responses/collection_location.xml') as f:
+        with open('ivr_standard_responses/collection_location.xml') as f:
             response = f.read()
         return response
     elif cardio_data['collection_person'] is None:
-        with open('standard_responses/collection_person.xml') as f:
+        with open('ivr_standard_responses/collection_person.xml') as f:
             response = f.read()
         return response
     else:
@@ -82,7 +82,7 @@ def clear_cardio_data():
 
 @app.route("/pghd_handler", methods=['POST'])
 def pghd_handler():
-    with open('standard_responses/pghd_menu.xml') as f:
+    with open('ivr_standard_responses/pghd_menu.xml') as f:
         response = f.read()
     return response
 
