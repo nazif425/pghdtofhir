@@ -1,0 +1,116 @@
+@prefix schema: <http://schema.org/> .
+@prefix pav: <http://purl.org/pav/> .
+@prefix adms: <http://www.w3.org/ns/adms#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix org: <http://www.w3.org/ns/org#> .
+@prefix xls2rdf: <https://xls2rdf.sparna.fr/vocabulary#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix skosthes: <http://purl.org/iso25964/skos-thes#> .
+@prefix vodan: <http://www.vodan-totafrica.info/vocs/vgt/> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix qb: <http://purl.org/linked-data/cube#> .
+@prefix dct: <http://purl.org/dc/terms/> .
+@prefix doap: <http://usefulinc.com/ns/doap#> .
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix dcat: <http://www.w3.org/ns/dcat#> .
+@prefix euvoc: <http://publications.europa.eu/ontology/euvoc#> .
+@prefix pghdConnect: <https://github.com/RenVit318/pghd/tree/main/src/vocab/pghd_connect/> .
+@prefix prov: <http://www.w3.org/ns/prov#> .
+@prefix foaf: <http://xmlns.com/foaf/0.1/> .
+@prefix dc: <http://purl.org/dc/elements/1.1/> .
+@prefix skos: <http://www.w3.org/2004/02/skos/core#> .
+@prefix skosxl: <http://www.w3.org/2008/05/skos-xl#> .
+
+<https://github.com/RenVit318/pghd/tree/main/src/vocab/pghd_connect/> a skos:ConceptScheme;
+  skos:prefLabel "SKOS-based vocabulary for the overarching structure of PGHD"@en;
+  dct:title "SKOS-based vocabulary for the overarching structure of PGHD"@en;
+  dct:description "This SKOS-based vocabulary contains terms to describe the connection between a singular patient in the VODAN-Africa network with their (various) sources of PGHD."@en;
+  dct:creator <https://orcid.org/0000-0003-2328-4117>;
+  dct:contributor <https://orcid.org/0009-0009-4887-3445,%20https://orcid.org/0000-0003-2531-9539>;
+  pav:createdOn "2024-04-24T14:00:00+01:00"@en;
+  pav:lastUpdatedOn "2024-04-24T14:00:00+01:00"@en;
+  pav:version "0.1"@en;
+  skos:hasTopConcept pghdConnect:patient .
+
+pghdConnect:patient a skos:Concept;
+  skos:prefLabel "patient"@en;
+  skos:definition "Main class for a patient"@en;
+  dct:creator <https://orcid.org/0000-0003-2328-4117>;
+  dct:contributor <https://orcid.org/0009-0009-4887-3445>, <https://orcid.org/0000-0003-2531-9539>;
+  skos:narrower pghdConnect:patientID, pghdConnect:fitbitID, pghdConnect:phoneNumber,
+    pghdConnect:hiddenCode, pghdConnect:collected_PGHD;
+  skos:inScheme <https://github.com/RenVit318/pghd/tree/main/src/vocab/pghd_connect/>;
+  skos:topConceptOf <https://github.com/RenVit318/pghd/tree/main/src/vocab/pghd_connect/> .
+
+pghdConnect:patientID a skos:Concept;
+  skos:prefLabel "patientID"@en;
+  skos:definition "Unique identifying number for a patient."@en;
+  skos:broader pghdConnect:patient;
+  skos:exactMatch vodan:UniqueIndividualIdentifier;
+  dct:creator <https://orcid.org/0000-0003-2328-4117>;
+  dct:contributor <https://orcid.org/0009-0009-4887-3445>, <https://orcid.org/0000-0003-2531-9539>;
+  skos:editorialNote "This assumes that the VODAN UII and in-clinic patient ID are the same."@en;
+  skos:inScheme <https://github.com/RenVit318/pghd/tree/main/src/vocab/pghd_connect/> .
+
+pghdConnect:fitbitID a skos:Concept;
+  skos:prefLabel "fitbitID"@en;
+  skos:definition "Unique identifying string of the Fitbit device belonging to the patient"@en;
+  skos:broader pghdConnect:patient;
+  dct:creator <https://orcid.org/0000-0003-2328-4117>;
+  dct:contributor <https://orcid.org/0009-0009-4887-3445>, <https://orcid.org/0000-0003-2531-9539>;
+  skos:editorialNote "Should be stored hidden and encrypted."@en;
+  skos:inScheme <https://github.com/RenVit318/pghd/tree/main/src/vocab/pghd_connect/> .
+
+pghdConnect:phoneNumber a skos:Concept;
+  skos:prefLabel "phoneNumber"@en;
+  skos:definition "Cellphone number belonging to the patient. Should be the number connected to the phone used for the IVR service."@en;
+  skos:broader pghdConnect:patient;
+  dct:creator <https://orcid.org/0000-0003-2328-4117>;
+  dct:contributor <https://orcid.org/0009-0009-4887-3445>, <https://orcid.org/0000-0003-2531-9539>;
+  skos:editorialNote "Should be stored hidden and encrypted."@en;
+  skos:inScheme <https://github.com/RenVit318/pghd/tree/main/src/vocab/pghd_connect/> .
+
+pghdConnect:hiddenCode a skos:Concept;
+  skos:prefLabel "hiddenCode"@en;
+  skos:definition "Secret integer code used by the patient to identify themselves in the IVR service."@en;
+  skos:broader pghdConnect:patient;
+  dct:creator <https://orcid.org/0000-0003-2328-4117>;
+  dct:contributor <https://orcid.org/0009-0009-4887-3445>, <https://orcid.org/0000-0003-2531-9539>;
+  skos:editorialNote "Should be stored hidden and encrypted."@en;
+  skos:inScheme <https://github.com/RenVit318/pghd/tree/main/src/vocab/pghd_connect/> .
+
+pghdConnect:collected_PGHD a skos:Concept;
+  skos:prefLabel "collected_PGHD"@en;
+  skos:definition "Collected PGHD pertaining to this patient."@en;
+  skos:broader pghdConnect:patient;
+  dct:creator <https://orcid.org/0000-0003-2328-4117>;
+  dct:contributor <https://orcid.org/0009-0009-4887-3445>, <https://orcid.org/0000-0003-2531-9539>;
+  skos:narrower pghdConnect:source_of_PGHD;
+  skos:inScheme <https://github.com/RenVit318/pghd/tree/main/src/vocab/pghd_connect/> .
+
+pghdConnect:source_of_PGHD a skos:Concept;
+  skos:prefLabel "source_of_PGHD"@en;
+  skos:definition "Source of the collected PGHD."@en;
+  skos:broader pghdConnect:collected_PGHD;
+  dct:creator <https://orcid.org/0000-0003-2328-4117>;
+  dct:contributor <https://orcid.org/0009-0009-4887-3445>, <https://orcid.org/0000-0003-2531-9539>;
+  skos:editorialNote "Provision of sources limited to implementations by the team."@en;
+  skos:narrower pghdConnect:fitbit, pghdConnect:bp_ivr;
+  skos:inScheme <https://github.com/RenVit318/pghd/tree/main/src/vocab/pghd_connect/> .
+
+pghdConnect:fitbit a skos:Concept;
+  skos:prefLabel "fitbit"@en;
+  skos:definition "Data collected and communicated using a wearable Fitbit device."@en;
+  skos:broader pghdConnect:source_of_PGHD;
+  dct:creator <https://orcid.org/0000-0003-2328-4117>;
+  dct:contributor <https://orcid.org/0009-0009-4887-3445>, <https://orcid.org/0000-0003-2531-9539>;
+  skos:inScheme <https://github.com/RenVit318/pghd/tree/main/src/vocab/pghd_connect/> .
+
+pghdConnect:bp_ivr a skos:Concept;
+  skos:prefLabel "bp_ivr"@en;
+  skos:definition "Data collected with a traditional blood pressure monitor and collected through IVR."@en;
+  skos:broader pghdConnect:source_of_PGHD;
+  dct:creator <https://orcid.org/0000-0003-2328-4117>;
+  dct:contributor <https://orcid.org/0009-0009-4887-3445>, <https://orcid.org/0000-0003-2531-9539>;
+  skos:inScheme <https://github.com/RenVit318/pghd/tree/main/src/vocab/pghd_connect/> .
