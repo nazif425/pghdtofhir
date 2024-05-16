@@ -1,0 +1,9 @@
+User - The User endpoints display information about the user's profile information,the regional locale & language settings, and their badges collected.
+Get profile  -  Retrieves the Fitbit user's profile data.
+Update profile - Modifies fitbit user's profile data
+Get badges - Retrieves a list of the user's badges which they have achieved.
+
+
+
+
+

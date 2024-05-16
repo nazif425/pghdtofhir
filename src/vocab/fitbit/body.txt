@@ -1,0 +1,5 @@
+Body -  The Body endpoints are used for querying and modifying the user's body fat and weight data.
+body fat log - A user's body fat log.
+fat -  Body fat measurement in the format X.XX.
+weight log - A weight log entry.
+BMI -  Weight measurement in the format X.XX.

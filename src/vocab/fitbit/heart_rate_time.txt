@@ -1,0 +1,8 @@
+Heart rate time series - The Heart Rate Time Series endpoints are used for querying the user's heart rate data.
+Heart rate time series by date - Retrieves the heart rate time series data over a period of time by specifying a date and time period. The response will include only the daily summary values.
+Resting heart rate - Resting heart rate value for the day. A sleep stage log is required to generate this value. When a classic sleep log is recorded, this value will be missing.
+
+
+
+
+

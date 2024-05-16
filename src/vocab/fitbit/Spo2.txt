@@ -1,0 +1,1 @@
+Blood Oxygen Saturation -  Sp02  is a measurement of your blood oxygen level. The Fitbit devices use sensors to record the percentage, average, as well as minimum and maximum levels of oxygen circulating in the user's blood while the user is asleep.
