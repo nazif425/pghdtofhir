@@ -1,0 +1,12 @@
+# Patient 1
+<https://repo.metadatacenter.org/template-instances/5c3c4a9d-cf6c-4dcb-a2f4-935e4c7fd1f7> <http://open-services.net/ns/core#modifiedBy> <https://metadatacenter.org/users/906764cd-503c-4ddc-9f75-bc2e77c2f571> .
+<https://repo.metadatacenter.org/template-instances/5c3c4a9d-cf6c-4dcb-a2f4-935e4c7fd1f7> <http://purl.org/pav/createdBy> <https://metadatacenter.org/users/906764cd-503c-4ddc-9f75-bc2e77c2f571> .
+<https://repo.metadatacenter.org/template-instances/5c3c4a9d-cf6c-4dcb-a2f4-935e4c7fd1f7> <http://purl.org/pav/createdOn> "2024-05-28T00:14:04-07:00"^^<http://www.w3.org/2001/XMLSchema#dateTime> .
+<https://repo.metadatacenter.org/template-instances/5c3c4a9d-cf6c-4dcb-a2f4-935e4c7fd1f7> <http://purl.org/pav/lastUpdatedOn> "2024-05-28T00:14:04-07:00"^^<http://www.w3.org/2001/XMLSchema#dateTime> .
+<https://repo.metadatacenter.org/template-instances/5c3c4a9d-cf6c-4dcb-a2f4-935e4c7fd1f7> <http://schema.org/description> "Registration form for a user where relevant device identifiers and authentication passcodes can be collected and stored in a template." .
+<https://repo.metadatacenter.org/template-instances/5c3c4a9d-cf6c-4dcb-a2f4-935e4c7fd1f7> <http://schema.org/isBasedOn> <https://repo.metadatacenter.org/templates/f49d788e-f611-4525-90e9-dd21204b51fa> .
+<https://repo.metadatacenter.org/template-instances/5c3c4a9d-cf6c-4dcb-a2f4-935e4c7fd1f7> <http://schema.org/name> "PGHD User Registration metadata" .
+<https://repo.metadatacenter.org/template-instances/5c3c4a9d-cf6c-4dcb-a2f4-935e4c7fd1f7> <https://github.com/RenVit318/pghd/tree/main/src/vocab/pghd_connect/fitbitID> "test" .
+<https://repo.metadatacenter.org/template-instances/5c3c4a9d-cf6c-4dcb-a2f4-935e4c7fd1f7> <https://github.com/RenVit318/pghd/tree/main/src/vocab/pghd_connect/hiddenCode> "1234"^^<http://www.w3.org/2001/XMLSchema#int> .
+<https://repo.metadatacenter.org/template-instances/5c3c4a9d-cf6c-4dcb-a2f4-935e4c7fd1f7> <https://github.com/RenVit318/pghd/tree/main/src/vocab/pghd_connect/patientID> "1234"^^<http://www.w3.org/2001/XMLSchema#int> .
+<https://repo.metadatacenter.org/template-instances/5c3c4a9d-cf6c-4dcb-a2f4-935e4c7fd1f7> <https://github.com/RenVit318/pghd/tree/main/src/vocab/pghd_connect/phoneNumber> "123-456-789" .
