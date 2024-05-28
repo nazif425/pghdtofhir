@@ -60,12 +60,12 @@ def cardio_data_collector():
 def send_data_to_cedar():
     cedar_url = 'https://resource.metadatacenter.org/template-instances'
     cedar_api_key = 'apiKey 62838dcb5b6359a1a93baeeef907669813ec431437b168efde17a61c254b3355'
-    ontology_prefix = 'https://github.com/abdullahikawu/PGHD/tree/main/vocabularies/'
+    ontology_prefix = 'https://github.com/abdullahikawu/PGHD/tree/main/vocabularies/' # TODO: Change this!
     current_time = datetime.now()
 
     cedar_template = open('templates/ivr_bp_cedar_template.json')
     data = json.load(cedar_template)
-    data['PatientID']['@value'] = '1234' # TODO: Add patient ID request
+    data['PatientID']['@value'] = '1234' # TODO: Add patient ID request. REMOVE NOW
     data['DataCollectedViaIVR']['@value'] = 'Yes'
     data['Date']['@value'] = current_time.strftime('%Y-%m-%d')
     data['Pulse Number']['@value'] = str(cardio_data['heart_rate'])
@@ -80,11 +80,19 @@ def send_data_to_cedar():
     requests.post(cedar_url, json=data, headers={'Content-Type': 'application/json',
                                                  'Accept': 'application/json',
                                                  'Authorization': cedar_api_key})
-    
+    data = None # Clear data
+
     # TODO: Extract template URI from the response to this request
-    # TODO: Add the PGHD_CONNECT upload
 
 
+    cedar_template_connect = open('templates/pghd_connect_template.json')  # TODO - Add this
+    data = json.load(cedar_template_connect)
+    # TODO Populate template
+
+
+def clear_data():
+    clear_cardio_data()
+    clear_meta_data()
 
 def clear_cardio_data():
     cardio_data['heart_rate'] = None
@@ -94,34 +102,41 @@ def clear_cardio_data():
     cardio_data['collection_location'] = None
     cardio_data['collection_person'] = None
 
+def clear_meta_data():
+    meta_data['phone_number'] = None
+    meta_data['cedar_registration_URI'] = None
+
 
 def authenticate(passcode):
-    # Load triple store
+    # Import registrations. This should ideally be done through remote querying on AllegroGraph so the data and script are fully separate.
     g = Graph()
     g.parse(registrations_file)
 
-    query_string = """
-    PREFIX pghdc: <https://github.com/RenVit318/pghd/tree/main/src/vocab/pghd_connect/>
-    PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>     
-    SELECT ?id
-    WHERE{
-        ?id <http://schema.org/isBasedOn>  <https://repo.metadatacenter.org/templates/f49d788e-f611-4525-90e9-dd21204b51fa> ;
-            pghdc:phoneNumber {0} ;
-            pghdc:hiddenCode {1}^^xsd:int .
-    }
-    """.format(5, passcode)
+    query_string = f"""
+        PREFIX pghdc: <https://github.com/RenVit318/pghd/tree/main/src/vocab/pghd_connect/>
+        PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>     
+        SELECT ?id
+        WHERE{{
+            ?id <http://schema.org/isBasedOn>  <https://repo.metadatacenter.org/templates/f49d788e-f611-4525-90e9-dd21204b51fa> ;
+                pghdc:phoneNumber "{meta_data['phone_number']}" ;
+                pghdc:hiddenCode "{passcode}"^^xsd:int .
+        }}
+        """
+    
+    # Execute query on graph using RDFLib. Check performance in case of large store
+    pghdc = Namespace("https://github.com/RenVit318/pghd/tree/main/src/vocab/pghd_connect/")
+    query = prepareQuery(query_string, initNs={'pghdc': pghdc, 'xsd': XSD})
+    res = g.query(query)
 
+    # Error catching -> can expand this depending on need
+    if len(res) == 0:
+        raise ValueError("This phonenumber + password combination is not known. Please check this and try again.")
+    elif len(res) > 1:
+        raise ValueError("There are multiple registrations connected to this phonenumber. Please check this with your caregiver.")
+    
+    for row in res:
+        meta_data['cedar_registration_URI'] = row.id
 
-    print(query_str)
-
-
-    #pghdc = Namespace("https://github.com/RenVit318/pghd/tree/main/src/vocab/pghd_connect/")
-    #query = prepareQuery(query_string, initNs={'pghdc': pghdc, 'xsd': XSD})
-    #res = g.query(query)
-    # TODO
-    # 1. Request user password (store this as briefly as possible)
-    # 2. Query template instance URI that matches phone_number + passcode combination
-    # 3. Store this somewhere
 
 @app.route("/pghd_handler", methods=['POST'])
 def pghd_handler():
@@ -211,10 +226,10 @@ def submit():
     digits = request.values.get("dtmfDigits", None)
     if digits == '1':
         send_data_to_cedar()
-        clear_cardio_data()
+        clear_data()
         return '<Response><Say>Your data has been saved, thank you for your time</Say><Reject/></Response>'
     else:
-        clear_cardio_data()
+        clear_data()
         return '<Response><Reject/></Response>'
 
 
