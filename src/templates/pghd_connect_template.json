@@ -1,0 +1,56 @@
+{
+    "@context": {
+      "rdfs": "http://www.w3.org/2000/01/rdf-schema#",
+      "xsd": "http://www.w3.org/2001/XMLSchema#",
+      "pav": "http://purl.org/pav/",
+      "schema": "http://schema.org/",
+      "oslc": "http://open-services.net/ns/core#",
+      "skos": "http://www.w3.org/2004/02/skos/core#",
+      "rdfs:label": {
+        "@type": "xsd:string"
+      },
+      "schema:isBasedOn": {
+        "@type": "@id"
+      },
+      "schema:name": {
+        "@type": "xsd:string"
+      },
+      "schema:description": {
+        "@type": "xsd:string"
+      },
+      "pav:derivedFrom": {
+        "@type": "@id"
+      },
+      "pav:createdOn": {
+        "@type": "xsd:dateTime"
+      },
+      "pav:createdBy": {
+        "@type": "@id"
+      },
+      "pav:lastUpdatedOn": {
+        "@type": "xsd:dateTime"
+      },
+      "oslc:modifiedBy": {
+        "@type": "@id"
+      },
+      "skos:notation": {
+        "@type": "xsd:string"
+      },
+      "Patient": "https://github.com/RenVit318/pghd/tree/main/src/vocab/pghd_connect/patient",
+      "collected_PGHD": "https://github.com/RenVit318/pghd/tree/main/src/vocab/pghd_connect/collected_PGHD",
+      "source_of_PGHD": "https://github.com/RenVit318/pghd/tree/main/src/vocab/pghd_connect/source_of_PGHD"
+    },
+    "Patient": {
+      "@id": null
+    },
+    "collected_PGHD": {
+      "@id": null
+    },
+    "source_of_PGHD": {
+      "@id": null,
+      "rdfs:label": null
+    },
+    "schema:isBasedOn": "https://repo.metadatacenter.org/templates/2b503137-f659-4d3e-96f9-92635f306988",
+    "schema:name": null,
+    "schema:description": "Template to connect a single patient to their metadata and the various instances of PGHD collected about them.",
+  }

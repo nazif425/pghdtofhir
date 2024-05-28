@@ -1,5 +1,5 @@
 import numpy as np
-from ivr_handler import send_data_to_cedar, clear_data
+
 from datetime import date, timedelta
 import json
 import random
