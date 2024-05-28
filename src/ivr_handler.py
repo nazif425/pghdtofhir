@@ -3,7 +3,16 @@ import requests
 from datetime import datetime
 import json
 
+# Should this be moved?
+from rdflib import Graph, Namespace
+from rdflib.namespace import XSD
+from rdflib.plugins.sparql import prepareQuery
+
 app = Flask(__name__)
+registrations_file = 'triple_store/registrations.ttl'
+
+meta_data = {'phone_number': None,
+             'cedar_registration_URI': None}
 
 cardio_data = {'heart_rate': None,
                'systolic_blood_pressure': None,
@@ -71,6 +80,11 @@ def send_data_to_cedar():
     requests.post(cedar_url, json=data, headers={'Content-Type': 'application/json',
                                                  'Accept': 'application/json',
                                                  'Authorization': cedar_api_key})
+    
+    # TODO: Extract template URI from the response to this request
+    # TODO: Add the PGHD_CONNECT upload
+
+
 
 def clear_cardio_data():
     cardio_data['heart_rate'] = None
@@ -79,6 +93,35 @@ def clear_cardio_data():
     cardio_data['collection_position'] = None
     cardio_data['collection_location'] = None
     cardio_data['collection_person'] = None
+
+
+def authenticate(passcode):
+    # Load triple store
+    g = Graph()
+    g.parse(registrations_file)
+
+    query_string = """
+    PREFIX pghdc: <https://github.com/RenVit318/pghd/tree/main/src/vocab/pghd_connect/>
+    PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>     
+    SELECT ?id
+    WHERE{
+        ?id <http://schema.org/isBasedOn>  <https://repo.metadatacenter.org/templates/f49d788e-f611-4525-90e9-dd21204b51fa> ;
+            pghdc:phoneNumber {0} ;
+            pghdc:hiddenCode {1}^^xsd:int .
+    }
+    """.format(5, passcode)
+
+
+    print(query_str)
+
+
+    #pghdc = Namespace("https://github.com/RenVit318/pghd/tree/main/src/vocab/pghd_connect/")
+    #query = prepareQuery(query_string, initNs={'pghdc': pghdc, 'xsd': XSD})
+    #res = g.query(query)
+    # TODO
+    # 1. Request user password (store this as briefly as possible)
+    # 2. Query template instance URI that matches phone_number + passcode combination
+    # 3. Store this somewhere
 
 @app.route("/pghd_handler", methods=['POST'])
 def pghd_handler():
@@ -123,7 +166,7 @@ def diastolic_blood_pressure():
     return cardio_data_collector()
 
 
-@app.route("/collection_position", methods=['POST']):
+@app.route("/collection_position", methods=['POST'])
 def collection_position():
     digits = request.values.get("dtmfDigits", None)
     if digits is not None:
@@ -131,7 +174,7 @@ def collection_position():
             cardio_data['collection_position'] = 'Laying'
         elif digits == 2:
             cardio_data['collection_position'] = 'Sitting'
-        elif digits == 3
+        elif digits == 3:
             cardio_data['collection_position'] = 'Standing'
 
     return cardio_data_collector()
