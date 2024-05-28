@@ -98,3 +98,9 @@ cedar_template.close()
 with open('test.json', 'w') as json_file:
     json.dump(data, json_file, indent=4)
 # data = json.dumps(data, indent=4)
+
+
+#TODO 
+# 1. Check the response from cedar and dicet it to get the uri 
+# 2. Save the uri 
+# 3. Push the uri to the cedar template instance
