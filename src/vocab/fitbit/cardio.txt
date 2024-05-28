@@ -1,0 +1,1 @@
+cardio fitness score (VO2Max) - The VO2 endpoints are used for querying the maximum or optimum rate at which the user’s heart, lungs, and muscles can effectively use oxygen during exercise.

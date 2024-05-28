@@ -1,0 +1,1 @@
+Breathing rate	- Breathing Rate or Respiratory Rate endpoints measure the average breaths per night.

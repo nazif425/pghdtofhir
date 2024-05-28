@@ -1,0 +1,7 @@
+Sleep - The Sleep endpoints are used for querying and modifying the user’s general sleep data.
+Sleep log - This endpoint returns a list of a user's sleep log entries before or after a given date, and specifying offset, limit and sort order. The data returned for different dates can include sleep periods that began on the previous date.
+Duration - Length of the sleep in milliseconds.
+Efficiency - Calculated sleep efficiency score.
+
+
+
