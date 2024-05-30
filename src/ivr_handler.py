@@ -80,15 +80,26 @@ def send_data_to_cedar():
     requests.post(cedar_url, json=data, headers={'Content-Type': 'application/json',
                                                  'Accept': 'application/json',
                                                  'Authorization': cedar_api_key})
-    data = None # Clear data
-
     # TODO: Extract template URI from the response to this request
+    cedar_data_URI = None
+    data = None # Clear data
+    
+    
 
 
-    cedar_template_connect = open('templates/pghd_connect_template.json')  # TODO - Add this
+    cedar_template_connect = open('templates/pghd_connect_template.json')
+    connect_ontology_prefix = 'https://github.com/abdullahikawu/PGHD/tree/main/vocabularies/
     data = json.load(cedar_template_connect)
-    # TODO Populate template
 
+    data['Patient'][['@id'] = str(meta_data['cedar_registration_URI'])
+    data['collected_PGHD']['@id'] = cedar_data_URI
+    data['source_of_PGHD']['@id'] = str(connect_ontology_prefix + 'bp_ivr')
+    data['source_of_PGHD']['rdfs:label'] = str('bp_ivr')
+    data['schema:name'] = 'temptest'
+
+    requests.post(cedar_url, json=data, headers={'Content-Type': 'application/json',
+                                                 'Accept': 'application/json',
+                                                 'Authorization': cedar_api_key})
 
 def clear_data():
     clear_cardio_data()
