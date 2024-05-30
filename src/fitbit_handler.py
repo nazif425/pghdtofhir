@@ -104,7 +104,5 @@ print(msg)
 print(response.status_code)
 
 #TODO 
-# 1. Check the response from cedar and dicet it to get the uri 
-# 2. Save the uri 
-# 3. Push the uri to the cedar template instance
+# 1. fix the gather_keys_oauth2 importation error 
 
