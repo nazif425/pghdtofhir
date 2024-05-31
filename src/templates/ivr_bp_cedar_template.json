@@ -41,10 +41,10 @@
     "hasPulseRate": "http://aimlab.cs.uoregon.edu/smash/ontologies/biomarker.owl#hasPulseRate",
     "hasDiastolicBloodPressureValue": "http://aimlab.cs.uoregon.edu/smash/ontologies/biomarker.owl#hasDiastolicBloodPressureValue",
     "hasSystolicBloodPressureValue": "http://aimlab.cs.uoregon.edu/smash/ontologies/biomarker.owl#hasSystolicBloodPressureValue",
-    "CollectionPosition": "https://github.com/abdullahikawu/PGHD/tree/main/vocabularies/CollectionPosition",
-    "CollectionLocation": "https://github.com/abdullahikawu/PGHD/tree/main/vocabularies/CollectionLocation",
-    "CollectionPerson": "https://github.com/abdullahikawu/PGHD/tree/main/vocabularies/CollectionPerson",
-    "DataCollectedViaIVR": "https://github.com/abdullahikawu/PGHD/tree/main/vocabularies/DataCollectedViaIVR"
+    "CollectionPosition": "https://github.com/RenVit318/pghd/tree/main/src/vocab/auxillary_info/CollectionPosition",
+    "CollectionLocation": "https://github.com/RenVit318/pghd/tree/main/src/vocab/auxillary_info/CollectionLocation",
+    "CollectionPerson": "https://github.com/RenVit318/pghd/tree/main/src/vocab/auxillary_info/CollectionPerson",
+    "DataCollectedViaIVR": "https://github.com/RenVit318/pghd/tree/main/src/vocab/auxillary_info/DataCollectedViaIVR"
   },
   "Date": {
     "@value": null,
@@ -79,7 +79,7 @@
     "rdfs:label": "Patient"
   },
   "DataCollectedViaIVR": {
-    "@value": null,
+    "@value": null
   },
   "schema:isBasedOn": "https://repo.metadatacenter.org/templates/d11645cd-03d1-42d7-ae2b-eab5856f6a1b",
   "schema:name": null,

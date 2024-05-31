@@ -59,8 +59,8 @@ def cardio_data_collector():
 
 def send_data_to_cedar():
     cedar_url = 'https://resource.metadatacenter.org/template-instances'
-    cedar_api_key = 'apiKey 62838dcb5b6359a1a93baeeef907669813ec431437b168efde17a61c254b3355'
-    ontology_prefix = 'https://github.com/abdullahikawu/PGHD/tree/main/vocabularies/' # TODO: Change this!
+    cedar_api_key = 'apiKey 7d1a85dbf1be5439b4b1332f860a29ad5377cbd43fe32a3962cb35c1cc62136b'
+    ontology_prefix = 'https://github.com/RenVit318/pghd/tree/main/src/vocab/auxillary_info/' # TODO: Change this to bioportal?
     current_time = datetime.now()
 
     cedar_template = open('templates/ivr_bp_cedar_template.json')
@@ -77,21 +77,18 @@ def send_data_to_cedar():
     data['schema:name'] = f'PGHD_BP {current_time.strftime("%d/%m/%Y %H:%M:%S")}'
     cedar_template.close()
 
-    requests.post(cedar_url, json=data, headers={'Content-Type': 'application/json',
+    response = requests.post(cedar_url, json=data, headers={'Content-Type': 'application/json',
                                                  'Accept': 'application/json',
                                                  'Authorization': cedar_api_key})
     # TODO: Extract template URI from the response to this request
-    cedar_data_URI = None
+    cedar_data_URI = response['@id']
     data = None # Clear data
-    
-    
-
 
     cedar_template_connect = open('templates/pghd_connect_template.json')
-    connect_ontology_prefix = 'https://github.com/abdullahikawu/PGHD/tree/main/vocabularies/
+    connect_ontology_prefix = 'https://github.com/abdullahikawu/PGHD/tree/main/vocabularies/'
     data = json.load(cedar_template_connect)
 
-    data['Patient'][['@id'] = str(meta_data['cedar_registration_URI'])
+    data['Patient']['@id'] = str(meta_data['cedar_registration_URI'])
     data['collected_PGHD']['@id'] = cedar_data_URI
     data['source_of_PGHD']['@id'] = str(connect_ontology_prefix + 'bp_ivr')
     data['source_of_PGHD']['rdfs:label'] = str('bp_ivr')
@@ -148,7 +145,7 @@ def authenticate(passcode):
     for row in res:
         meta_data['cedar_registration_URI'] = row.id
 
-
+# TODO: Change entry point of IVR to the passcode requestor
 @app.route("/pghd_handler", methods=['POST'])
 def pghd_handler():
     with open('ivr_standard_responses/pghd_menu.xml') as f:
