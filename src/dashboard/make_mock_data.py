@@ -31,6 +31,8 @@ def create_bp_ivr_instances(N, patientID, CEDAR_registration_ID):
     bp_data = json.load(cedar_bp_template)
     connect_data = json.load(cedar_template_connect)
 
+    #TODO: ADD IN DATE CHANGING!!
+
     for i in range(N):
 
         #data['PatientID']['@value'] = patientID
