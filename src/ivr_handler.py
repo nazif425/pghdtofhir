@@ -59,7 +59,8 @@ def cardio_data_collector():
 
 def send_data_to_cedar():
     cedar_url = 'https://resource.metadatacenter.org/template-instances'
-    cedar_api_key = 'apiKey 7d1a85dbf1be5439b4b1332f860a29ad5377cbd43fe32a3962cb35c1cc62136b'
+    with open('../.secrets.json') as secrets:
+        cedar_api_key = json.load(secrets)["authkey_RENS"]
     ontology_prefix = 'https://github.com/RenVit318/pghd/tree/main/src/vocab/auxillary_info/' # TODO: Change this to bioportal?
     current_time = datetime.now()
 
