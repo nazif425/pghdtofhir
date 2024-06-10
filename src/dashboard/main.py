@@ -98,7 +98,7 @@ def setup_dashboard():
     plot_attrs["dia_bp"] =  st.checkbox("Diastolic Blood Pressure")
     
     st.write(plot_attrs)
-    
+
     return plot_attrs
 
 
@@ -108,6 +108,7 @@ def main():
 
     plot_attrs = setup_dashboard()
     plot_history(g, plot_attrs)
+
 
 if __name__ == '__main__':
     main()
