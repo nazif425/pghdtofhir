@@ -1,0 +1,8 @@
+Heart rate variability - (HRV) endpoints are used for querying the user’s heart rate variability data.
+Heart rate variability summary by date -This endpoint returns the Heart Rate Variability (HRV) data for a single date.
+Date time - The sleep log date specified in the format YYYY-MM-DD.
+
+
+
+
+

@@ -1,0 +1,8 @@
+Temperatute - The temperature endpoints are used for querying ether core body  or skin temperature  when user is asleep 
+Get temparature (core) - Core body temperature manually logged by the user 
+Get temparature (skin) - Skin body temparature recorded by the device while the user is asleep 
+
+
+
+
+

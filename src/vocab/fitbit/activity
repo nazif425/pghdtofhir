@@ -1,0 +1,7 @@
+Activity - The Activity endpoints are used to query and/or modify a Fitbit user's daily activity data. The information returned is the step count, distance, elevation, floors, calories burned, active minutes, activity goals, exercise details, etc. The Activity endpoints support returning Intraday data (see Intraday).
+Daily activity summary - Retrieves a summary and list of a user’s activities and activity log entries for a given day.
+Fairly active minutes - Total minutes the user was fairly/moderately active.
+Lightly active minutes - Total minutes the user was lightly active.
+Sedentary minutes - Total minutes the user was sedentary. 
+Very active minutes -  Total minutes the user was very active.
+Steps - Number of steps recorded during the exercise.
