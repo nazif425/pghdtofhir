@@ -1,0 +1,98 @@
+{
+  "@context": {
+    "rdfs": "http://www.w3.org/2000/01/rdf-schema#",
+    "xsd": "http://www.w3.org/2001/XMLSchema#",
+    "pav": "http://purl.org/pav/",
+    "schema": "http://schema.org/",
+    "oslc": "http://open-services.net/ns/core#",
+    "skos": "http://www.w3.org/2004/02/skos/core#",
+    "rdfs:label": {
+      "@type": "xsd:string"
+    },
+    "schema:isBasedOn": {
+      "@type": "@id"
+    },
+    "schema:name": {
+      "@type": "xsd:string"
+    },
+    "schema:description": {
+      "@type": "xsd:string"
+    },
+    "pav:derivedFrom": {
+      "@type": "@id"
+    },
+    "pav:createdOn": {
+      "@type": "xsd:dateTime"
+    },
+    "pav:createdBy": {
+      "@type": "@id"
+    },
+    "pav:lastUpdatedOn": {
+      "@type": "xsd:dateTime"
+    },
+    "oslc:modifiedBy": {
+      "@type": "@id"
+    },
+    "skos:notation": {
+      "@type": "xsd:string"
+    },
+    "Fat": "https://github.com/RenVit318/pghd/tree/main/src/vocab/fitbit/fat",
+    "BMI": "https://github.com/RenVit318/pghd/tree/main/src/vocab/fitbit/BMI",
+    "Fairly active minutes": "https://github.com/RenVit318/pghd/tree/main/src/vocab/fitbit/fairly_active_minutes",
+    "Lightly active minutes": "https://github.com/RenVit318/pghd/tree/main/src/vocab/fitbit/lightly_active_minutes",
+    "Sedentary minutes": "https://github.com/RenVit318/pghd/tree/main/src/vocab/fitbit/sedentary_minutes",
+    "Very active minutes": "https://github.com/RenVit318/pghd/tree/main/src/vocab/fitbit/very_active_minutes",
+    "Sleep duration": "https://github.com/RenVit318/pghd/tree/main/src/vocab/fitbit/sleep_duration",
+    "Sleep efficiency": "https://github.com/RenVit318/pghd/tree/main/src/vocab/fitbit/sleep_efficiency",
+    "Date": "http://purl.org/dc/elements/1.1/date",
+    "Resting heart rate": "https://github.com/RenVit318/pghd/tree/main/src/vocab/fitbit/resting_heart_rate",
+    "Steps": "https://github.com/RenVit318/pghd/tree/main/src/vocab/fitbit/steps"
+  },
+  "Fat": {
+    "@value": null,
+    "@type": "xsd:decimal"
+  },
+  "BMI": {
+    "@value": null,
+    "@type": "xsd:decimal"
+  },
+  "Fairly active minutes": {
+    "@value": null,
+    "@type": "xsd:decimal"
+  },
+  "Lightly active minutes": {
+    "@value": null,
+    "@type": "xsd:decimal"
+  },
+  "Sedentary minutes": {
+    "@value": null,
+    "@type": "xsd:decimal"
+  },
+  "Very active minutes": {
+    "@value": null,
+    "@type": "xsd:decimal"
+  },
+  "Sleep duration": {
+    "@value": null,
+    "@type": "xsd:decimal"
+  },
+  "Sleep efficiency": {
+    "@value": null,
+    "@type": "xsd:decimal"
+  },
+  "Date": {
+    "@value": null,
+    "@type": "xsd:date"
+  },
+  "Resting heart rate": {
+    "@value": null,
+    "@type": "xsd:decimal"
+  },
+  "Steps": {
+    "@value": null,
+    "@type": "xsd:decimal"
+  },
+  "schema:isBasedOn": "https://repo.metadatacenter.org/templates/7e011beb-f4f6-495c-8243-1eab51c651c7",
+  "schema:name": "PGHD Fitbit metadata",
+  "schema:description": "Our project is vascular disease risk analytics through interoperability of FAIR patient records with wearables. We are using fitbit wearable for the analysis and therfore, our vocabulary is based on fitbit features."
+}
