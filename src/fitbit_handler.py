@@ -67,21 +67,21 @@ def puish_data_to_cedar():
     cedar_api_key = 'apiKey 62838dcb5b6359a1a93baeeef907669813ec431437b168efde17a61c254b3355'
     
 #push data to CEDAR 
-    cedar_template = open('templates/pghd_connect_template.json')
+    cedar_template = open('templates/fitbit_template.json')
     data = json.load(cedar_template)
-    data['userid']['@value'] = CLIENT_ID
+    #data['userid']['@value'] = CLIENT_ID # COMMENT BY RK: This should be moved to the registration step and checked against for authentication.
 
     data['Fat']['@value'] = str(fat)
     data['BMI']['@value'] = str(bmi)
-    data['date time']['@value'] =Start_time.strftime('%Y-%m-%dT%H:%M:%S') # COMMENT BY RK: Can we get the observation time from the fitbit?
+    #data['date time']['@value'] =Start_time.strftime('%Y-%m-%dT%H:%M:%S') # COMMENT BY RK: Can we get the observation time from the fitbit? According to the description it should also only be date.
     data['Fairly active minutes']['@value'] = str(fairlyActiveMinutes)
-    data['lightly active minutes']['@value'] = str(lightlyActiveMinutes)
-    data['sedentary minutes']['@value'] = str(sedentaryMinutes)
-    data['very active minutes']['@value'] = str(veryActiveMinutes)
-    data['duration']['@value'] = str(sleep_duration)
-    data['efficiency']['@value'] = str(sleep_efficiency)
-    data['resting heart rate']['@value'] = str(restingHeartRate)
-    data['steps']['@value'] = str(steps_count)
+    data['Lightly active minutes']['@value'] = str(lightlyActiveMinutes)
+    data['Sedentary minutes']['@value'] = str(sedentaryMinutes)
+    data['Very active minutes']['@value'] = str(veryActiveMinutes)
+    data['Sleep duration']['@value'] = str(sleep_duration)
+    data['Sleep efficiency']['@value'] = str(sleep_efficiency)
+    data['Resting heart rate']['@value'] = str(restingHeartRate)
+    data['Steps']['@value'] = str(steps_count)
 
     # data['schema:name'] = f'VHD {Start_time}' ##VHD 2023-11-14 00:00:00
 
@@ -89,7 +89,10 @@ def puish_data_to_cedar():
 
 
     
-#push data to cedar 
+
+    #push data to cedar 
+    # COMMENT BY RK: In production we should push to predefined folders so that things aren't lying around everywhere. 
+    # you can do this by adding params = {'folder_id': folder_id} to the POST request below.
     try:
         response = requests.post(cedar_url, json=data, headers={'Content-Type': 'application/json',
                                                      'Accept': 'application/json',
