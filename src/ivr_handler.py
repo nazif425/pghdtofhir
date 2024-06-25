@@ -21,6 +21,7 @@ cardio_data = {'heart_rate': None,
                'collection_location': None,
                'collection_person': None}
 
+
 def cardio_data_collector():
     if cardio_data['heart_rate'] is None:
         with open('ivr_standard_responses/heart_rate.xml') as f:
@@ -47,15 +48,16 @@ def cardio_data_collector():
             response = f.read()
         return response
     else:
-        response = '<Response>'
+        response =   '<Response>'
         response += f'<Say>Your provided heartrate is {cardio_data["heart_rate"]}</Say>'
         response += f'<Say>Your provided systolic bloodpressure is {cardio_data["systolic_blood_pressure"]}</Say>'
         response += f'<Say>Your provided diastolic bloodpressure is {cardio_data["diastolic_blood_pressure"]}</Say>'
-        response += '<GetDigits timeout="30" finishOnKey="#" callbackUrl="/submit">'
-        response += '<Say>If this is correct and you want to submit, press one followed by the hash sign. If you want to abort press two followed by the hash sign</Say>'
-        response += '</GetDigits></Response>'
+        response +=  '<GetDigits timeout="30" finishOnKey="#" callbackUrl="/submit">'
+        response +=  '<Say>If this is correct and you want to submit, press one followed by the hash sign. If you want to abort press two followed by the hash sign</Say>'
+        response +=  '</GetDigits></Response>'
 
         return response
+
 
 def send_data_to_cedar():
     cedar_url = 'https://resource.metadatacenter.org/template-instances'
@@ -89,7 +91,7 @@ def send_data_to_cedar():
     connect_ontology_prefix = 'https://github.com/RenVit318/pghd/tree/main/src/vocab/pghd_connect/'
     connect_data = json.load(cedar_template_connect)
 
-    connnect_data['Patient']['@id'] = str(meta_data['cedar_registration_URI'])
+    connect_data['Patient']['@id'] = str(meta_data['cedar_registration_URI'])
     connect_data['collected_PGHD']['@id'] = cedar_data_URI
     connect_data['source_of_PGHD']['@id'] = str(connect_ontology_prefix + 'bp_ivr')
     connect_data['source_of_PGHD']['rdfs:label'] = str('bp_ivr')
@@ -158,44 +160,33 @@ def authenticate(passcode):
         else:
             return False, "This phonenumber + password combination is not known. Please check this and try again."
 
-# TODO: UPDATE xml files
+
 @app.route("/pghd_handler", methods=['POST'])
 def pghd_handler():
     with open('ivr_standard_responses/pghd_menu.xml') as f:
         response = f.read()
     return response
 
-@app.route("/authenticate_request", methods=['POST'])
-def pghd_authRquest():
-    digits = request.values.get("dtmfDigits", None)
-    if digits == '1':
-        with open('ivr_standard_responses/authenticate.xml') as f:
-            response = f.read()
-        return response
-    else:
-        return '<Response><Reject/></Response>'
 
-@app.route("/authenticate_handler", methods=['POST'])
-def pghd_authCheck():
+@app.route("/authenticate", methods=['POST'])
+def pghd_authenticator():
     digits = request.values.get("dtmfDigits", None)
     authenticated, response_text = authenticate(digits)
 
     if authenticated:
-        f"""
-<Response>
-    <Say>{response_text}</Say>
-    <Redirect>https://www.pghd.renskievit.com/bp_ivr/pghd_cardio_handler</Redirect>
-</Response>
-        """
-        return response
+        # Right now we just continue to BP. We could potentially fork here depending on which devices the user has
+        bp_handler = "https://www.pghd.renskievit.com/ivr/pghd_cardio_handler"
+
+        response  =  "<Response>"
+        response += f"<Say>{response_text}</Say>"
+        response += f"<Redirect>{bp_handler}</Redirect>"
+        response +=  "</Response>"
     else:  
-        f"""
-<Response>
-    <Say>{response_text}</Say>
-    <Reject/>
-</Response>
-        """
-   
+        response  =  "<Response>"
+        response += f"<Say>{response_text}</Say>"
+        response +=  "<Reject/>"
+        response +=  "</Response>"
+
     return response
 
 
@@ -267,8 +258,6 @@ def collection_person():
             cardio_data['collection_person'] = 'Caregiver'
     
     return cardio_data_collector()
-
-
 
 
 @app.route("/submit", methods=['POST'])

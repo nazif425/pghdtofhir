@@ -1,6 +1,6 @@
 <Response>
-    <Say>Welcome to PGHD registration service</Say>
-    <GetDigits timeout="30" finishOnKey="#" callbackUrl="https://9b1e-80-114-159-161.eu.ngrok.io/pghd_cardio_handler">
-        <Say>Press one followed by the hash sign to provide your readings from your digital heartrate monitor. Press two followed by the hash sign to abort this call</Say>
+    <Say>Welcome to the VODAN PGHD registration service</Say>
+    <GetDigits timeout="30" finishOnKey="#" callbackUrl="https://pghd.renskievit.com/ivr/authenticate">
+        <Say>Please enter your passcode to continue</Say>
     </GetDigits>
 </Response>
