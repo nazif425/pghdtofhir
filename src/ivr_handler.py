@@ -21,6 +21,7 @@ cardio_data = {'heart_rate': None,
                'collection_location': None,
                'collection_person': None}
 
+
 def cardio_data_collector():
     if cardio_data['heart_rate'] is None:
         with open('ivr_standard_responses/heart_rate.xml') as f:
@@ -47,57 +48,62 @@ def cardio_data_collector():
             response = f.read()
         return response
     else:
-        response = '<Response>'
+        response =   '<Response>'
         response += f'<Say>Your provided heartrate is {cardio_data["heart_rate"]}</Say>'
         response += f'<Say>Your provided systolic bloodpressure is {cardio_data["systolic_blood_pressure"]}</Say>'
         response += f'<Say>Your provided diastolic bloodpressure is {cardio_data["diastolic_blood_pressure"]}</Say>'
-        response += '<GetDigits timeout="30" finishOnKey="#" callbackUrl="/submit">'
-        response += '<Say>If this is correct and you want to submit, press one followed by the hash sign. If you want to abort press two followed by the hash sign</Say>'
-        response += '</GetDigits></Response>'
+        response +=  '<GetDigits timeout="30" finishOnKey="#" callbackUrl="/submit">'
+        response +=  '<Say>If this is correct and you want to submit, press one followed by the hash sign. If you want to abort press two followed by the hash sign</Say>'
+        response +=  '</GetDigits></Response>'
 
         return response
+
 
 def send_data_to_cedar():
     cedar_url = 'https://resource.metadatacenter.org/template-instances'
     with open('../.secrets.json') as secrets:
         cedar_api_key = json.load(secrets)["authkey_RENS"]
-    ontology_prefix = 'https://github.com/RenVit318/pghd/tree/main/src/vocab/auxillary_info/' # TODO: Change this to bioportal?
     current_time = datetime.now()
 
+    ontology_prefix = 'https://github.com/RenVit318/pghd/tree/main/src/vocab/auxillary_info/' 
     cedar_template = open('templates/ivr_bp_cedar_template.json')
-    data = json.load(cedar_template)
-    data['PatientID']['@value'] = '1234' # TODO: Add patient ID request. REMOVE NOW
-    data['DataCollectedViaIVR']['@value'] = 'Yes'
-    data['Date']['@value'] = current_time.strftime('%Y-%m-%d')
-    data['Pulse Number']['@value'] = str(cardio_data['heart_rate'])
-    data['Blood Pressure (Systolic)']['@value'] = str(cardio_data['systolic_blood_pressure'])
-    data['Blood Pressure (Diastolic)']['@value'] = str(cardio_data['diastolic_blood_pressure'])
-    data['CollectionPosition']['@value'] = ontology_prefix + str(cardio_data['collection_position'])
-    data['CollectionLocation']['@value'] = ontology_prefix + str(cardio_data['collection_location'])
-    data['CollectionPerson']['@value'] = ontology_prefix + str(cardio_data['collection_person'])
-    data['schema:name'] = f'PGHD_BP {current_time.strftime("%d/%m/%Y %H:%M:%S")}'
+    bp_data = json.load(cedar_template)
+
+    bp_data['DataCollectedViaIVR']['@value'] = 'Yes'
+    bp_data['Date']['@value'] = current_time.strftime('%Y-%m-%d')
+    bp_data['Pulse Number']['@value'] = str(cardio_data['heart_rate'])
+    bp_data['Blood Pressure (Systolic)']['@value'] = str(cardio_data['systolic_blood_pressure'])
+    bp_data['Blood Pressure (Diastolic)']['@value'] = str(cardio_data['diastolic_blood_pressure'])
+    bp_data['CollectionPosition']['@value'] = ontology_prefix + str(cardio_data['collection_position'])
+    bp_data['CollectionLocation']['@value'] = ontology_prefix + str(cardio_data['collection_location'])
+    bp_data['CollectionPerson']['@value'] = ontology_prefix + str(cardio_data['collection_person'])
+    bp_data['schema:name'] = f"PGHD_BP {current_time.strftime('%Y-%m-%d')}"
     cedar_template.close()
 
-    response = requests.post(cedar_url, json=data, headers={'Content-Type': 'application/json',
-                                                 'Accept': 'application/json',
-                                                 'Authorization': cedar_api_key})
-    # TODO: Extract template URI from the response to this request
+    response = requests.post(cedar_url, json=bp_data, 
+                             headers={'Content-Type': 'application/json',
+                                      'Accept': 'application/json',
+                                      'Authorization': cedar_api_key})
+
     cedar_data_URI = response['@id']
-    data = None # Clear data
 
     cedar_template_connect = open('templates/pghd_connect_template.json')
-    connect_ontology_prefix = 'https://github.com/abdullahikawu/PGHD/tree/main/vocabularies/'
-    data = json.load(cedar_template_connect)
+    connect_ontology_prefix = 'https://github.com/RenVit318/pghd/tree/main/src/vocab/pghd_connect/'
+    connect_data = json.load(cedar_template_connect)
 
-    data['Patient']['@id'] = str(meta_data['cedar_registration_URI'])
-    data['collected_PGHD']['@id'] = cedar_data_URI
-    data['source_of_PGHD']['@id'] = str(connect_ontology_prefix + 'bp_ivr')
-    data['source_of_PGHD']['rdfs:label'] = str('bp_ivr')
-    data['schema:name'] = 'temptest'
+    connect_data['Patient']['@id'] = str(meta_data['cedar_registration_URI'])
+    connect_data['collected_PGHD']['@id'] = cedar_data_URI
+    connect_data['source_of_PGHD']['@id'] = str(connect_ontology_prefix + 'bp_ivr')
+    connect_data['source_of_PGHD']['rdfs:label'] = str('bp_ivr')
+    connect_data['schema:name'] = 'temptest'
 
-    requests.post(cedar_url, json=data, headers={'Content-Type': 'application/json',
-                                                 'Accept': 'application/json',
-                                                 'Authorization': cedar_api_key})
+    requests.post(cedar_url, json=connect_data, 
+                  headers={'Content-Type': 'application/json',
+                           'Accept': 'application/json',
+                           'Authorization': cedar_api_key})
+
+    clear_data()
+
 
 def clear_data():
     clear_cardio_data()
@@ -118,17 +124,21 @@ def clear_meta_data():
 
 def authenticate(passcode):
     # Import registrations. This should ideally be done through remote querying on AllegroGraph so the data and script are fully separate.
+    if passcode is None:
+        return False, "No password was entered" 
+
     g = Graph()
     g.parse(registrations_file)
 
     query_string = f"""
         PREFIX pghdc: <https://github.com/RenVit318/pghd/tree/main/src/vocab/pghd_connect/>
         PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>     
-        SELECT ?id
+        SELECT ?id ?code ?patient_id
         WHERE{{
             ?id <http://schema.org/isBasedOn>  <https://repo.metadatacenter.org/templates/f49d788e-f611-4525-90e9-dd21204b51fa> ;
                 pghdc:phoneNumber "{meta_data['phone_number']}" ;
-                pghdc:hiddenCode "{passcode}"^^xsd:int .
+                pghdc:hiddenCode ?code
+                pghdc:patientID ?patient_id
         }}
         """
     
@@ -139,14 +149,18 @@ def authenticate(passcode):
 
     # Error catching -> can expand this depending on need
     if len(res) == 0:
-        raise ValueError("This phonenumber + password combination is not known. Please check this and try again.")
+        return False, "This phonenumber + password combination is not known. Please check this and try again."
     elif len(res) > 1:
-        raise ValueError("There are multiple registrations connected to this phonenumber. Please check this with your caregiver.")
+        raise False, "There are multiple registrations connected to this phonenumber. Please check this with your caregiver."
     
     for row in res:
-        meta_data['cedar_registration_URI'] = row.id
+        if str(row.code) == str(passcode):
+            meta_data['cedar_registration_URI'] = row.id
+            return True, f"Welcome, your ID is {row.patient_id}" 
+        else:
+            return False, "This phonenumber + password combination is not known. Please check this and try again."
 
-# TODO: Change entry point of IVR to the passcode requestor
+
 @app.route("/pghd_handler", methods=['POST'])
 def pghd_handler():
     with open('ivr_standard_responses/pghd_menu.xml') as f:
@@ -154,13 +168,31 @@ def pghd_handler():
     return response
 
 
+@app.route("/authenticate", methods=['POST'])
+def pghd_authenticator():
+    digits = request.values.get("dtmfDigits", None)
+    authenticated, response_text = authenticate(digits)
+
+    if authenticated:
+        # Right now we just continue to BP. We could potentially fork here depending on which devices the user has
+        bp_handler = "https://www.pghd.renskievit.com/ivr/pghd_cardio_handler"
+
+        response  =  "<Response>"
+        response += f"<Say>{response_text}</Say>"
+        response += f"<Redirect>{bp_handler}</Redirect>"
+        response +=  "</Response>"
+    else:  
+        response  =  "<Response>"
+        response += f"<Say>{response_text}</Say>"
+        response +=  "<Reject/>"
+        response +=  "</Response>"
+
+    return response
+
+
 @app.route("/pghd_cardio_handler", methods=['POST'])
 def pghd_cardio_handler():
-    digits = request.values.get("dtmfDigits", None)
-    if digits == '1':
-        return cardio_data_collector()
-    else:
-        return '<Response><Reject/></Response>'
+    return cardio_data_collector()
 
 
 @app.route("/heart_rate", methods=['POST'])
@@ -226,8 +258,6 @@ def collection_person():
             cardio_data['collection_person'] = 'Caregiver'
     
     return cardio_data_collector()
-
-
 
 
 @app.route("/submit", methods=['POST'])
