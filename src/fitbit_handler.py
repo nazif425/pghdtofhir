@@ -8,7 +8,7 @@ from threading import current_thread
 import gather_keys_oauth2 as Oauth2
 import fitbit
 import pandas as pd 
-import datetime 
+from datetime import datetime
 import json
 import requests
 
@@ -17,14 +17,14 @@ import requests
 # or is it a script which we run on intervals through CRON jobs?
 
 #fitbit credentials
-Start_time =  datetime.now()
+ 
 # COMMENT BY RK: Both of these need to be moved into a PGHD_REGISTRATION instance, and extracted dynamically in the fitbit_handler. 
 # i.e. we have an incoming client ID + secret which we should check in the database if they match -> then match it to a Patient URI for PGHD_CONNECT
 with open('secrets.json') as secrets:
     cedar_api_key = json.load(secrets)["authkey_RENS"]
 with open('secrets.json') as secrets:
     CLIENT_ID = json.load(secrets)["CLIENT_ID"]
-    # CLIENT_SECRET = json.load(secrets)["CLIENT_SECRET"]
+     
 
 with open('secrets.json') as secrets:
     CLIENT_SECRET = json.load(secrets)["CLIENT_SECRET"]
@@ -32,9 +32,7 @@ with open('secrets.json') as secrets:
 with open('secrets.json') as secrets:
     CEDAR_registration_ID = json.load(secrets)["CEDAR_registration_ID"]
     
-print(CLIENT_ID)
-print(CLIENT_SECRET)
-print(CEDAR_registration_ID)
+    
 cedar_url = 'https://resource.metadatacenter.org/template-instances'
 
 
@@ -53,8 +51,8 @@ def fitbit_authentication():
 auth2_client = fitbit_authentication()
 
 # COMMENT BY RK: Is putting values to '0' if they do not exist right? This can mess with any statistics in the data I think. Make this None, or null I think
-#Fetch data from Fitbit 
-#TODO: put this in a function
+
+#  put this in a function
 start_time = datetime(2023, 11, 11)
 
 
@@ -97,11 +95,11 @@ def get_fitbit_data(start_time):
     }
 
     return fitbit_data
-
-# data = json.load(cedar_template)
+ 
+#push data to cedar
 def push_data_to_cedar(data, start_time, cedar_api_key,cedar_template,cedar_url):
     data = json.load(cedar_template)
-    #data['userid']['@value'] = CLIENT_ID # COMMENT BY RK: This should be moved to the registration step and checked against for authentication.
+     
 
     data['Fat']['@value'] = str(data.get("fat"))
     data['BMI']['@value'] = str(data.get("bmi"))
@@ -130,7 +128,7 @@ def push_data_to_cedar(data, start_time, cedar_api_key,cedar_template,cedar_url)
                                                      'Accept': 'application/json',
                                                      'Authorization': cedar_api_key})
         if response.status_code == 201:  # Assuming a successful creation response
-            # print(Start_time, "Data successfully pushed to Cedar!")
+            
             msg = "Data successfully pushed to Cedar!"
             cedar_data_URI = response.json()["@id"]
         else:
@@ -138,7 +136,7 @@ def push_data_to_cedar(data, start_time, cedar_api_key,cedar_template,cedar_url)
             msg =  f"Error: {response.status_code}, {response.text},  "
 
     except Exception as e:
-        # print(f"An error occurred: {e},{Start_time}")
+         
         msg = f"An error occurred: {e},  "
 
     # COMMENT BY RK: Somewhere here add the PGHD_CONNECT push code. i.e. get the data instance URI, combine it with Patient URI (which should have been gotten at the authentication step
@@ -149,12 +147,13 @@ def push_data_to_cedar(data, start_time, cedar_api_key,cedar_template,cedar_url)
 
 
 def push_data_to_connect(cedar_data_URI,connect_template):
-    # cedar_template_connect = open('connect.json')
+     
     data = json.load(connect_template)
-
+    # connect_data['source_of_PGHD']['@id'] = str(connect_ontology_prefix + 'bp_ivr')
+    # connect_data['source_of_PGHD']['rdfs:label'] = str('bp_ivr')
     data['Patient']['@id'] = str(meta_data['cedar_registration_URI'])
     data['collected_PGHD']['@id'] = cedar_data_URI
-    data['source_of_PGHD']['@id'] = str(connect_ontology_prefix + 'bp_ivr')
+    data['source_of_PGHD']['@id'] = str(connect_ontology_prefix + 'Fitbit')
     data['schema:name'] = 'temptest'
 
     
@@ -174,19 +173,23 @@ def push_data_to_connect(cedar_data_URI,connect_template):
         
         
     return msg
-#crerate main function to run all the functions and the script
+
+#main function	
 def main():
+    start_time = datetime(2023, 11, 11)
     fitbit_data = get_fitbit_data(start_time)
     cedar_template = open('templates/fitbit_template.json')
-    cedar_data_URI, fit_msg = push_data_to_cedar(fitbit_data, start_time, cedar_api_key,cedar_template,cedar_url)
+    fit_msg,cedar_data_URI = push_data_to_cedar(fitbit_data, start_time, cedar_api_key,cedar_template,cedar_url)
     connect_template = open('templates/pghd_connect_template.json')
     connect_msg = push_data_to_connect(cedar_data_URI,connect_template)
     
     print(fit_msg)
     print(connect_msg)
     
+    
 if __name__ == "__main__":
     main()
+    
 #TODO 
 # 1. fix the gather_keys_oauth2 importation error 
 
