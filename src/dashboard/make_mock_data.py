@@ -55,7 +55,7 @@ def create_bp_ivr_instances(N, patientID, CEDAR_registration_ID):
                                  params = {'folder_id': folder_id})
         #print(response.status_code)
         #print(json.dumps(response.json(), indent=2))
-        cedar_data_URI = response.json()["@id"]
+        cedar_data_URI = response.json()["@id"] #data uri for the instance
         
         
         
@@ -87,7 +87,7 @@ def create_fitbit_instances():
 
 def main():
     patientID = '1234'
-    CEDAR_registration_ID = 'https://repo.metadatacenter.org/template-instances/5c3c4a9d-cf6c-4dcb-a2f4-935e4c7fd1f7'
+    CEDAR_registration_ID = 'https://repo.metadatacenter.org/template-instances/5c3c4a9d-cf6c-4dcb-a2f4-935e4c7fd1f7' # cedar registration id
     N = 5
 
     create_bp_ivr_instances(N, patientID, CEDAR_registration_ID)
