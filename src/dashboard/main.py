@@ -7,12 +7,12 @@ from urllib import parse
 from rdflib import Graph
 import streamlit as st
 
-from plotting import plot_history
+from plotting import plot_bp, plot_fitbit
 
 
 def set_styles():
     # Set matplotlib styles
-    pass
+    plt.style.use('bmh')
 
 @st.cache_data
 def retrieve_data_cedar():
@@ -86,28 +86,34 @@ def retrieve_data_cedar():
     return g
 
 
-
-
 def setup_dashboard():
     st.write("Welcome to the PGHD dashboard.")
-    st.write("Tick the boxes of the attributes you want to see plotted below.")
+    st.sidebar.write("Tick the boxes of the attributes you want to see plotted below.")
+    st.sidebar.write("")
     
     plot_attrs = {}
-    plot_attrs["pulse"]  =  st.checkbox("Pulse Rate")
-    plot_attrs["sys_bp"] =  st.checkbox("Systolic Blood Pressure")
-    plot_attrs["dia_bp"] =  st.checkbox("Diastolic Blood Pressure")
-    
-    st.write(plot_attrs)
+    st.sidebar.write("Blood Pressure Values")
+    plot_attrs["pulse"]  =  st.sidebar.checkbox("Pulse Rate")
+    plot_attrs["sys_bp"] =  st.sidebar.checkbox("Systolic Blood Pressure")
+    plot_attrs["dia_bp"] =  st.sidebar.checkbox("Diastolic Blood Pressure")
+
+    st.sidebar.write("")
+    st.sidebar.write("Fitbit Values")
+    # TODO: HAROLD ADD FITBIT PLOT VALUES HERE (SEE ABOVE)
+    plot_attrs["fitbit"]= st.sidebar.checkbox("All Fitbit Values")
 
     return plot_attrs
 
-
-def main():
+def main(): 
     set_styles()
     g = retrieve_data_cedar()
 
     plot_attrs = setup_dashboard()
-    plot_history(g, plot_attrs)
+    if plot_attrs["pulse"] or plot_attrs["sys_bp"] or plot_attrs["dia_bp"]:
+        plot_bp(g, plot_attrs) 
+
+    if plot_attrs["fitbit"]:
+        plot_fitbit(g, plot_attrs)
 
 
 if __name__ == '__main__':

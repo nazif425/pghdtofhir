@@ -17,7 +17,6 @@ from rdflib.namespace import XSD
 from rdflib.plugins.sparql import prepareQuery
 
 
- 
 def fitbit_authentication(user):
     server=Oauth2.OAuth2Server(user["CLIENT_ID"], user["CLIENT_SECRET"])
     server.browser_authorize()

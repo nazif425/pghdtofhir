@@ -2,6 +2,7 @@ import streamlit as st
 import mpld3
 from mpld3 import plugins
 import streamlit.components.v1 as components
+from datetime import date, timedelta
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -21,8 +22,19 @@ def process_simple_query(graph, query_string):
     return res
 
 
+def plot_trend(x, y, label, c, size=8, highlight_outliers=True):
+    mean = np.mean(y)
+    std = np.std(y)
+    if highlight_outliers:
+        outliers = np.abs((y - mean)/std) > 1
+        plt.plot(x[outliers], y[outliers], lw=0, marker='X', color=c, markersize=2*size)
+    else:
+        outliers = np.full_like(x, False)
 
-def plot_history(g, atts_to_plot):
+    plt.plot(x[~outliers], y[~outliers], lw=0, marker='o', color=c, markersize=size, label=label)
+    plt.axhline(mean, color=c, ls='--', alpha=0.7)
+
+def plot_bp(g, atts_to_plot):
     query_str = """
         PREFIX pghdc: <https://github.com/RenVit318/pghd/tree/main/src/vocab/pghd_connect/>
         PREFIX bp_aux: <https://github.com/RenVit318/pghd/tree/main/src/vocab/auxillary_info/>
@@ -75,35 +87,69 @@ def plot_history(g, atts_to_plot):
         data.loc[i, 'person'] = row.person
         data.loc[i, 'pos']    = row.pos
 
-    unique_dates, idxs = np.unique(data['date'], return_index=True)
-    extremes = (np.min(unique_dates), np.max(unique_dates))
+    
 
-    daterange = st.slider(label='Select date range', min_value=extremes[0], max_value=extremes[1],
-                          value=extremes)
+    unique_dates, idxs = np.unique(data['date'], return_index=True)
+    min_date = np.min(unique_dates)
+    max_date = np.max(unique_dates)
+    delta = timedelta(days=1)
+    start_state = (np.max((min_date, max_date - 2 * delta)), max_date)
+
+    daterange = st.slider(label='Select date range', min_value=min_date, max_value=max_date,
+                          value=start_state)
 
     # Plotting
-    fig = plt.figure()#figsize=(8,5))
-
-    # Can we do this in a way that properly makes use of pd data frames?
+    fig = plt.figure()
     if atts_to_plot['pulse']:
-        plt.plot(data.loc[idxs, 'date'], data.loc[idxs, 'pulse'],
-                 lw=0, marker='.', label='Pulse Rate')
+        plot_trend(data.loc[idxs, 'date'], data.loc[idxs, 'pulse'], c='C0', label="Pulse Rate")
     if atts_to_plot['sys_bp']:
-        plt.plot(data.loc[idxs, 'date'], data.loc[idxs, 'sys_bp'],
-                 lw=0, marker='.', label='Systolic BP')
+        plot_trend(data.loc[idxs, 'date'], data.loc[idxs, 'sys_bp'], c='C1', label="Systolic Blood Pressure")
     if atts_to_plot['dia_bp']:
-        plt.plot(data.loc[idxs, 'date'], data.loc[idxs, 'dia_bp'],
-                 lw=0, marker='.', label='Diastolic BP')
+        plot_trend(data.loc[idxs, 'date'], data.loc[idxs, 'dia_bp'], c='C2', label="Diastolic Blood Pressure")
+  
         
-    #plt.axhline(y=0, lw=1)
+    plt.axhline(y=0, lw=1, c='black')
+    plt.xlim(daterange)
 
-    #plt.xlim(daterange)
-    #plt.xticks(rotation=60)
+    plt.xlabel('Date of measurement')
+    plt.ylabel('Pulse Rate / Blood Pressure Value')
+    plt.title('PGHD - Blood Pressure')
+
+    # Setup proper xticks
+    ticks = []
+    labels = []
+    done = False
+    curr_date = daterange[0]
+    while not done:
+        if curr_date == daterange[1]:
+            done = True
+        ticks.append(curr_date)
+        labels.append(curr_date.strftime("%d-%m"))
+        curr_date += delta 
+    plt.xticks(ticks=ticks, labels=labels, rotation=60)
+
+    plt.legend()
     
-    #plt.ylabel('Y')
+    st.pyplot(fig)
 
 
+    show_data = st.checkbox("Click here to view the data")
+    if show_data: 
+        df = pd.DataFrame(data)
+        st.dataframe(data, 
+                     use_container_width=True, hide_index=True,
+                     column_config={
+                        "date": "Date",
+                        "pulse": "Pulse Rate",
+                        "sys_bp": "Systolic BP",
+                        "dia_bp": "Diastolic BP",
+                        "loc": "Location",
+                        "person": "Person",
+                        "pos": "Position"
+                     })
 
+
+def dynamic_fig(fig):
 
     plt.legend(loc='lower right')
     css = """
@@ -160,7 +206,14 @@ def plot_history(g, atts_to_plot):
 
     fig_html = mpld3.fig_to_html(fig)
     components.html(fig_html, height=600)
-    
+
+
+
+def plot_fitbit(g, plot_attrs):
+    st.write('Plot fitbit stuff here..')
+    fig = plt.figure()
+
+    st.pyplot(fig)
 
 
 
