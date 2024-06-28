@@ -18,13 +18,6 @@ from rdflib.plugins.sparql import prepareQuery
 
 
  
-# COMMENT BY RK: Both of these need to be moved into a PGHD_REGISTRATION instance, and extracted dynamically in the fitbit_handler. 
-# i.e. we have an incoming client ID + secret which we should check in the database if they match -> then match it to a Patient URI for PGHD_CONNECT
-
-
-    
-    
-
 def fitbit_authentication(user):
     server=Oauth2.OAuth2Server(user["CLIENT_ID"], user["CLIENT_SECRET"])
     server.browser_authorize()
@@ -151,9 +144,6 @@ def push_data_to_cedar(data, start_time, user):
     return msg
 
 
-
-
-
 def get_fitbit_users():
     # TODO: Send SPARQL query over the registration database
 #    Import registrations. This should ideally be done through remote querying on AllegroGraph so the data and script are fully separate.
@@ -167,27 +157,23 @@ def get_fitbit_users():
         SELECT ?id ?code ?patient_id
         WHERE{{
             ?id <http://schema.org/isBasedOn>  <https://repo.metadatacenter.org/templates/f49d788e-f611-4525-90e9-dd21204b51fa> ;
-                pghdc:phoneNumber "{meta_data['phone_number']}" ;
-                pghdc:hiddenCode ?code
-                pghdc:patientID ?patient_id
+                pghdc:fitbitID ?client_id
+                pghdc:fitbitSecret ?client_secret
         }}
         """
     
     # Execute query on graph using RDFLib. Check performance in case of large store
-    pghdc = Namespace("https://github.com/RenVit318/pghd/tree/main/src/vocab/pghd_connect/")
+    pghdc = Namespace("https://github.com/Ren Vit318/pghd/tree/main/src/vocab/pghd_connect/")
     query = prepareQuery(query_string, initNs={'pghdc': pghdc, 'xsd': XSD})
     res = g.query(query)
 
-
-
-
-
-    with open('secrets.json') as secrets:
-        CLIENT_ID = json.load(secrets)["CLIENT_ID"]
-    with open('secrets.json') as secrets:
-        CLIENT_SECRET = json.load(secrets)["CLIENT_SECRET"]
-    with open('secrets.json') as secrets:
-        CEDAR_registration_ID = json.load(secrets)["CEDAR_registration_ID"]
+    users = []
+    for row in res:
+        users.append({
+            "CLIENT_ID": row.client_id,
+            "CLIENT_SECRET": row.client_secret,
+            "CEDAR_registration_ID": row.id
+        })
 
 
 def handle_fitbit_data(user):
@@ -196,13 +182,13 @@ def handle_fitbit_data(user):
     fitbit_data = get_fitbit_data(start_time, auth2_client)
     push_data_to_cedar(fitbit_data, start_time, user)
     
+
 def main():
     fitbit_users = get_fitbit_users()
     for user in fitbit_users:
         handle_fitbit_data(user)
 
 
-    
 if __name__ == "__main__":
     main()
     
