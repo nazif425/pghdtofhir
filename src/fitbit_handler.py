@@ -1,4 +1,4 @@
-################ Fitbit_to_Cedar.py #############################
+################ fitbit_handler.py #############################
 # PGHD Project
 # Description: This script fetches the data from fitbit and pushes it to CEDAR
 ##################################################################
@@ -12,51 +12,29 @@ from datetime import datetime
 import json
 import requests
 
+from rdflib import Graph, Namespace
+from rdflib.namespace import XSD
+from rdflib.plugins.sparql import prepareQuery
 
-# COMMENT BY RK: Question on execution of this code which impacts its structure. Is this always on, accepting incoming data POST requests when the fitbit is ready,
-# or is it a script which we run on intervals through CRON jobs?
 
-#fitbit credentials
  
 # COMMENT BY RK: Both of these need to be moved into a PGHD_REGISTRATION instance, and extracted dynamically in the fitbit_handler. 
 # i.e. we have an incoming client ID + secret which we should check in the database if they match -> then match it to a Patient URI for PGHD_CONNECT
-with open('secrets.json') as secrets:
-    cedar_api_key = json.load(secrets)["authkey_RENS"]
-with open('secrets.json') as secrets:
-    CLIENT_ID = json.load(secrets)["CLIENT_ID"]
-     
 
-with open('secrets.json') as secrets:
-    CLIENT_SECRET = json.load(secrets)["CLIENT_SECRET"]
-    
-with open('secrets.json') as secrets:
-    CEDAR_registration_ID = json.load(secrets)["CEDAR_registration_ID"]
+
     
     
-cedar_url = 'https://resource.metadatacenter.org/template-instances'
 
-
-
-##fitbit authentication
-def fitbit_authentication():
-    server=Oauth2.OAuth2Server(CLIENT_ID, CLIENT_SECRET)
+def fitbit_authentication(user):
+    server=Oauth2.OAuth2Server(user["CLIENT_ID"], user["CLIENT_SECRET"])
     server.browser_authorize()
     ACCESS_TOKEN=str(server.fitbit.client.session.token['access_token'])
     REFRESH_TOKEN=str(server.fitbit.client.session.token['refresh_token'])
-    auth2_client=fitbit.Fitbit(CLIENT_ID,CLIENT_SECRET,oauth2=True,access_token=ACCESS_TOKEN,refresh_token=REFRESH_TOKEN)
+    auth2_client=fitbit.Fitbit(user["CLIENT_ID"], user["CLIENT_SECRET"], oauth2=True, access_token=ACCESS_TOKEN, refresh_token=REFRESH_TOKEN)
     return auth2_client
 
 
-
-auth2_client = fitbit_authentication()
-
-# COMMENT BY RK: Is putting values to '0' if they do not exist right? This can mess with any statistics in the data I think. Make this None, or null I think
-
-#  put this in a function
-start_time = datetime(2023, 11, 11)
-
-
-def get_fitbit_data(start_time):
+def get_fitbit_data(start_time, auth2_client):
     body = auth2_client.body(date=start_time)
     activities = auth2_client.activities(date=start_time)
     sleep = auth2_client.sleep(date=start_time)
@@ -96,10 +74,16 @@ def get_fitbit_data(start_time):
 
     return fitbit_data
  
-#push data to cedar
-def push_data_to_cedar(data, start_time, cedar_api_key,cedar_template,cedar_url):
+
+
+def push_data_to_cedar(data, start_time, user):
+    cedar_url = 'https://resource.metadatacenter.org/template-instances'
+    with open('../.secrets.json') as secrets:
+        cedar_api_key = json.load(secrets)["authkey_RENS"]
+    
+    cedar_template = open('templates/fitbit_template.json')
     data = json.load(cedar_template)
-     
+    current_time = datetime.now()
 
     data['Fat']['@value'] = str(data.get("fat"))
     data['BMI']['@value'] = str(data.get("bmi"))
@@ -114,19 +98,18 @@ def push_data_to_cedar(data, start_time, cedar_api_key,cedar_template,cedar_url)
     # data['Total distance']['@value'] = str(data.get("total_distances"))
     # data['Calories burnt']['@value'] = str(data.get("calories_burnt"))
     data['Steps']['@value'] = str(data.get("steps_count"))
+    data['schema:name'] = f"PGHD_FB {current_time.strftime('%Y-%m-%d')}"
     
     cedar_template.close()
     
 
-    
 
-    #push data to cedar 
     # COMMENT BY RK: In production we should push to predefined folders so that things aren't lying around everywhere. 
     # you can do this by adding params = {'folder_id': folder_id} to the POST request below.
     try:
         response = requests.post(cedar_url, json=data, headers={'Content-Type': 'application/json',
-                                                     'Accept': 'application/json',
-                                                     'Authorization': cedar_api_key})
+                                                                'Accept': 'application/json',
+                                                                'Authorization': cedar_api_key})
         if response.status_code == 201:  # Assuming a successful creation response
             
             msg = "Data successfully pushed to Cedar!"
@@ -139,25 +122,18 @@ def push_data_to_cedar(data, start_time, cedar_api_key,cedar_template,cedar_url)
          
         msg = f"An error occurred: {e},  "
 
-    # COMMENT BY RK: Somewhere here add the PGHD_CONNECT push code. i.e. get the data instance URI, combine it with Patient URI (which should have been gotten at the authentication step
-    # and then POST an instance of PGHD_CONNECT with these values and fitbit as source_of_PGHD
-    
-    return   msg, cedar_data_URI
 
-
-
-def push_data_to_connect(cedar_data_URI,connect_template):
+    # Setup PGHD_CONNECT
+    cedar_template_connect = open('templates/pghd_connect_template.json')
+    connect_ontology_prefix = 'https://github.com/RenVit318/pghd/tree/main/src/vocab/pghd_connect/'
+    connect_data = json.load(cedar_template_connect)
      
-    data = json.load(connect_template)
-    # connect_data['source_of_PGHD']['@id'] = str(connect_ontology_prefix + 'bp_ivr')
-    # connect_data['source_of_PGHD']['rdfs:label'] = str('bp_ivr')
-    data['Patient']['@id'] = str(meta_data['cedar_registration_URI'])
-    data['collected_PGHD']['@id'] = cedar_data_URI
-    data['source_of_PGHD']['@id'] = str(connect_ontology_prefix + 'Fitbit')
-    data['schema:name'] = 'temptest'
+    connect_data['Patient']['@id'] = str(user['cedar_registration_URI'])
+    connect_data['collected_PGHD']['@id'] = cedar_data_URI
+    connect_data['source_of_PGHD']['@id'] = str(connect_ontology_prefix + 'fitbit')
+    connect_data['source_of_PGHD']['rdfs:label'] = str('fitbit')
+    connect_data['schema:name'] = f"PGHD_FB CNT {current_time.strftime('%Y-%m-%d')}"
 
-    
-    
     try:
         response = requests.post(cedar_url, json=data, headers={'Content-Type': 'application/json',
                                                  'Accept': 'application/json',
@@ -171,25 +147,68 @@ def push_data_to_connect(cedar_data_URI,connect_template):
     except Exception as e:
         msg = f"An error occurred: {e},  "
         
-        
+
     return msg
 
-#main function	
+
+
+
+
+def get_fitbit_users():
+    # TODO: Send SPARQL query over the registration database
+#    Import registrations. This should ideally be done through remote querying on AllegroGraph so the data and script are fully separate.
+    registrations_file = 'triple_store/registrations.ttl'
+    g = Graph()
+    g.parse(registrations_file)
+
+    query_string = f"""
+        PREFIX pghdc: <https://github.com/RenVit318/pghd/tree/main/src/vocab/pghd_connect/>
+        PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>     
+        SELECT ?id ?code ?patient_id
+        WHERE{{
+            ?id <http://schema.org/isBasedOn>  <https://repo.metadatacenter.org/templates/f49d788e-f611-4525-90e9-dd21204b51fa> ;
+                pghdc:phoneNumber "{meta_data['phone_number']}" ;
+                pghdc:hiddenCode ?code
+                pghdc:patientID ?patient_id
+        }}
+        """
+    
+    # Execute query on graph using RDFLib. Check performance in case of large store
+    pghdc = Namespace("https://github.com/RenVit318/pghd/tree/main/src/vocab/pghd_connect/")
+    query = prepareQuery(query_string, initNs={'pghdc': pghdc, 'xsd': XSD})
+    res = g.query(query)
+
+
+
+
+
+    with open('secrets.json') as secrets:
+        CLIENT_ID = json.load(secrets)["CLIENT_ID"]
+    with open('secrets.json') as secrets:
+        CLIENT_SECRET = json.load(secrets)["CLIENT_SECRET"]
+    with open('secrets.json') as secrets:
+        CEDAR_registration_ID = json.load(secrets)["CEDAR_registration_ID"]
+
+
+def handle_fitbit_data(user):
+    start_time = datetime(2023, 11, 11) # What should this be? Probably dynamic instead of hard coded at least right
+    auth2_client = fitbit_authentication(user)
+    fitbit_data = get_fitbit_data(start_time, auth2_client)
+    push_data_to_cedar(fitbit_data, start_time, user)
+    
 def main():
-    start_time = datetime(2023, 11, 11)
-    fitbit_data = get_fitbit_data(start_time)
-    cedar_template = open('templates/fitbit_template.json')
-    fit_msg,cedar_data_URI = push_data_to_cedar(fitbit_data, start_time, cedar_api_key,cedar_template,cedar_url)
-    connect_template = open('templates/pghd_connect_template.json')
-    connect_msg = push_data_to_connect(cedar_data_URI,connect_template)
-    
-    print(fit_msg)
-    print(connect_msg)
-    
+    fitbit_users = get_fitbit_users()
+    for user in fitbit_users:
+        handle_fitbit_data(user)
+
+
     
 if __name__ == "__main__":
     main()
     
+
+
+
 #TODO 
 # 1. fix the gather_keys_oauth2 importation error 
 

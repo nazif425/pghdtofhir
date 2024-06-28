@@ -3,7 +3,6 @@ import requests
 from datetime import datetime
 import json
 
-# Should this be moved?
 from rdflib import Graph, Namespace
 from rdflib.namespace import XSD
 from rdflib.plugins.sparql import prepareQuery
@@ -95,7 +94,7 @@ def send_data_to_cedar():
     connect_data['collected_PGHD']['@id'] = cedar_data_URI
     connect_data['source_of_PGHD']['@id'] = str(connect_ontology_prefix + 'bp_ivr')
     connect_data['source_of_PGHD']['rdfs:label'] = str('bp_ivr')
-    connect_data['schema:name'] = 'temptest'
+    connect_data['schema:name'] = f"PGHD_BP CNT {current_time.strftime('%Y-%m-%d')}"
 
     requests.post(cedar_url, json=connect_data, 
                   headers={'Content-Type': 'application/json',
@@ -151,7 +150,7 @@ def authenticate(passcode):
     if len(res) == 0:
         return False, "This phonenumber + password combination is not known. Please check this and try again."
     elif len(res) > 1:
-        raise False, "There are multiple registrations connected to this phonenumber. Please check this with your caregiver."
+        return False, "There are multiple registrations connected to this phonenumber. Please check this with your caregiver."
     
     for row in res:
         if str(row.code) == str(passcode):
@@ -273,4 +272,4 @@ def submit():
 
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=True, port=2024)
