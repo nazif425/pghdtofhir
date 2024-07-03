@@ -2,6 +2,7 @@ from flask import Flask, request
 import requests
 from datetime import datetime
 import json
+from urllib import parse
 
 from rdflib import Graph, Namespace
 from rdflib.namespace import XSD
@@ -121,13 +122,28 @@ def clear_meta_data():
     meta_data['cedar_registration_URI'] = None
 
 
-def authenticate(passcode):
+def authenticate(passcode, local_registrations=False):
     # Import registrations. This should ideally be done through remote querying on AllegroGraph so the data and script are fully separate.
     if passcode is None:
         return False, "No password was entered" 
 
+    # This clause can be used if the list of registered patients is stored localy at clinic side and can be easily retrieved (or queried through e.g. AG)
+    # For the purpose of the pilot we store all data on CEDAR and import from there 
     g = Graph()
-    g.parse(registrations_file)
+    if local_registrations:
+        g.parse(registrations_file)
+    else:
+        with open('../.secrets.json') as secrets:
+            cedar_api_key = json.load(secrets)["authkey_RENS"]
+
+        cedar_url = "https://resource.metadatacenter.org/template-instances/"
+        # NOTE: This is only for one patient!!
+        patient_uri = parse.quote_plus("https://repo.metadatacenter.org/template-instances/f33ce769-87be-4d08-b55d-01026eae057c")
+        headers = {"accept": "application/json", "authorization": cedar_api_key}
+
+        response = requests.get(cedar_url+patient_uri, headers=headers)
+        g.parse(data=response.json(), format='json-ld')
+
 
     query_string = f"""
         PREFIX pghdc: <https://github.com/RenVit318/pghd/tree/main/src/vocab/pghd_connect/>
@@ -136,11 +152,11 @@ def authenticate(passcode):
         WHERE{{
             ?id <http://schema.org/isBasedOn>  <https://repo.metadatacenter.org/templates/f49d788e-f611-4525-90e9-dd21204b51fa> ;
                 pghdc:phoneNumber "{meta_data['phone_number']}" ;
-                pghdc:hiddenCode ?code
-                pghdc:patientID ?patient_id
+                pghdc:hiddenCode ?code ;
+                pghdc:patientID ?patient_id .
         }}
         """
-    
+
     # Execute query on graph using RDFLib. Check performance in case of large store
     pghdc = Namespace("https://github.com/RenVit318/pghd/tree/main/src/vocab/pghd_connect/")
     query = prepareQuery(query_string, initNs={'pghdc': pghdc, 'xsd': XSD})
@@ -157,7 +173,7 @@ def authenticate(passcode):
             meta_data['cedar_registration_URI'] = row.id
             return True, f"Welcome, your ID is {row.patient_id}" 
         else:
-            return False, "This phonenumber + password combination is not known. Please check this and try again."
+            return False, "2 This phonenumber + password combination is not known. Please check this and try again."
 
 
 @app.route("/pghd_handler", methods=['POST'])
