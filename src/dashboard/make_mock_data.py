@@ -34,9 +34,7 @@ def create_bp_ivr_instances(N, patientID, CEDAR_registration_ID):
     #TODO: ADD IN DATE CHANGING!!
 
     for i in range(N):
-
-        #data['PatientID']['@value'] = patientID
-        
+        #data['PatientID']['@value'] = patientID       
         bp_data['DataCollectedViaIVR']['@value'] = "Yes"
         bp_data['Date']['@value'] = instance_date.strftime('%Y-%m-%d')
         bp_data['hasPulseRate']['@value'] = str(int(np.random.normal(80, 10)))

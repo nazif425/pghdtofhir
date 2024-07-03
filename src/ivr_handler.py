@@ -9,7 +9,9 @@ from rdflib.namespace import XSD
 from rdflib.plugins.sparql import prepareQuery
 
 app = Flask(__name__)
-registrations_file = 'triple_store/registrations.ttl'
+registrations_file = None # 'triple_store/registrations.ttl'
+# The folder is now hard-coded. Should be made dynamic in production
+folder_id = "https://repo.metadatacenter.org/folders/b451e291-0a49-4d5c-a626-933043006eae"
 
 meta_data = {'phone_number': None,
              'cedar_registration_URI': None}
@@ -61,7 +63,7 @@ def cardio_data_collector():
 
 def send_data_to_cedar():
     cedar_url = 'https://resource.metadatacenter.org/template-instances'
-    with open('../.secrets.json') as secrets:
+    with open('.secrets.json') as secrets:
         cedar_api_key = json.load(secrets)["authkey_RENS"]
     current_time = datetime.now()
 
@@ -69,23 +71,29 @@ def send_data_to_cedar():
     cedar_template = open('templates/ivr_bp_cedar_template.json')
     bp_data = json.load(cedar_template)
 
-    bp_data['DataCollectedViaIVR']['@value'] = 'Yes'
+    bp_data['DataCollectedViaIVR']['@value'] = "Yes"
     bp_data['Date']['@value'] = current_time.strftime('%Y-%m-%d')
-    bp_data['Pulse Number']['@value'] = str(cardio_data['heart_rate'])
-    bp_data['Blood Pressure (Systolic)']['@value'] = str(cardio_data['systolic_blood_pressure'])
-    bp_data['Blood Pressure (Diastolic)']['@value'] = str(cardio_data['diastolic_blood_pressure'])
-    bp_data['CollectionPosition']['@value'] = ontology_prefix + str(cardio_data['collection_position'])
-    bp_data['CollectionLocation']['@value'] = ontology_prefix + str(cardio_data['collection_location'])
-    bp_data['CollectionPerson']['@value'] = ontology_prefix + str(cardio_data['collection_person'])
+    bp_data['hasPulseRate']['@value'] = str(cardio_data['heart_rate'])
+    bp_data['hasSystolicBloodPressureValue']['@value'] = str(cardio_data['systolic_blood_pressure'])
+    bp_data['hasDiastolicBloodPressureValue']['@value'] = str(cardio_data['diastolic_blood_pressure'])
+    bp_data['CollectionPosition']['@id'] = ontology_prefix + str(cardio_data['collection_position'])
+    bp_data['CollectionPosition']['rdfs:label'] = str(cardio_data['collection_position'])
+    bp_data['CollectionLocation']['@id'] = ontology_prefix + str(cardio_data['collection_location'])
+    bp_data['CollectionLocation']['rdfs:label'] = str(cardio_data['collection_location'])
+    bp_data['CollectionPerson']['@id'] = ontology_prefix + str(cardio_data['collection_person'])
+    bp_data['CollectionPerson']['rdfs:label'] = str(cardio_data['collection_person'])
     bp_data['schema:name'] = f"PGHD_BP {current_time.strftime('%Y-%m-%d')}"
     cedar_template.close()
 
+    print(bp_data)
+    
     response = requests.post(cedar_url, json=bp_data, 
                              headers={'Content-Type': 'application/json',
                                       'Accept': 'application/json',
-                                      'Authorization': cedar_api_key})
-
-    cedar_data_URI = response['@id']
+                                      'Authorization': cedar_api_key},
+                             params = {'folder_id': folder_id})
+    print(response)
+    cedar_data_URI = response.json()['@id']
 
     cedar_template_connect = open('templates/pghd_connect_template.json')
     connect_ontology_prefix = 'https://github.com/RenVit318/pghd/tree/main/src/vocab/pghd_connect/'
@@ -100,7 +108,8 @@ def send_data_to_cedar():
     requests.post(cedar_url, json=connect_data, 
                   headers={'Content-Type': 'application/json',
                            'Accept': 'application/json',
-                           'Authorization': cedar_api_key})
+                           'Authorization': cedar_api_key},
+                  params = {'folder_id': folder_id})
 
     clear_data()
 
@@ -133,7 +142,7 @@ def authenticate(passcode, local_registrations=False):
     if local_registrations:
         g.parse(registrations_file)
     else:
-        with open('../.secrets.json') as secrets:
+        with open('.secrets.json') as secrets:
             cedar_api_key = json.load(secrets)["authkey_RENS"]
 
         cedar_url = "https://resource.metadatacenter.org/template-instances/"
@@ -178,6 +187,16 @@ def authenticate(passcode, local_registrations=False):
 
 @app.route("/pghd_handler", methods=['POST'])
 def pghd_handler():
+    meta_data['phone_number'] = request.values.get("callerNumber", None)
+
+    if meta_data['phone_number'] is None:
+        response  =  "<Response>"
+        response += f"<Say>Your phone number could not be interpreted. Please contact your hospital to resolve this issue.</Say>"
+        response += f"<Reject/>"
+        response +=  "</Response>"
+
+        return response
+
     with open('ivr_standard_responses/pghd_menu.xml') as f:
         response = f.read()
     return response
@@ -190,7 +209,7 @@ def pghd_authenticator():
 
     if authenticated:
         # Right now we just continue to BP. We could potentially fork here depending on which devices the user has
-        bp_handler = "https://www.pghd.renskievit.com/ivr/pghd_cardio_handler"
+        bp_handler = "https://pghd.renskievit.com/ivr/pghd_cardio_handler"
 
         response  =  "<Response>"
         response += f"<Say>{response_text}</Say>"
@@ -241,11 +260,11 @@ def diastolic_blood_pressure():
 def collection_position():
     digits = request.values.get("dtmfDigits", None)
     if digits is not None:
-        if digits == 1:
+        if digits == '1':
             cardio_data['collection_position'] = 'Laying'
-        elif digits == 2:
+        elif digits == '2':
             cardio_data['collection_position'] = 'Sitting'
-        elif digits == 3:
+        elif digits == '3':
             cardio_data['collection_position'] = 'Standing'
 
     return cardio_data_collector()
@@ -255,9 +274,9 @@ def collection_position():
 def collection_location():
     digits = request.values.get("dtmfDigits", None)
     if digits is not None:
-        if digits == 1:
+        if digits == '1':
             cardio_data['collection_location'] = 'Home'
-        elif digits == 2:
+        elif digits == '2':
             cardio_data['collection_location'] = 'Outside'
 
     return cardio_data_collector()
@@ -267,9 +286,9 @@ def collection_location():
 def collection_person():
     digits = request.values.get("dtmfDigits", None)
     if digits is not None:
-        if digits == 1:
+        if digits == '1':
             cardio_data['collection_person'] = 'Patient'
-        elif digits == 2:
+        elif digits == '2':
             cardio_data['collection_person'] = 'Caregiver'
     
     return cardio_data_collector()
@@ -285,7 +304,14 @@ def submit():
     else:
         clear_data()
         return '<Response><Reject/></Response>'
+    
+
+@app.route("/test", methods=['POST'])
+def test():
+    digits = request.values.get("dtmfDigits", None)
+    return str(digits)
 
 
 if __name__ == '__main__':
-    app.run(debug=True, port=2024)
+    send_data_to_cedar()
+    #app.run(debug=True, port=2024)

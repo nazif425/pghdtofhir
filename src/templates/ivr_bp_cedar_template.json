@@ -37,7 +37,6 @@
       "@type": "xsd:string"
     },
     "Date": "http://purl.org/dc/elements/1.1/date",
-    "Unique Individual Identifer": "http://www.vodan-totafrica.info/vocs/vgt/UniqueIndividualIdentifer",
     "hasPulseRate": "http://aimlab.cs.uoregon.edu/smash/ontologies/biomarker.owl#hasPulseRate",
     "hasDiastolicBloodPressureValue": "http://aimlab.cs.uoregon.edu/smash/ontologies/biomarker.owl#hasDiastolicBloodPressureValue",
     "hasSystolicBloodPressureValue": "http://aimlab.cs.uoregon.edu/smash/ontologies/biomarker.owl#hasSystolicBloodPressureValue",
@@ -49,10 +48,6 @@
   "Date": {
     "@value": null,
     "@type": "xsd:date"
-  },
-  "Unique Individual Identifer": {
-    "@value": null,
-    "@type": "xsd:int"
   },
   "hasPulseRate": {
     "@value": null,
@@ -68,15 +63,15 @@
   },
   "CollectionPosition": {
     "@id": null,
-    "rdfs:label": "Sitting"
+    "rdfs:label": null
   },
   "CollectionLocation": {
     "@id": null,
-    "rdfs:label": "Home"
+    "rdfs:label": null
   },
   "CollectionPerson": {
     "@id": null,
-    "rdfs:label": "Patient"
+    "rdfs:label": null
   },
   "DataCollectedViaIVR": {
     "@value": null
