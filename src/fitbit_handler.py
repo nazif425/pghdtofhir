@@ -12,6 +12,7 @@ from datetime import datetime
 import json
 import requests
 
+from urllib import parse
 from rdflib import Graph, Namespace
 from rdflib.namespace import XSD
 from rdflib.plugins.sparql import prepareQuery
