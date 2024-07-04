@@ -100,7 +100,15 @@ def setup_dashboard():
     st.sidebar.write("")
     st.sidebar.write("Fitbit Values")
     # TODO: HAROLD ADD FITBIT PLOT VALUES HERE (SEE ABOVE)
-    plot_attrs["fitbit"]= st.sidebar.checkbox("All Fitbit Values")
+    plot_attrs["fairlyActiveMinutes"]= st.sidebar.checkbox("Fairly active minutes")
+    plot_attrs["lightlyActiveMinutes"]= st.sidebar.checkbox("Lightly active minutes")
+    plot_attrs["sedentaryMinutes"]= st.sidebar.checkbox("Sedentary minutes")
+    plot_attrs["veryActiveMinutes"]= st.sidebar.checkbox("Very active minutes")
+    plot_attrs["sleep_duration"]= st.sidebar.checkbox("Sleep duration")
+    plot_attrs["sleep_efficiency"]= st.sidebar.checkbox("Sleep efficiency")
+    plot_attrs["restingHeartRate"]= st.sidebar.checkbox("Resting heart rate")
+    plot_attrs["steps_count"]= st.sidebar.checkbox("Steps")
+    # plot_attrs["fitbit"]= st.sidebar.checkbox("All Fitbit Values")
 
     return plot_attrs
 
@@ -112,7 +120,10 @@ def main():
     if plot_attrs["pulse"] or plot_attrs["sys_bp"] or plot_attrs["dia_bp"]:
         plot_bp(g, plot_attrs) 
 
-    if plot_attrs["fitbit"]:
+    if plot_attrs["fairlyActiveMinutes"] or plot_attrs["lightlyActiveMinutes"] or plot_attrs["sedentaryMinutes"] or plot_attrs["veryActiveMinutes"]:
+        plot_bp(g, plot_attrs)
+        
+    if  plot_attrs["sleep_duration"]  or plot_attrs["restingHeartRate"] or  plot_attrs["steps_count"]:
         plot_fitbit(g, plot_attrs)
 
 
