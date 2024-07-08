@@ -1,3 +1,4 @@
+
 import streamlit as st
 import mpld3
 from mpld3 import plugins
@@ -42,7 +43,7 @@ def plot_bp(g, atts_to_plot):
         PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
         PREFIX dc: <http://purl.org/dc/elements/1.1/>
         PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-        SELECT ?pulse ?sys_bp ?dia_bp ?date ?loc ?person ?pos
+        SELECT ?pulfairlyActiveMinutesse ?sys_bp ?dia_bp ?date ?loc ?person ?pos
         WHERE {
             ?y pghdc:patient ?x ;
                pghdc:collected_PGHD ?z . 
@@ -215,5 +216,122 @@ def plot_fitbit(g, plot_attrs):
 
     st.pyplot(fig)
 
+## help me uppdate this for the fitbit stuff
+    query_str = """
+        PREFIX pghdc: <https://github.com/RenVit318/pghd/tree/main/src/vocab/pghd_connect/>
+        PREFIX bp_aux: <https://github.com/RenVit318/pghd/tree/main/src/vocab/auxillary_info/>
+        PREFIX smash: <http://aimlab.cs.uoregon.edu/smash/ontologies/biomarker.owl#>
+        PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+        PREFIX dc: <http://purl.org/dc/elements/1.1/>
+        PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+        SELECT ?date ?fairlyActiveMinutes ?lightlyActiveMinutes ?sedentaryMinutes ?veryActiveMinutes ?sleep_duration ?sleep_efficiency ?restingHeartRate ?steps_count 
+        WHERE {
+            ?y pghdc:patient ?x ;
+               pghdc:collected_PGHD ?z . 
+            ?x pghdc:patientID "1234"^^xsd:int .
+            ?z smash:hasSystolicBloodPressureValue ?sys_bp ;
+               smash:hasDiastolicBloodPressureValue ?dia_bp ;
+               smash:hasPulseRate ?pulse ;
+               bp_aux:CollectionLocation ?loc_uri ;
+               bp_aux:CollectionPerson ?person_uri ;
+               bp_aux:CollectionPosition ?pos_uri ;
+               dc:date ?date .
+
+            ?loc_uri    rdfs:label ?loc .
+            ?person_uri rdfs:label ?person .
+            ?pos_uri    rdfs:label ?pos .
+        }
+    """
+    pghdc = Namespace("https://github.com/RenVit318/pghd/tree/main/src/vocab/pghd_connect/")
+    smash = Namespace("http://aimlab.cs.uoregon.edu/smash/ontologies/biomarker.owl#")
+    dc    = Namespace("http://purl.org/dc/elements/1.1/")
+    bp_aux= Namespace("https://github.com/RenVit318/pghd/tree/main/src/vocab/auxillary_info/")
+    query = prepareQuery(query_str, initNs={"pghdc": pghdc, "bp_aux": bp_aux, "smash": smash, "dc": dc, "xsd": XSD, "rdfs": RDFS})
+    res = g.query(query)
+    
+
+    N = len(res)
+    data = pd.DataFrame({
+        'date'   : np.zeros(N, dtype=str),
+        'fairlyActiveMinutes'  : np.zeros(N, dtype=object),
+        'lightlyActiveMinutes' : np.zeros(N, dtype=float),
+        'sedentaryMinutes': np.zeros(N, dtype=float),
+        'veryActiveMinutes': np.zeros(N, dtype=float),
+        'sleep_duration'   : np.zeros(N, dtype=str),
+        'sleep_efficiency': np.zeros(N, dtype=str),
+        'restingHeartRate'   : np.zeros(N, dtype=str),
+        'steps_count'   : np.zeros(N, dtype=str),
+    })
+    
+    for i, row in enumerate(res):
+        data.loc[i, 'date']   = date.fromisoformat(row.date)
+        data.loc[i, 'fairlyActiveMinutes']  = float(row.pulse)
+        data.loc[i, 'lightlyActiveMinutes'] = float(row.sys_bp)
+        data.loc[i, 'sedentaryMinutes'] = float(row.dia_bp)
+        data.loc[i, 'veryActiveMinutes']    = row.loc
+        data.loc[i, 'sleep_duration'] = row.person
+        data.loc[i, 'sleep_efficiency']    = row.pos
+        data.loc[i, 'restingHeartRate']    = row.pos
+        data.loc[i, 'steps_count']    = row.pos
 
 
+    unique_dates, idxs = np.unique(data['date'], return_index=True)
+    min_date = np.min(unique_dates)
+    max_date = np.max(unique_dates)
+    delta = timedelta(days=1)
+    start_state = (np.max((min_date, max_date - 2 * delta)), max_date)
+
+    daterange = st.slider(label='Select date range', min_value=min_date, max_value=max_date,
+                          value=start_state)
+    
+    
+        # Plotting
+    fig = plt.figure()
+    if plot_attrs['pulse']:
+        plot_trend(data.loc[idxs, 'date'], data.loc[idxs, 'pulse'], c='C0', label="Pulse Rate")
+    if plot_attrs['sys_bp']:
+        plot_trend(data.loc[idxs, 'date'], data.loc[idxs, 'sys_bp'], c='C1', label="Systolic Blood Pressure")
+    if plot_attrs['dia_bp']:
+        plot_trend(data.loc[idxs, 'date'], data.loc[idxs, 'dia_bp'], c='C2', label="Diastolic Blood Pressure")
+  
+    plt.axhline(y=0, lw=1, c='black')
+    plt.xlim(daterange)
+
+    plt.xlabel('Date of measurement')
+    plt.ylabel('Fitbit Data Value')
+    plt.title('PGHD - FITBIT Data')
+
+    # Setup proper xticks
+    ticks = []
+    labels = []
+    done = False
+    curr_date = daterange[0]
+    while not done:
+        if curr_date == daterange[1]:
+            done = True
+        ticks.append(curr_date)
+        labels.append(curr_date.strftime("%d-%m"))
+        curr_date += delta 
+    plt.xticks(ticks=ticks, labels=labels, rotation=60)
+
+    plt.legend()
+    
+    st.pyplot(fig)
+
+
+    show_data = st.checkbox("Click here to view the data")
+    if show_data: 
+        df = pd.DataFrame(data)
+        st.dataframe(data, 
+                     use_container_width=True, hide_index=True,
+                     column_config={
+                        "date": "Date",
+                        "fairlyActiveMinutes": "Fairly Active Minutes",
+                        "lightlyActiveMinutes": "Lightly Active Minutes",
+                        "sedentaryMinutes": "Sedentary Minutes",
+                        "veryActiveMinutes": "Very Active Minutes",
+                        "sleep_duration": "Sleep Duration",
+                        "sleep_efficiency": "Sleep Efficiency",
+                        "restingHeartRate": "Resting Heart Rate",
+                        "steps_count": "Steps Count"
+                     })

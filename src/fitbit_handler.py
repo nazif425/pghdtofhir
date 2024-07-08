@@ -88,8 +88,8 @@ def push_data_to_cedar(data, start_time, user):
     data['Sleep duration']['@value'] = str(data.get("sleep_duration"))
     data['Sleep efficiency']['@value'] = str(data.get("sleep_efficiency"))
     data['Resting heart rate']['@value'] = str(data.get("restingHeartRate"))
-    # data['Total distance']['@value'] = str(data.get("total_distances"))
-    # data['Calories burnt']['@value'] = str(data.get("calories_burnt"))
+    data['Total distance']['@value'] = str(data.get("total_distances"))
+    data['Calories burnt']['@value'] = str(data.get("calories_burnt"))
     data['Steps']['@value'] = str(data.get("steps_count"))
     data['schema:name'] = f"PGHD_FB {current_time.strftime('%Y-%m-%d')}"
     

@@ -120,11 +120,14 @@ def main():
     if plot_attrs["pulse"] or plot_attrs["sys_bp"] or plot_attrs["dia_bp"]:
         plot_bp(g, plot_attrs) 
 
-    if plot_attrs["fairlyActiveMinutes"] or plot_attrs["lightlyActiveMinutes"] or plot_attrs["sedentaryMinutes"] or plot_attrs["veryActiveMinutes"]:
-        plot_bp(g, plot_attrs)
+    if plot_attrs["fairlyActiveMinutes"] or plot_attrs["lightlyActiveMinutes"] or plot_attrs["sedentaryMinutes"] or plot_attrs["veryActiveMinutes"] or  plot_attrs["steps_count"]:
+        plot_fitbit(g, plot_attrs) 
         
-    if  plot_attrs["sleep_duration"]  or plot_attrs["restingHeartRate"] or  plot_attrs["steps_count"]:
+    if  plot_attrs["sleep_duration"]  or plot_attrs["sleep_efficiency"] :
         plot_fitbit(g, plot_attrs)
+    
+    if plot_attrs["restingHeartRate"]:
+        plot_fitbit(g, plot_attrs  )
 
 
 if __name__ == '__main__':
