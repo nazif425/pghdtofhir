@@ -54,7 +54,7 @@ def cardio_data_collector():
         response += f'<Say>Your provided heartrate is {cardio_data["heart_rate"]}</Say>'
         response += f'<Say>Your provided systolic bloodpressure is {cardio_data["systolic_blood_pressure"]}</Say>'
         response += f'<Say>Your provided diastolic bloodpressure is {cardio_data["diastolic_blood_pressure"]}</Say>'
-        response +=  '<GetDigits timeout="30" finishOnKey="#" callbackUrl="/submit">'
+        response +=  '<GetDigits timeout="30" finishOnKey="#" callbackUrl="https://pghd.renskievit.com/ivr/submit">'
         response +=  '<Say>If this is correct and you want to submit, press one followed by the hash sign. If you want to abort press two followed by the hash sign</Say>'
         response +=  '</GetDigits></Response>'
 
@@ -145,14 +145,39 @@ def authenticate(passcode, local_registrations=False):
         with open('.secrets.json') as secrets:
             cedar_api_key = json.load(secrets)["authkey_RENS"]
 
-        cedar_url = "https://resource.metadatacenter.org/template-instances/"
-        # NOTE: This is only for one patient!!
-        patient_uri = parse.quote_plus("https://repo.metadatacenter.org/template-instances/f33ce769-87be-4d08-b55d-01026eae057c")
+        get_instances_url =  "https://resource.metadatacenter.org/folders/"
+        get_instancedata_url = "https://resource.metadatacenter.org/template-instances/"
         headers = {"accept": "application/json", "authorization": cedar_api_key}
 
-        response = requests.get(cedar_url+patient_uri, headers=headers)
-        g.parse(data=response.json(), format='json-ld')
+        # Get all patients - this works for now but is not very scalable. I think it is better though than keeping all patients in memory continuously (RK)
+        # Step 1: Find the URIs of all registered patient instances
+        registration_folder_id = "https://repo.metadatacenter.org/folders/6547e00c-3e91-4c50-b0c9-3185ea68a39f" 
+        url = get_instances_url + parse.quote_plus(registration_folder_id) + '/contents'
 
+        response = requests.get(url, headers=headers)
+        response = response.json()
+        #print(response)
+        
+        # Make an RDFlib Graph on which we can query for the dashboard
+        g = Graph()
+
+        # Request each instance individually and add it to the graph
+        cedar_instances = response["resources"]
+        #print(cedar_instances)
+        N = len(cedar_instances)
+        #print(f"Found {N} instances to import.")
+        for instance in cedar_instances:
+            
+            instance_ID = parse.quote_plus(instance["@id"]) # make the instance ID url-safe
+            print(instance_ID)
+            # Send out get request for instance data
+            url = get_instancedata_url + instance_ID
+            response = requests.get(url, headers=headers)
+
+            # Add data to the graph
+            g.parse(data=response.json(), format='json-ld')
+       
+    print(g.serialize(format='turtle'))
 
     query_string = f"""
         PREFIX pghdc: <https://github.com/RenVit318/pghd/tree/main/src/vocab/pghd_connect/>
@@ -182,11 +207,12 @@ def authenticate(passcode, local_registrations=False):
             meta_data['cedar_registration_URI'] = row.id
             return True, f"Welcome, your ID is {row.patient_id}" 
         else:
-            return False, "2 This phonenumber + password combination is not known. Please check this and try again."
+            return False, "This phonenumber + password combination is not known. Please check this and try again."
 
 
 @app.route("/pghd_handler", methods=['POST'])
 def pghd_handler():
+    clear_data() # Remove data in case the last call was not finished
     meta_data['phone_number'] = request.values.get("callerNumber", None)
 
     if meta_data['phone_number'] is None:
@@ -313,5 +339,4 @@ def test():
 
 
 if __name__ == '__main__':
-    send_data_to_cedar()
-    #app.run(debug=True, port=2024)
+    app.run(debug=True, port=2024)

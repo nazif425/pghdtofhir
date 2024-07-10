@@ -127,7 +127,7 @@ def main():
         plot_fitbit(g, plot_attrs)
     
     if plot_attrs["restingHeartRate"]:
-        plot_fitbit(g, plot_attrs  )
+        plot_fitbit(g, plot_attrs)
 
 
 if __name__ == '__main__':

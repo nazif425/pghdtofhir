@@ -145,8 +145,6 @@ def push_data_to_cedar(data, start_time, user):
 
 
 def get_fitbit_users(local_registrations=False):
-    # TODO: Send SPARQL query over the registration database
-#    Import registrations. This should ideally be done through remote querying on AllegroGraph so the data and script are fully separate.
     registrations_file = None #'triple_store/registrations.ttl'
 
     # This clause can be used if the list of registered patients is stored localy at clinic side and can be easily retrieved (or queried through e.g. AG)
@@ -158,13 +156,37 @@ def get_fitbit_users(local_registrations=False):
         with open('.secrets.json') as secrets:
             cedar_api_key = json.load(secrets)["authkey_RENS"]
 
-        cedar_url = "https://resource.metadatacenter.org/template-instances/"
-        # NOTE: This is only for one patient!!
-        patient_uri = parse.quote_plus("https://repo.metadatacenter.org/template-instances/f33ce769-87be-4d08-b55d-01026eae057c")
+        get_instances_url =  "https://resource.metadatacenter.org/folders/"
+        get_instancedata_url = "https://resource.metadatacenter.org/template-instances/"
         headers = {"accept": "application/json", "authorization": cedar_api_key}
 
-        response = requests.get(cedar_url+patient_uri, headers=headers)
-        g.parse(data=response.json(), format='json-ld')
+        # Get all patients - this works for now but is not very scalable. I think it is better though than keeping all patients in memory continuously (RK)
+        # Step 1: Find the URIs of all registered patient instances
+        registration_folder_id = "https://repo.metadatacenter.org/folders/6547e00c-3e91-4c50-b0c9-3185ea68a39f" 
+        url = get_instances_url + parse.quote_plus(registration_folder_id) + '/contents'
+
+        response = requests.get(url, headers=headers)
+        response = response.json()
+        #print(response)
+        
+        # Make an RDFlib Graph on which we can query for the dashboard
+        g = Graph()
+
+        # Request each instance individually and add it to the graph
+        cedar_instances = response["resources"]
+        #print(cedar_instances)
+        N = len(cedar_instances)
+        #print(f"Found {N} instances to import.")
+        for instance in cedar_instances:
+            
+            instance_ID = parse.quote_plus(instance["@id"]) # make the instance ID url-safe
+            print(instance_ID)
+            # Send out get request for instance data
+            url = get_instancedata_url + instance_ID
+            response = requests.get(url, headers=headers)
+
+            # Add data to the graph
+            g.parse(data=response.json(), format='json-ld')
 
 
     query_string = f"""
@@ -173,13 +195,13 @@ def get_fitbit_users(local_registrations=False):
         SELECT ?id ?code ?patient_id
         WHERE{{
             ?id <http://schema.org/isBasedOn>  <https://repo.metadatacenter.org/templates/f49d788e-f611-4525-90e9-dd21204b51fa> ;
-                pghdc:fitbitID ?client_id
-                pghdc:fitbitSecret ?client_secret
+                pghdc:fitbitID ?client_id ;
+                pghdc:fitbitSecret ?client_secret .
         }}
         """
     
     # Execute query on graph using RDFLib. Check performance in case of large store
-    pghdc = Namespace("https://github.com/Ren Vit318/pghd/tree/main/src/vocab/pghd_connect/")
+    pghdc = Namespace("https://github.com/RenVit318/pghd/tree/main/src/vocab/pghd_connect/")
     query = prepareQuery(query_string, initNs={'pghdc': pghdc, 'xsd': XSD})
     res = g.query(query)
 
