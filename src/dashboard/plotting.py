@@ -6,7 +6,6 @@ import streamlit.components.v1 as components
 from datetime import date, timedelta
 
 import numpy as np
-import matplotlib.pyplot as plt
 import plotly.express as px
 import pandas as pd
 from datetime import date
@@ -23,19 +22,6 @@ def process_simple_query(graph, query_string):
 
     return res
 
-
-def plot_trend(df, ydata, label, c, size=8, highlight_outliers=False):
-    #mean = np.mean(y)
-    #std = np.std(y)
-    #if highlight_outliers:
-    #    outliers = np.abs((y - mean)/std) > 1
-    #    st.plotly_chart(x[outliers], y[outliers], lw=0, marker='X', color=c, markersize=2*size)
-    #else:
-    #    outliers = np.full(len(x), False)
-    #st.plotly_chart(x[~outliers], y[~outliers], lw=0, marker='o', color=c, markersize=size, label=label)
-    #plt.axhline(mean, color=c, ls='--', alpha=0.7)
-    fig = px.line(df, x='date', y=['sys_bp', 'dia_bp'])
-    return fig
     
 
 def plot_bp(g, atts_to_plot):

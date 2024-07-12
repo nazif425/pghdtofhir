@@ -1,5 +1,3 @@
-import matplotlib.pyplot as plt
-
 import json
 import requests
 from urllib import parse
@@ -13,9 +11,6 @@ from plotting import plot_bp, plot_fitbit
 from auth import setup_authenticator
 
 
-def set_styles():
-    # Set matplotlib styles
-    plt.style.use('bmh')
 
 @st.cache_data
 def retrieve_data_cedar():
