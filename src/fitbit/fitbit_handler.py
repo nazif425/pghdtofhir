@@ -71,7 +71,7 @@ def get_fitbit_data(start_time, auth2_client):
 
 def push_data_to_cedar(data, start_time, user):
     cedar_url = 'https://resource.metadatacenter.org/template-instances'
-    with open('../.secrets.json') as secrets:
+    with open('../../.secrets.json') as secrets:
         cedar_api_key = json.load(secrets)["authkey_RENS"]
     
     cedar_template = open('templates/fitbit_template.json')
@@ -153,7 +153,7 @@ def get_fitbit_users(local_registrations=False):
     if local_registrations:
         g.parse(registrations_file)
     else:
-        with open('.secrets.json') as secrets:
+        with open('../../.secrets.json') as secrets:
             cedar_api_key = json.load(secrets)["authkey_RENS"]
 
         get_instances_url =  "https://resource.metadatacenter.org/folders/"

@@ -1,0 +1,13 @@
+credentials:
+  usernames:
+    admin:
+      email: rens@renskievit.com
+      name: Admin
+      password: PGHD4LIFE # To be replaced with hashed password
+cookie:
+  expiry_days: 0
+  key: VODAN_AFRICA
+  name: PGHD_DASH
+preauthorized:
+  emails:
+  

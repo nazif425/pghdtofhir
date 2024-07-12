@@ -5,9 +5,12 @@ import requests
 from urllib import parse
 
 from rdflib import Graph
+from rdflib.plugins.sparql import prepareQuery
+from rdflib import Namespace
 import streamlit as st
 
 from plotting import plot_bp, plot_fitbit
+from auth import setup_authenticator
 
 
 def set_styles():
@@ -16,6 +19,7 @@ def set_styles():
 
 @st.cache_data
 def retrieve_data_cedar():
+    #st.write("Retrieving data now...")
     try:
         g = Graph()
         g.parse('mock_data.ttl')
@@ -85,13 +89,33 @@ def retrieve_data_cedar():
 
     return g
 
+def get_patient_list(g):
+    query_str = """
+        PREFIX pghdc: <https://github.com/RenVit318/pghd/tree/main/src/vocab/pghd_connect/>
+        SELECT ?id
+        WHERE {
+            ?x pghdc:patientID ?id .
+        }
+    """
+    pghdc = Namespace("https://github.com/RenVit318/pghd/tree/main/src/vocab/pghd_connect/")
+    query = prepareQuery(query_str, initNs={"pghdc": pghdc})
+    res = g.query(query)
+    
+    patients = []
+    for row in res:
+        patients.append(row.id.value)
+    return patients
 
-def setup_dashboard():
-    st.write("Welcome to the PGHD dashboard.")
+def setup_sidebar(patients):
+    plot_attrs = {}
+
+    # Sidebar patient selector
+    plot_attrs["patient"] = st.sidebar.selectbox("Select a Patient ID", patients)
+
+    # Sidebar plot attribute selector
     st.sidebar.write("Tick the boxes of the attributes you want to see plotted below.")
     st.sidebar.write("")
     
-    plot_attrs = {}
     st.sidebar.write("Blood Pressure Values")
     plot_attrs["pulse"]  =  st.sidebar.checkbox("Pulse Rate")
     plot_attrs["sys_bp"] =  st.sidebar.checkbox("Systolic Blood Pressure")
@@ -99,35 +123,51 @@ def setup_dashboard():
 
     st.sidebar.write("")
     st.sidebar.write("Fitbit Values")
-    # TODO: HAROLD ADD FITBIT PLOT VALUES HERE (SEE ABOVE)
-    plot_attrs["fairlyActiveMinutes"]= st.sidebar.checkbox("Fairly active minutes")
-    plot_attrs["lightlyActiveMinutes"]= st.sidebar.checkbox("Lightly active minutes")
-    plot_attrs["sedentaryMinutes"]= st.sidebar.checkbox("Sedentary minutes")
-    plot_attrs["veryActiveMinutes"]= st.sidebar.checkbox("Very active minutes")
-    plot_attrs["sleep_duration"]= st.sidebar.checkbox("Sleep duration")
-    plot_attrs["sleep_efficiency"]= st.sidebar.checkbox("Sleep efficiency")
-    plot_attrs["restingHeartRate"]= st.sidebar.checkbox("Resting heart rate")
-    plot_attrs["steps_count"]= st.sidebar.checkbox("Steps")
-    # plot_attrs["fitbit"]= st.sidebar.checkbox("All Fitbit Values")
-
+    plot_attrs["rest_heartrate"] = st.sidebar.checkbox("Resting Heart Rate") 
+    plot_attrs["activity"]       = st.sidebar.checkbox("Activity") 
+    plot_attrs["steps_count"]    = st.sidebar.checkbox("Step Count") 
+    plot_attrs["sleep_data"]     = st.sidebar.checkbox("Sleep Data") 
+    
     return plot_attrs
 
+
+
+
 def main(): 
+    authenticator = setup_authenticator()
+    name, authentication_status, username = authenticator.login(location='main')
+
     set_styles()
-    g = retrieve_data_cedar()
 
-    plot_attrs = setup_dashboard()
-    if plot_attrs["pulse"] or plot_attrs["sys_bp"] or plot_attrs["dia_bp"]:
-        plot_bp(g, plot_attrs) 
+    if st.session_state["authentication_status"] is False:
+        st.error('Username/password is incorrect')
+    if st.session_state["authentication_status"] is None:
+        st.warning('Please enter your username and password')
+    elif st.session_state["authentication_status"]:
+        authenticator.logout()
+        st.write(f'Welcome *{st.session_state["name"]}* to the PGHD dashboard')
 
-    if plot_attrs["fairlyActiveMinutes"] or plot_attrs["lightlyActiveMinutes"] or plot_attrs["sedentaryMinutes"] or plot_attrs["veryActiveMinutes"] or  plot_attrs["steps_count"]:
-        plot_fitbit(g, plot_attrs) 
-        
-    if  plot_attrs["sleep_duration"]  or plot_attrs["sleep_efficiency"] :
-        plot_fitbit(g, plot_attrs)
     
-    if plot_attrs["restingHeartRate"]:
-        plot_fitbit(g, plot_attrs)
+        # Go into the true content
+        g = retrieve_data_cedar()
+        patients = get_patient_list(g)
+        patients.append('0000')
+
+        plot_attrs = setup_sidebar(patients)
+        st.write(f"You are now looking at the data of Patient {plot_attrs['patient']}")
+        if plot_attrs["pulse"] or plot_attrs["sys_bp"] or plot_attrs["dia_bp"]:
+            plot_bp(g, plot_attrs)    
+
+        # Fitbit plotter handlers - separated out because of the different orders of magnitude
+        if plot_attrs["rest_heartrate"]:
+            plot_fitbit(g, plot_attrs) 
+        if plot_attrs["activity"]:
+            plot_fitbit(g, plot_attrs)     
+        if plot_attrs["steps_count"]:
+            plot_fitbit(g, plot_attrs) 
+        if plot_attrs["sleep_data"]:
+            plot_fitbit(g, plot_attrs)     
+
 
 
 if __name__ == '__main__':

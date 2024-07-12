@@ -1,12 +1,13 @@
 
 import streamlit as st
-import mpld3
-from mpld3 import plugins
+#import mpld3
+#from mpld3 import plugins
 import streamlit.components.v1 as components
 from datetime import date, timedelta
 
 import numpy as np
 import matplotlib.pyplot as plt
+import plotly.express as px
 import pandas as pd
 from datetime import date
 
@@ -23,31 +24,33 @@ def process_simple_query(graph, query_string):
     return res
 
 
-def plot_trend(x, y, label, c, size=8, highlight_outliers=True):
-    mean = np.mean(y)
-    std = np.std(y)
-    if highlight_outliers:
-        outliers = np.abs((y - mean)/std) > 1
-        plt.plot(x[outliers], y[outliers], lw=0, marker='X', color=c, markersize=2*size)
-    else:
-        outliers = np.full_like(x, False)
-
-    plt.plot(x[~outliers], y[~outliers], lw=0, marker='o', color=c, markersize=size, label=label)
-    plt.axhline(mean, color=c, ls='--', alpha=0.7)
+def plot_trend(df, ydata, label, c, size=8, highlight_outliers=False):
+    #mean = np.mean(y)
+    #std = np.std(y)
+    #if highlight_outliers:
+    #    outliers = np.abs((y - mean)/std) > 1
+    #    st.plotly_chart(x[outliers], y[outliers], lw=0, marker='X', color=c, markersize=2*size)
+    #else:
+    #    outliers = np.full(len(x), False)
+    #st.plotly_chart(x[~outliers], y[~outliers], lw=0, marker='o', color=c, markersize=size, label=label)
+    #plt.axhline(mean, color=c, ls='--', alpha=0.7)
+    fig = px.line(df, x='date', y=['sys_bp', 'dia_bp'])
+    return fig
+    
 
 def plot_bp(g, atts_to_plot):
-    query_str = """
+    query_str = f"""
         PREFIX pghdc: <https://github.com/RenVit318/pghd/tree/main/src/vocab/pghd_connect/>
         PREFIX bp_aux: <https://github.com/RenVit318/pghd/tree/main/src/vocab/auxillary_info/>
         PREFIX smash: <http://aimlab.cs.uoregon.edu/smash/ontologies/biomarker.owl#>
         PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
         PREFIX dc: <http://purl.org/dc/elements/1.1/>
         PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-        SELECT ?pulfairlyActiveMinutesse ?sys_bp ?dia_bp ?date ?loc ?person ?pos
-        WHERE {
+        SELECT ?pulse ?sys_bp ?dia_bp ?date ?loc ?person ?pos
+        WHERE {{
             ?y pghdc:patient ?x ;
                pghdc:collected_PGHD ?z . 
-            ?x pghdc:patientID "1234"^^xsd:int .
+            ?x pghdc:patientID '{atts_to_plot['patient']}'^^xsd:int .
             ?z smash:hasSystolicBloodPressureValue ?sys_bp ;
                smash:hasDiastolicBloodPressureValue ?dia_bp ;
                smash:hasPulseRate ?pulse ;
@@ -59,8 +62,9 @@ def plot_bp(g, atts_to_plot):
             ?loc_uri    rdfs:label ?loc .
             ?person_uri rdfs:label ?person .
             ?pos_uri    rdfs:label ?pos .
-        }
+        }}
     """
+
     pghdc = Namespace("https://github.com/RenVit318/pghd/tree/main/src/vocab/pghd_connect/")
     smash = Namespace("http://aimlab.cs.uoregon.edu/smash/ontologies/biomarker.owl#")
     dc    = Namespace("http://purl.org/dc/elements/1.1/")
@@ -88,55 +92,48 @@ def plot_bp(g, atts_to_plot):
         data.loc[i, 'person'] = row.person
         data.loc[i, 'pos']    = row.pos
 
-    
+    data = data.sort_values(by='date')
 
-    unique_dates, idxs = np.unique(data['date'], return_index=True)
-    min_date = np.min(unique_dates)
-    max_date = np.max(unique_dates)
-    delta = timedelta(days=1)
-    start_state = (np.max((min_date, max_date - 2 * delta)), max_date)
+    #unique_dates, idxs = np.unique(data['date'], return_index=True)
+    #min_date = np.min(unique_dates)
+    #max_date = np.max(unique_dates)
+    #delta = timedelta(days=1)
+    #start_state = (np.max((min_date, max_date - 2 * delta)), max_date)
 
-    daterange = st.slider(label='Select date range', min_value=min_date, max_value=max_date,
-                          value=start_state)
+    #daterange = st.slider(label='Select date range', min_value=min_date, max_value=max_date,
+    #                      value=start_state)
 
     # Plotting
-    fig = plt.figure()
+    ydata = []
     if atts_to_plot['pulse']:
-        plot_trend(data.loc[idxs, 'date'], data.loc[idxs, 'pulse'], c='C0', label="Pulse Rate")
+        ydata.append('pulse')
     if atts_to_plot['sys_bp']:
-        plot_trend(data.loc[idxs, 'date'], data.loc[idxs, 'sys_bp'], c='C1', label="Systolic Blood Pressure")
+        ydata.append('sys_bp')
     if atts_to_plot['dia_bp']:
-        plot_trend(data.loc[idxs, 'date'], data.loc[idxs, 'dia_bp'], c='C2', label="Diastolic Blood Pressure")
-  
-        
-    plt.axhline(y=0, lw=1, c='black')
-    plt.xlim(daterange)
+        ydata.append('dia_bp')
 
-    plt.xlabel('Date of measurement')
-    plt.ylabel('Pulse Rate / Blood Pressure Value')
-    plt.title('PGHD - Blood Pressure')
+    if len(ydata) > 0:
+        fig = px.line(data, x='date', y=ydata, custom_data=['loc', 'person', 'pos'], 
+                      title=f"IVR Blood Pressure Monitor Data", 
+                      markers=True)
 
-    # Setup proper xticks
-    ticks = []
-    labels = []
-    done = False
-    curr_date = daterange[0]
-    while not done:
-        if curr_date == daterange[1]:
-            done = True
-        ticks.append(curr_date)
-        labels.append(curr_date.strftime("%d-%m"))
-        curr_date += delta 
-    plt.xticks(ticks=ticks, labels=labels, rotation=60)
-
-    plt.legend()
-    
-    st.pyplot(fig)
+        fig.update_traces(
+            hovertemplate="<br>".join([
+                "Date: %{x}",
+                "Val:  %{y}",
+                "Location: %{customdata[0]}",
+                "Person:   %{customdata[1]}",
+                "Position: %{customdata[2]}",
+            ])
+        )
+        st.plotly_chart(fig)
 
 
+
+    # Show the data in a table
     show_data = st.checkbox("Click here to view the data")
     if show_data: 
-        df = pd.DataFrame(data)
+        #df = pd.DataFrame(data)
         st.dataframe(data, 
                      use_container_width=True, hide_index=True,
                      column_config={
@@ -148,65 +145,6 @@ def plot_bp(g, atts_to_plot):
                         "person": "Person",
                         "pos": "Position"
                      })
-
-
-def dynamic_fig(fig):
-
-    plt.legend(loc='lower right')
-    css = """
-    table
-    {
-    border-collapse: collapse;
-    }
-    th
-    {
-    color: #ffffff;
-    background-color: #000000;
-    }
-    td
-    {
-    background-color: #cccccc;
-    }
-    table, th, td
-    {
-    font-family:Arial, Helvetica, sans-serif;
-    border: 1px solid white;
-    text-align: right;
-    }
-    """
-
-
-
-
-    for axes in fig.axes:
-        for line in axes.get_lines():
-
-            labels = []
-
-            for i in range(N):
-                html_label = f'<table border="1" class="dataframe"> <thead> <tr style="text-align: right;"> </thead> <tbody> <tr> <th>Position</th> <td>{data.loc[i, "pos"]}</td> </tr> <tr> <th>Person</th> <td>{data.loc[i, "person"]}</td> </tr> <tr> <th>Location</th> <td>{data.loc[i, "loc"]}</td> </tr> </tbody> </table>'
-                labels.append(html_label)
-
-            # Create the tooltip with the labels (x and y coords) and attach it to each line with the css specified
-            tooltip = plugins.PointHTMLTooltip(line, labels, css=css)
-            # Since this is a separate plugin, you have to connect it
-            plugins.connect(fig, tooltip)
-
-    #        print(line)
-    #        # get the x and y coords
-    #        xy_data = line.get_xydata()
-    #        labels = []
-    #        for x, y in xy_data:
-    #            # Create a label for each point with the x and y coords
-    #            html_label = f'<table border="1" class="dataframe"> <thead> <tr style="text-align: right;"> </thead> <tbody> <tr> <th>x</th> <td>{x}</td> </tr> <tr> <th>y</th> <td>{y}</td> </tr> </tbody> </table>'
-    #            labels.append(html_label)
-    #        # Create the tooltip with the labels (x and y coords) and attach it to each line with the css specified
-    #        tooltip = plugins.PointHTMLTooltip(line, labels, css=css)
-    #        # Since this is a separate plugin, you have to connect it
-    #        plugins.connect(fig, tooltip)
-
-    fig_html = mpld3.fig_to_html(fig)
-    components.html(fig_html, height=600)
 
 
 
