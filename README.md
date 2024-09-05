@@ -1,2 +1,2 @@
 # pghd
-Repository for the semantic integration of PGHD with the VODAN-Africa project.
+Repository for the semantic integration of Two PGHD Sources (IVR and Wearable - Fitbit) with the VODAN-Africa project.
