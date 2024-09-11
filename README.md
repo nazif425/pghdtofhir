@@ -1,2 +1,2 @@
-# pghd
-Repository for the semantic integration of Two PGHD Sources (IVR and Wearable - Fitbit) with the VODAN-Africa project.
+# pghdtofhir
+This program maps PGHD to FHIR resource via the use of ontology to enable interoperability of pghd across EHR systems.
