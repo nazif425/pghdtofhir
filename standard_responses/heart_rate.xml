@@ -1,0 +1,5 @@
+<Response>
+    <GetDigits timeout="30" finishOnKey="#" callbackUrl="https://pghdtofhir.render.com/ivr/heart_rate">
+        <Say>Fill in your heartrate followed by the hash sign. If you do not have this data, press zero followed by the hash sign.</Say>
+    </GetDigits>
+</Response>
