@@ -1,6 +1,6 @@
 <Response>
     <Say>Welcome to PGHD submission service</Say>
-    <GetDigits timeout="30" finishOnKey="#" callbackUrl="https://pghdtofhir.render.com/ivr/pghd_cardio_handler">
+    <GetDigits timeout="30" finishOnKey="#" callbackUrl="https://pghdtofhir.onrender.com/ivr/pghd_cardio_handler">
         <Say>To provide your readings from your digital heartrate monitor, press one followed by the hash sign. To abort this call, Press two followed by the hash sign.</Say>
     </GetDigits>
 </Response>
