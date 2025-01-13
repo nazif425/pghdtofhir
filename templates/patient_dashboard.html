@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Patient Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
+    <style>
+        .patient-card {
+            max-width: 600px;
+            width: 100%;
+        }
+
+        .edit-link {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            font-size: 1rem;
+        }
+
+        .status-indicator {
+            width: 15px;
+            height: 15px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 10px;
+        }
+
+        .status-connected {
+            background-color: green;
+        }
+
+        .status-not-connected {
+            background-color: red;
+        }
+    </style>
+</head>
+<body>
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div>
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+    <a href="{{ url_for('portal.patient_logout') }}" class="edit-link">Logout</a>
+    <div class="container d-flex justify-content-center align-items-center vh-100">
+        
+        <div class="card p-4 patient-card position-relative">
+            <!-- Edit Link -->
+            <a href="{{ url_for('portal.update_patient') }}" class="edit-link">Edit</a>
+            
+            <!-- Patient Profile Section -->
+            <h2 class="text-center mb-4">Patient Profile</h2>
+
+            <!-- Patient Details -->
+            <div class="mb-3">
+                <h5 class="mb-0">Name:</h5>
+                <p>{{ patient.name if patient.name }}</p>
+            </div>
+            <div class="mb-3">
+                <h5 class="mb-0">Phone Number:</h5>
+                <p>{{ patient.phone_number if patient.phone_number }}</p>
+            </div>
+
+            <!-- Fitbit Section with Toggle and Status -->
+            <div class="d-flex justify-content-between align-items-center mt-4">
+                <div class="d-flex align-items-center">
+                    <span class="status-indicator {{ 'status-connected' if fitbit_connected else 'status-not-connected' }}"></span>
+                    <span class="me-2">Fitbit:</span>
+                    <span class="text-muted">{{ 'Connected' if fitbit_connected else 'Not Connected' }}</span>
+                </div>
+                <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" id="fitbitToggle" {{ 'checked' if fitbit_connected else '' }}>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM" crossorigin="anonymous"></script>
+    <script>
+/*
+        // JavaScript to handle Fitbit toggle
+        document.getElementById('fitbitToggle').addEventListener('change', function() {
+            const connectionStatus = document.querySelector('.status-indicator');
+            const statusText = document.querySelector('.text-muted');
+
+            if (this.checked) {
+                connectionStatus.classList.remove('status-not-connected');
+                connectionStatus.classList.add('status-connected');
+                statusText.innerText = 'Connected';
+            } else {
+                connectionStatus.classList.remove('status-connected');
+                connectionStatus.classList.add('status-not-connected');
+                statusText.innerText = 'Not Connected';
+            }
+        });
+
+*/
+    const connectFitbitLink = "{{ connect_fitbit_link }}";
+    const disconnectFitbitLink = "{{ disconnect_fitbit_link }}";
+
+    // JavaScript to handle Fitbit toggle
+    document.getElementById('fitbitToggle').addEventListener('change', function() {
+        const connectionStatus = document.querySelector('.status-indicator');
+        const statusText = document.querySelector('.text-muted');
+        const isChecked = this.checked;
+
+        const action = isChecked ? 'connect' : 'disconnect';
+        const actionLink = isChecked ? connectFitbitLink : disconnectFitbitLink;
+        
+        // Show confirmation dialog
+        if (confirm(`Do you want to ${action} your Fitbit?`)) {
+            if (isChecked) {
+                // If connecting, send an asynchronous request to get auth_url
+                fetch(actionLink)
+                    .then(response => response.json())
+                    .then(data => {
+                        const authUrl = data.auth_url;
+                        // Redirect to the Fitbit authentication URL
+                        window.location.href = authUrl;
+                    })
+                    .catch(error => {
+                        console.error('Error connecting to Fitbit:', error);
+                        alert('There was an error connecting to Fitbit. Please try again.');
+                        this.checked = false; // Revert the toggle if there's an error
+                        connectionStatus.classList.remove('status-connected');
+                        connectionStatus.classList.add('status-not-connected');
+                        statusText.innerText = 'Not Connected';
+                    });
+            } else {
+                // If disconnecting, just redirect to the disconnect link
+                window.location.href = actionLink;
+            }
+        } else {
+            // Revert the toggle if user cancels the confirmation
+            this.checked = !isChecked;
+            if (isChecked) {
+                connectionStatus.classList.remove('status-connected');
+                connectionStatus.classList.add('status-not-connected');
+                statusText.innerText = 'Not Connected';
+            } else {
+                connectionStatus.classList.remove('status-not-connected');
+                connectionStatus.classList.add('status-connected');
+                statusText.innerText = 'Connected';
+            }
+        }
+    });
+    </script>
+</body>
+</html>

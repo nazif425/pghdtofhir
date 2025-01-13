@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Practitioner Registration</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
+</head>
+<body>
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div>
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+    <div class="container d-flex justify-content-center align-items-center vh-100">
+        
+        
+        <div class="card p-4" style="width: 100%; max-width: 500px;">
+            <h2 class="text-center">Practitioner Registration</h2>
+            <form method="POST" action="{{ url_for('portal.create_practitioner') }}" onsubmit="return validateForm()">
+                <div class="mb-3">
+                    <label for="name" class="form-label">Name</label>
+                    <input type="text" class="form-control" id="name" name="name" placeholder="Enter your name" required minlength="2">
+                    <div class="invalid-feedback">Name is required and must be at least 2 characters long.</div>
+                </div>
+                <div class="mb-3">
+                    <label for="practitionerId" class="form-label">Practitioner ID</label>
+                    <input type="text" name="practitioner_id" class="form-control" id="practitionerId" placeholder="Enter your practitioner ID" required>
+                    <div class="invalid-feedback">
+                        Please provide practitioner ID.
+                    </div>
+                </div>
+<               <div class="mb-3">
+                    <label for="email" class="form-label">Email address</label>
+                    <input type="email" name="email" class="form-control" id="email" placeholder="Enter your email" required>
+                    <div class="invalid-feedback">
+                        Please provide a valid email address.
+                    </div>
+                </div>
+                <!-- Phone Number Field -->
+                <div class="mb-3">
+                    <label for="phone" class="form-label">Phone Number</label>
+                    <input type="tel" class="form-control" id="phone" name="phone_number" placeholder="Enter your phone number" 
+                             required pattern="^\+?\d{10,15}$">
+                    <div class="invalid-feedback">Please enter a valid phone number (e.g., +1234567890).</div>
+                </div>
+                <!-- Referral code -->
+                <div class="mb-3">
+                    <label for="code" class="form-label">Referral code</label>
+                    <input type="text" class="form-control" id="code" name="code" placeholder="Enter Admin referral code">
+                    <div class="invalid-feedback">Please enter a valid referral code</div>
+                </div>
+                <button type="submit" class="btn btn-primary w-100">Submit</button>
+            </form>
+        </div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM" crossorigin="anonymous"></script>
+    <script>
+        function validateForm() {
+            const email = document.getElementById('email');
+            const name = document.getElementById('name');
+            const phone = document.getElementById('phone');
+            const code = document.getElementById('code');
+            const practitionerId = document.getElementById('practitionerId');
+
+            // Clear previous feedback
+            email.classList.remove('is-invalid');
+            name.classList.remove('is-invalid');
+            phone.classList.remove('is-invalid');
+            code.classList.remove('is-invalid');
+            practitionerId.classList.remove('is-invalid');
+
+            let valid = true;
+
+            if (!email.value) {
+                email.classList.add('is-invalid');
+                valid = false;
+            }
+
+            if (!name.value) {
+                name.classList.add('is-invalid');
+                valid = false;
+            }
+
+            if (!phone.value) {
+                phone.classList.add('is-invalid');
+                valid = false;
+            }
+
+            if (!code.value) {
+                code.classList.add('is-invalid');
+                valid = false;
+            }
+
+            if (!practitionerId.value) {
+                code.classList.add('is-invalid');
+                valid = false;
+            }
+
+            return valid; // Only submit if valid
+        }
+    </script>
+</body>
+</html>

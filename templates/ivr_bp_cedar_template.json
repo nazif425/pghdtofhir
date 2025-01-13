@@ -1,0 +1,82 @@
+{
+  "@context": {
+    "rdfs": "http://www.w3.org/2000/01/rdf-schema#",
+    "xsd": "http://www.w3.org/2001/XMLSchema#",
+    "pav": "http://purl.org/pav/",
+    "schema": "http://schema.org/",
+    "oslc": "http://open-services.net/ns/core#",
+    "skos": "http://www.w3.org/2004/02/skos/core#",
+    "rdfs:label": {
+      "@type": "xsd:string"
+    },
+    "schema:isBasedOn": {
+      "@type": "@id"
+    },
+    "schema:name": {
+      "@type": "xsd:string"
+    },
+    "schema:description": {
+      "@type": "xsd:string"
+    },
+    "pav:derivedFrom": {
+      "@type": "@id"
+    },
+    "pav:createdOn": {
+      "@type": "xsd:dateTime"
+    },
+    "pav:createdBy": {
+      "@type": "@id"
+    },
+    "pav:lastUpdatedOn": {
+      "@type": "xsd:dateTime"
+    },
+    "oslc:modifiedBy": {
+      "@type": "@id"
+    },
+    "skos:notation": {
+      "@type": "xsd:string"
+    },
+    "Date": "http://purl.org/dc/elements/1.1/date",
+    "hasPulseRate": "http://aimlab.cs.uoregon.edu/smash/ontologies/biomarker.owl#hasPulseRate",
+    "hasDiastolicBloodPressureValue": "http://aimlab.cs.uoregon.edu/smash/ontologies/biomarker.owl#hasDiastolicBloodPressureValue",
+    "hasSystolicBloodPressureValue": "http://aimlab.cs.uoregon.edu/smash/ontologies/biomarker.owl#hasSystolicBloodPressureValue",
+    "CollectionPosition": "https://github.com/RenVit318/pghd/tree/main/src/vocab/auxillary_info/CollectionPosition",
+    "CollectionLocation": "https://github.com/RenVit318/pghd/tree/main/src/vocab/auxillary_info/CollectionLocation",
+    "CollectionPerson": "https://github.com/RenVit318/pghd/tree/main/src/vocab/auxillary_info/CollectionPerson",
+    "DataCollectedViaIVR": "https://github.com/RenVit318/pghd/tree/main/src/vocab/auxillary_info/DataCollectedViaIVR"
+  },
+  "Date": {
+    "@value": null,
+    "@type": "xsd:date"
+  },
+  "hasPulseRate": {
+    "@value": null,
+    "@type": "xsd:decimal"
+  },
+  "hasDiastolicBloodPressureValue": {
+    "@value": null,
+    "@type": "xsd:decimal"
+  },
+  "hasSystolicBloodPressureValue": {
+    "@value": null,
+    "@type": "xsd:decimal"
+  },
+  "CollectionPosition": {
+    "@id": null,
+    "rdfs:label": null
+  },
+  "CollectionLocation": {
+    "@id": null,
+    "rdfs:label": null
+  },
+  "CollectionPerson": {
+    "@id": null,
+    "rdfs:label": null
+  },
+  "DataCollectedViaIVR": {
+    "@value": null
+  },
+  "schema:isBasedOn": "https://repo.metadatacenter.org/templates/d11645cd-03d1-42d7-ae2b-eab5856f6a1b",
+  "schema:name": null,
+  "schema:description": "CEDAR Template to collect Patient Generated Health Data collected using a digital blood pressure monitor, and communicated via interactive voice response. The vocabulary used in this template is such that it is interoperable with the VODANA templates."
+}
