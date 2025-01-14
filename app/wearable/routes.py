@@ -186,8 +186,12 @@ def data_request():
         if not former_session:          
             abort(404, f"No record found for {phone_number}")
         # Load the RDF graph
-        g = Graph()
-        g.parse(former_session.rdf_file, format="turtle")
+        new_g = Graph()
+        # new_g.parse(former_session.rdf_file, format="turtle")
+        tripple_store = Graph()
+        tripple_store_loc = "static/rdf_files/wearpghdprovo-onto-store.ttl"
+        tripple_store.parse(tripple_store_loc, format="turtle")
+        
         request_data = Request(
                 identity_id=identity.identity_id,
                 startedAtTime=datetime.now(),
@@ -195,7 +199,7 @@ def data_request():
                 description='Fetch patient data collected via a phone call.')
         db.session.add(request_data)
         db.session.commit()
-        new_instances = add_metadata_to_graph(g, identity)
+        new_instances = add_metadata_to_graph(new_g, identity)
         if new_instances.get("PGHDRequest", None):
             query_header = """
                 PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
@@ -223,12 +227,18 @@ def data_request():
                 FILTER (?timestamp >= "{start_date}"^^xsd:dateTime && ?timestamp <= "{end_date}"^^xsd:dateTime)
             }}
             """
-            result = g.query(query_header + find_patient)
+            result = tripple_store.query(query_header + find_patient)
             for row in result:
-                g.add((row.instance, prov.wasGeneratedBy, new_instances["PGHDRequest"]))
-            g.serialize(former_session.rdf_file, format="turtle")
+                new_g.add((row.instance, prov.wasGeneratedBy, new_instances["PGHDRequest"]))
+            
+            # save data in store
+            for s, p, o in new_g:
+                tripple_store.add((s, p, o))
+            tripple_store.serialize(tripple_store_loc, format="turtle")
+            #g.serialize(former_session.rdf_file, format="turtle")
+            
             result_prototype = {"IVR": "This is still under implementation"}
-            if data["destination_url"]:
+            if data.get("destination_url", None):
                 headers = {"Content-Type": "application/json"}
                 # Make the POST request to Fitbit API
                 response_data = requests.post(
@@ -426,10 +436,11 @@ def fetch_fitbit_data():
         # Load the RDF graph
         g = Graph()
         g.parse("static/rdf_files/wearpghdprovo-onto-template.ttl", format="turtle")
+        new_g = Graph()
         other_data = {
             "wearable_name": "FITBIT"
         }
-        new_instances = add_metadata_to_graph(g, identity, other_data=other_data)
+        new_instances = add_metadata_to_graph(new_g, identity, other_data=other_data)
 
         category = {
             "Sleep": [],
@@ -449,15 +460,15 @@ def fetch_fitbit_data():
             instance = unique_id(pghdprovo.PGHD)
             
             # Create an instance
-            g.add((instance, RDF.type, pghdprovo.PGHD))
+            new_g.add((instance, RDF.type, pghdprovo.PGHD))
             
             # Adding data to instance
-            g.add((instance, pghdprovo.name, Literal(data_set["name"])))
-            g.add((instance, pghdprovo.value, Literal(data_set["value"])))
-            g.add((instance, pghdprovo.dataSource, Literal('Wearable')))
+            new_g.add((instance, pghdprovo.name, Literal(data_set["name"])))
+            new_g.add((instance, pghdprovo.value, Literal(data_set["value"])))
+            new_g.add((instance, pghdprovo.dataSource, Literal('Wearable')))
             timestamp = datetime.strptime(data_set["date"], "%Y-%m-%d")
             time_str = timestamp.isoformat(timespec='seconds')
-            g.add((instance, pghdprovo.hasTimestamp, Literal(time_str, datatype=XSD.dateTime)))
+            new_g.add((instance, pghdprovo.hasTimestamp, Literal(time_str, datatype=XSD.dateTime)))
             
             # Add property annotations to instance
             if declared_data_property:
@@ -466,23 +477,23 @@ def fetch_fitbit_data():
                         subject=wearpghdprovo[data_set["name"]], 
                         predicate=annoteProp)
                     if value:
-                        g.add((instance, annoteProp, value))
+                        new_g.add((instance, annoteProp, value))
             
             # Assign patient instance to data
             if new_instances.get("Patient", None):
-                g.add((instance, prov.wasAttributedTo, new_instances["Patient"]))
+                new_g.add((instance, prov.wasAttributedTo, new_instances["Patient"]))
             
             # Assign patient instance to data
             if new_instances.get("Patient", None):
-                g.add((instance, pghdprovo.wasCollectedBy, new_instances["Patient"]))
+                new_g.add((instance, pghdprovo.wasCollectedBy, new_instances["Patient"]))
             
             # Assign patient instance to data
             if new_instances.get("PGHDRequest", None):
-                g.add((instance, prov.wasGeneratedBy, new_instances["PGHDRequest"]))
+                new_g.add((instance, prov.wasGeneratedBy, new_instances["PGHDRequest"]))
             
             # Assign patient instance to data
             if new_instances.get("Wearable", None):
-                g.add((instance, prov.wasDerivedFrom, new_instances["Wearable"]))
+                new_g.add((instance, prov.wasDerivedFrom, new_instances["Wearable"]))
             
             # Add instance to a data category
             if declared_data_property:
@@ -493,13 +504,18 @@ def fetch_fitbit_data():
             else:
                 category['Others'].append(instance)
         
-        str_time = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
-        file_loc = "static/rdf_files/wearpghdprovo_" + str_time + ".ttl"
-        g.serialize(file_loc, format="turtle")
-        request_data.rdf_file = file_loc
+        #str_time = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
+        #file_loc = "static/rdf_files/wearpghdprovo_" + str_time + ".ttl"
+        tripple_store = Graph()
+        tripple_store_loc = "static/rdf_files/wearpghdprovo-onto-store.ttl"
+        tripple_store.parse(tripple_store_loc, format="turtle")
+        for s, p, o in new_g:
+            tripple_store.add((s, p, o))
+        tripple_store.serialize(tripple_store_loc, format="turtle")
+        #request_data.rdf_file = file_loc
         db.session.commit()
         #print(category)
-        if data["destination_url"]:
+        if destination_url:
             
             headers = {
                 "Content-Type": "application/json"
@@ -509,7 +525,7 @@ def fetch_fitbit_data():
             response_data = requests.post(
                     destination_url, 
                     headers=headers, 
-                    data={"data_request_type": "IVR"})
+                    data={"prepared_data" : prepared_data})
             
             if response_data.status_code != 200:
                 print(f"data shared to {destination_url} successfully")

@@ -230,18 +230,22 @@ def submit():
         default_rdf = "static/rdf_files/wearpghdprovo-onto-template.ttl"
         
         # find existing rdf file for the patient
-        former_session = CallSession.query.filter(
-            CallSession.phone_number==phone_number, 
-            CallSession.rdf_file != None
-        ).first()
+        #former_session = CallSession.query.filter(
+        #    CallSession.phone_number==phone_number, 
+        #    CallSession.rdf_file != None
+        #).first()
 
         # Load the RDF graph
-        G = Graph()
-        if former_session:          
-            G.parse(former_session.rdf_file, format="turtle")
-        else:
-            G.parse(default_rdf, format="turtle")
-        
+        #G = Graph()
+        #if former_session:          
+        #    G.parse(former_session.rdf_file, format="turtle")
+        #else:
+        #G.parse(default_rdf, format="turtle")
+        new_g = Graph()
+        tripple_store = Graph()
+        tripple_store_loc = "static/rdf_files/wearpghdprovo-onto-store.ttl"
+        tripple_store.parse(tripple_store_loc, format="turtle")
+
         query_header = """
             PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
             PREFIX owl: <http://www.w3.org/2002/07/owl#>
@@ -272,7 +276,7 @@ def submit():
         patient_instance = None
         patient_relative = None
 
-        result = G.query(query_header + find_patient)
+        result = tripple_store.query(query_header + find_patient)
         
         for row in result:
             print(row.patient, row.patientrelative, sep=", ")
@@ -283,71 +287,75 @@ def submit():
 
         if not patient_instance:
             patient_instance = unique_id(pghdprovo.Patient)
-            G.add((patient_instance, RDF.type, pghdprovo.Patient))
-            G.add((patient_instance, pghdprovo.phoneNumber, Literal(phone_number)))
+            new_g.add((patient_instance, RDF.type, pghdprovo.Patient))
+            new_g.add((patient_instance, pghdprovo.phoneNumber, Literal(phone_number)))
         
         if not patient_relative and collection_person == "Caregiver":
             patient_relative = unique_id(pghdprovo.PatientRelative)
-            G.add((patient_relative, RDF.type, pghdprovo.PatientRelative))
-            G.add((patient_relative, pghdprovo.relationship, Literal(collection_person)))
-            G.add((patient_instance, pghdprovo.actedOnBehalfOf, patient_relative))
+            new_g.add((patient_relative, RDF.type, pghdprovo.PatientRelative))
+            new_g.add((patient_relative, pghdprovo.relationship, Literal(collection_person)))
+            new_g.add((patient_instance, pghdprovo.actedOnBehalfOf, patient_relative))
         
         for record in new_records:
             # Define unique PGHD instance name e.g PGHD.f47ac10b
             instance = unique_id(pghdprovo.PGHD)
             
             # Create an instance
-            G.add((instance, RDF.type, pghdprovo.PGHD))
+            new_g.add((instance, RDF.type, pghdprovo.PGHD))
             
             # Adding data to instance
-            G.add((instance, pghdprovo.name, Literal(record['name'])))
-            G.add((instance, pghdprovo.value, Literal(record['value'])))
-            G.add((instance, pghdprovo.dataSource, Literal('IVR')))
+            new_g.add((instance, pghdprovo.name, Literal(record['name'])))
+            new_g.add((instance, pghdprovo.value, Literal(record['value'])))
+            new_g.add((instance, pghdprovo.dataSource, Literal('IVR')))
             time_str = timestamp.isoformat(timespec='seconds')
-            G.add((instance, pghdprovo.hasTimestamp, Literal(time_str, datatype=XSD.dateTime)))
+            new_g.add((instance, pghdprovo.hasTimestamp, Literal(time_str, datatype=XSD.dateTime)))
             
             # Create state instance. Record body position
             state = unique_id(pghdprovo.State)
-            G.add((state, RDF.type, pghdprovo.State))
-            G.add((state, pghdprovo.posture, Literal(collection_position)))
-            G.add((instance, pghdprovo.hasContextualInfo, state))
+            new_g.add((state, RDF.type, pghdprovo.State))
+            new_g.add((state, pghdprovo.posture, Literal(collection_position)))
+            new_g.add((instance, pghdprovo.hasContextualInfo, state))
             
             # Protocol instance. Record body side
             protocol = unique_id(pghdprovo.Protocol)
-            G.add((protocol, RDF.type, pghdprovo.Protocol))
-            G.add((protocol, pghdprovo.bodySite, Literal(collection_body_site)))
-            G.add((instance, pghdprovo.hasContextualInfo, protocol))
+            new_g.add((protocol, RDF.type, pghdprovo.Protocol))
+            new_g.add((protocol, pghdprovo.bodySite, Literal(collection_body_site)))
+            new_g.add((instance, pghdprovo.hasContextualInfo, protocol))
 
             # location instance
             location = unique_id(pghdprovo.ContextualInfo)
-            G.add((location, RDF.type, pghdprovo.ContextualInfo))
-            G.add((location, pghdprovo.locationOfPatient, Literal(collection_location)))
-            G.add((instance, pghdprovo.hasContextualInfo, location))
+            new_g.add((location, RDF.type, pghdprovo.ContextualInfo))
+            new_g.add((location, pghdprovo.locationOfPatient, Literal(collection_location)))
+            new_g.add((instance, pghdprovo.hasContextualInfo, location))
 
             # Assign patient instance to data
-            G.add((instance, prov.wasAttributedTo, patient_instance))   
+            new_g.add((instance, prov.wasAttributedTo, patient_instance))   
 
             # Assign the person who collected the data
             if collection_person == "Caregiver":
-                G.add((instance, pghdprovo.wasCollectedBy, patient_relative))
+                new_g.add((instance, pghdprovo.wasCollectedBy, patient_relative))
             else:
-                G.add((instance, pghdprovo.wasCollectedBy, patient_instance))
+                new_g.add((instance, pghdprovo.wasCollectedBy, patient_instance))
         # save rdf graph into to a file
-        str_time = timestamp.strftime("%Y-%m-%d-%H-%M-%S")
-        file_loc = "static/rdf_files/wearpghdprovo_" + str_time + ".ttl"
-        file_loc = former_session.rdf_file if former_session else file_loc
-        G.serialize(file_loc, format="turtle")
-
+        #str_time = timestamp.strftime("%Y-%m-%d-%H-%M-%S")
+        #file_loc = "static/rdf_files/wearpghdprovo_" + str_time + ".ttl"
+        #file_loc = former_session.rdf_file if former_session else file_loc
+        #G.serialize(file_loc, format="turtle")
         # Insert rdf file dir to current session record
-        sessionId = request.values.get('sessionId', None)
-        current_session = CallSession.query.filter(CallSession.session_id==sessionId).first()
-        if current_session:
-            current_session.rdf_file = file_loc
-            db.session.commit()
-            clear_session_data()
-        else:
-            print("Failed to save rdf file dir in database")
-            return '<Response><Reject/></Response>'
+        #sessionId = request.values.get('sessionId', None)
+        #current_session = CallSession.query.filter(CallSession.session_id==sessionId).first()
+        #if current_session:
+        #    current_session.rdf_file = file_loc
+        #    db.session.commit()
+        #    clear_session_data()
+        #else:
+        #    print("Failed to save rdf file dir in database")
+        #    return '<Response><Reject/></Response>'
+        
+        # Save to local tripple store
+        for s, p, o in new_g:
+            tripple_store.add((s, p, o))
+        tripple_store.serialize(tripple_store_loc, format="turtle")
         return '<Response><Say>Your data has been saved, thank you for your time</Say><Reject/></Response>'
     else:
         clear_session_data()

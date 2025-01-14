@@ -52,7 +52,9 @@ def get_main_class(graph, subject):
                     main_class = obj
     return main_class
 
-def copy_instance(g, instance, mapping_dict):
+def copy_instance(new_g, instance, mapping_dict):
+    g = Graph()
+    g.parse("static/rdf_files/wearpghdprovo-onto-template.ttl", format="turtle")
     if not mapping_dict.get(str(instance), None):
         # if row.object is not already a copy
         if str(instance) not in [mapping_dict[mapped] for mapped in mapping_dict.keys()]:
@@ -61,7 +63,7 @@ def copy_instance(g, instance, mapping_dict):
                 return None
             new_instance = unique_id(instance_class)
             for rdf_type in g.objects(instance, RDF.type):
-                g.add((new_instance, RDF.type, rdf_type))
+                new_g.add((new_instance, RDF.type, rdf_type))
             mapping_dict[str(instance)] = str(new_instance)
         else:
             # return as it is a copy of an original instance
@@ -159,7 +161,7 @@ def send_authorisation_email(receiver_email, auth_link, name=""):
         print(f"❌ Failed to send email: {e}")
         return False
 
-def add_metadata_to_graph(g, identity, other_data=None):
+def add_metadata_to_graph(new_g, identity, other_data=None):
     # define namespace 
     pghdprovo = Namespace("https://w3id.org/pghdprovo/")
     wearpghdprovo = Namespace("https://w3id.org/wearpghdprovo/")
@@ -171,8 +173,8 @@ def add_metadata_to_graph(g, identity, other_data=None):
     # add a instance
     # g.add((subject, predicate, object))
 
-    #g = Graph()
-    #    g.parse("static/rdf_files/wearpghdprovo-onto-template.ttl", format="turtle")
+    g = Graph()
+    g.parse("static/rdf_files/wearpghdprovo-onto-template.ttl", format="turtle")
 
     query_header = """
         PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
@@ -269,25 +271,25 @@ def add_metadata_to_graph(g, identity, other_data=None):
         # create new copy of the existing instances in the template and add data to it 
         for row in result:
             # print (row.subject, row.property, row.object, sep=") , (")
-            new_subject = copy_instance(g, row.subject, mapping_dict)
+            new_subject = copy_instance(new_g, row.subject, mapping_dict)
             # print(str(row.subject), str(new_subject), sep=" : ")
 
             # if object is an individual
             if isinstance(row.object, URIRef):
                 if OWL.Class not in list(g.objects(row.object, RDF.type)):
-                    new_object = copy_instance(g, row.object, mapping_dict)
+                    new_object = copy_instance(new_g, row.object, mapping_dict)
                     if new_object:
                         # print(str(row.object), str(new_object), sep=" : ")
-                        g.add((new_subject, row.property, new_object))
+                        new_g.add((new_subject, row.property, new_object))
             else:
                 # get property name from URI
                 row_property = get_entity_name(row.property)
                 # add data that match property name
                 if data.get(row_property, None):
                     if is_timestamp(data[row_property]):
-                        g.add((new_subject, row.property, Literal(data[row_property], datatype=XSD.dateTime)))
+                        new_g.add((new_subject, row.property, Literal(data[row_property], datatype=XSD.dateTime)))
                     else:
-                        g.add((new_subject, row.property, Literal(data[row_property])))
+                        new_g.add((new_subject, row.property, Literal(data[row_property])))
             print("\n\n")
 
     # Find new copy of instances from earlier defined
