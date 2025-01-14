@@ -237,7 +237,7 @@ def data_request():
             tripple_store.serialize(tripple_store_loc, format="turtle")
             #g.serialize(former_session.rdf_file, format="turtle")
             
-            result_prototype = {"IVR": "This is still under implementation"}
+            result_prototype = {"IVR_link": '/' + tripple_store_loc}
             if data.get("destination_url", None):
                 headers = {"Content-Type": "application/json"}
                 # Make the POST request to Fitbit API
