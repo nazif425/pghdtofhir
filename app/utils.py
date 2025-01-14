@@ -19,7 +19,7 @@ from rdflib import Namespace
 
 CLIENT_ID = '238ZN5'
 CLIENT_SECRET = '2c1f3aa0a96bc067d34714c281b953d0'
-redirect_uri = 'http://127.0.0.1:5000/wearable/fitbit_auth_callback'
+redirect_uri = 'https://pghdtofhir.onrender.com/wearable/fitbit_auth_callback'
 
 def unique_id(uri_class):
     return URIRef(str(uri_class) + "." + uuid.uuid4().hex[:8])
@@ -173,7 +173,7 @@ def add_metadata_to_graph(g, identity, other_data=None):
 
     #g = Graph()
     #    g.parse("static/rdf_files/wearpghdprovo-onto-template.ttl", format="turtle")
-    
+
     query_header = """
         PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
         PREFIX owl: <http://www.w3.org/2002/07/owl#>
