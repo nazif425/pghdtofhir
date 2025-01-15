@@ -155,10 +155,10 @@ def send_authorisation_email(receiver_email, auth_link, name=""):
         with smtplib.SMTP_SSL(smtp_server, smtp_port) as server:
             server.login(sender_email, password)  # Login
             server.sendmail(sender_email, receiver_email, message.as_string())  # Send email
-        print("✅ Email sent successfully!")
+        print("Email sent successfully!")
         return True
     except Exception as e:
-        print(f"❌ Failed to send email: {e}")
+        print(f"Failed to send email: {e}")
         return False
 
 def add_metadata_to_graph(new_g, identity, other_data=None):
