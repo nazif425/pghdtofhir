@@ -432,7 +432,12 @@ def fetch_fitbit_data():
         request_data.endedAtTime = datetime.now()
         timestamp = request_data.endedAtTime
         db.session.commit()
-
+        
+        pghdprovo = Namespace("https://w3id.org/pghdprovo/")
+        wearpghdprovo = Namespace("https://w3id.org/wearpghdprovo/")
+        prov = Namespace("http://www.w3.org/ns/prov#")
+        foaf = Namespace("http://xmlns.com/foaf/0.1/gender")
+        
         # Load the RDF graph
         g = Graph()
         g.parse("static/rdf_files/wearpghdprovo-onto-template.ttl", format="turtle")
