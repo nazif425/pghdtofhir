@@ -54,7 +54,7 @@ def cardio_data_collector():
         response += f'<Say>Your provided heartrate is {heart_rate}</Say>'
         response += f'<Say>Your provided systolic blood pressure is {systolic_bp}</Say>'
         response += f'<Say>Your provided diastolic blood pressure is {diastolic_bp}</Say>'
-        response += '<GetDigits timeout="30" finishOnKey="#" callbackUrl="https://pghdtofhir.onrender.com/ivr/submit">'
+        response += '<GetDigits timeout="30" finishOnKey="#" callbackUrl="https://pghdonfhir.abdullahikawu.org/ivr/submit">'
         response += '<Say>If this is correct and you want to submit, press one followed by the hash sign. If you want to abort press two followed by the hash sign</Say>'
         response += '</GetDigits></Response>'
 

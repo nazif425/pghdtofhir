@@ -1,8 +1,8 @@
 <Response>
-    <GetDigits timeout="30" finishOnKey="#" callbackUrl="https://pghdtofhir.onrender.com/patient_id_handler">
+    <GetDigits timeout="30" finishOnKey="#" callbackUrl="https://pghdonfhir.abdullahikawu.org/patient_id_handler">
         <Say>Please enter patient ID followed by the hash key to continue</Say>
     </GetDigits>
-    <GetDigits timeout="30" finishOnKey="#" callbackUrl="https://pghdtofhir.onrender.com/patient_id_handler">
+    <GetDigits timeout="30" finishOnKey="#" callbackUrl="https://pghdonfhir.abdullahikawu.org/patient_id_handler">
         <Say>You are yet to provide patient ID. Please enter the patient ID followed by the hash key to continue</Say>
     </GetDigits>
     <Reject/>

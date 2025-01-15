@@ -1,6 +1,6 @@
 <Response>
     <Say>Please record what your position was during data collection and finish with the hash sign.</Say>
-    <GetDigits timeout="30" finishOnKey="#" callbackUrl="https://pghdtofhir.onrender.com/ivr/collection_position">
+    <GetDigits timeout="30" finishOnKey="#" callbackUrl="https://pghdonfhir.abdullahikawu.org/ivr/collection_position">
         <Say>If you were laying down press one. If you were seated press two. If you were standing press three.</Say>
     </GetDigits>
 </Response>

@@ -1,5 +1,5 @@
 <Response>
-    <GetDigits timeout="30" finishOnKey="#" callbackUrl="https://pghdtofhir.onrender.com/ivr/diastolic_blood_pressure">
+    <GetDigits timeout="30" finishOnKey="#" callbackUrl="https://pghdonfhir.abdullahikawu.org/ivr/diastolic_blood_pressure">
         <Say>Fill in your diastolic blood pressure followed by the hash sign. If you do not have this data, press zero followed by the hash sign.</Say>
     </GetDigits>
 </Response>

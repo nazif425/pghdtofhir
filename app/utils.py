@@ -19,7 +19,7 @@ from rdflib import Namespace
 
 CLIENT_ID = '238ZN5'
 CLIENT_SECRET = '2c1f3aa0a96bc067d34714c281b953d0'
-redirect_uri = 'https://pghdtofhir.onrender.com/wearable/fitbit_auth_callback'
+redirect_uri = 'https://pghdonfhir.abdullahikawu.org/wearable/fitbit_auth_callback'
 
 def unique_id(uri_class):
     return URIRef(str(uri_class) + "." + uuid.uuid4().hex[:8])

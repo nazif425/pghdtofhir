@@ -1,6 +1,6 @@
 <Response>
     <Say>Please record on the which side of the body the data was collected from and finish with the hash sign.</Say>
-    <GetDigits timeout="30" finishOnKey="#" callbackUrl="https://pghdtofhir.onrender.com/ivr/collection_body_site">
+    <GetDigits timeout="30" finishOnKey="#" callbackUrl="https://pghdonfhir.abdullahikawu.org/ivr/collection_body_site">
         <Say>If data was collected from the right arm press one. If data was collected from the left arm press two.</Say>
     </GetDigits>
 </Response>

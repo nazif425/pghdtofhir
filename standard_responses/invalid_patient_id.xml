@@ -1,6 +1,6 @@
 <Response>
     <Say>Sorry, No patient found with ID you provided.</Say>
-    <GetDigits timeout="30" finishOnKey="#" callbackUrl="https://pghdtofhir.onrender.com/ivr/patient_id_handler">
+    <GetDigits timeout="30" finishOnKey="#" callbackUrl="https://pghdonfhir.abdullahikawu.org/ivr/patient_id_handler">
         <Say>Please enter a valid patient ID followed by the hash key to continue</Say>
     </GetDigits>
     <Reject/>

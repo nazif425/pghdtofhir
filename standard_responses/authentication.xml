@@ -1,9 +1,9 @@
 <Response>
     <Say>Welcome to PGHD submission service</Say>
-    <GetDigits timeout="30" finishOnKey="#" callbackUrl="https://pghdtofhir.onrender.com/ivr/pghd_handler">
+    <GetDigits timeout="30" finishOnKey="#" callbackUrl="https://pghdonfhir.abdullahikawu.org/ivr/pghd_handler">
         <Say>Please enter your ID followed by the hash key to continue</Say>
     </GetDigits>
-    <GetDigits timeout="30" finishOnKey="#" callbackUrl="https://pghdtofhir.onrender.com/ivr/pghd_handler">
+    <GetDigits timeout="30" finishOnKey="#" callbackUrl="https://pghdonfhir.abdullahikawu.org/ivr/pghd_handler">
         <Say>You are yet to provide your ID. Please enter your ID followed by the hash key to continue</Say>
     </GetDigits>
     <Reject/>
