@@ -97,7 +97,7 @@ class Request(db.Model):
     rdf_file = db.Column(db.String(255), nullable=True)
     created_at = db.Column(db.DateTime(timezone=True), server_default=func.now())
 
-    identity = db.relationship('Identity', back_populates='request', uselist=False)
+    identity = db.relationship('Identity', back_populates='request')
 
     def __repr__(self):
         return f'<Request {self.request_id}>'
