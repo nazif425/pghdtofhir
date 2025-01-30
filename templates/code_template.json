@@ -1,0 +1,37 @@
+{
+    "restingHeartRate": {
+        "system": "http://snomed.info/sct",
+        "code": "444981005",
+        "display": "Resting heart rate"
+    },  
+    "Heart rate": {
+        "system": "http://snomed.info/sct",
+        "code": "364075005",
+        "display": "Heart rate"
+    },
+    "Systolic blood pressure": {
+        "system": " http://snomed.info/sct",
+        "code": "271649006", 
+        "display": "Systolic blood pressure"
+    },
+    "Diastolic blood pressure": {
+        "system": " http://snomed.info/sct",
+        "code": "271650006", 
+        "display": "Diastolic blood pressure"
+    },
+    "calories": {
+        "system": "http://loinc.org",
+        "code": "41979-6",
+        "display": "Calories burned in 24 hour Calculated"
+    },
+    "steps": {
+        "system": "http://loinc.org",
+        "code": "41950-7", 
+        "display": "Number of steps in 24 hour Measured"
+    },
+    "sleepDuration": {
+        "system": " http://snomed.info/sct",
+        "code": "248263006", 
+        "display": "Duration of sleep"
+    }
+}
