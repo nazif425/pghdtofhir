@@ -15,7 +15,7 @@ from rdflib import Graph, URIRef, Literal, XSD, OWL
 from rdflib.namespace import RDF, RDFS
 from rdflib import Namespace
 
-from ..utils import CLIENT_ID, CLIENT_SECRET, redirect_uri
+from ..utils import CLIENT_ID, CLIENT_SECRET, REDIRECT_URI
 
 wearable = Blueprint('wearable', __name__)
 
@@ -92,7 +92,7 @@ def generate_fitbit_auth_url(**kwargs):
         'code_challenge': code_challenge,
         'code_challenge_method': 'S256',
         'state': state,
-        'redirect_uri': redirect_uri
+        'redirect_uri': REDIRECT_URI
     }
     scope = '&scope=activity+cardio_fitness+electrocardiogram+heartrate'\
             '+irregular_rhythm_notifications+location+nutrition'\
