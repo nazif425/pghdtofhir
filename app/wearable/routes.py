@@ -15,8 +15,9 @@ from rdflib import Namespace
 
 from . import wearable, get_fitbit_data, store_tokens_in_db, load_tokens_from_db
 from . import refresh_and_store_tokens, generate_fitbit_auth_url
-from ..utils import unique_id, get_entity_name, is_timestamp, get_main_class, redirect_uri, add_metadata_to_graph
-from ..utils import CLIENT_ID, CLIENT_SECRET, copy_instance, transform_data, send_authorisation_email
+from ..utils import unique_id, get_entity_name, is_timestamp, get_main_class, REDIRECT_URI, add_metadata_to_graph
+from ..utils import CLIENT_ID, CLIENT_SECRET, transform_data, send_authorisation_email, get_or_create_instances
+from ..utils import verify_resources
 
 @wearable.route('/cancel_fitbit_auth', methods=['GET'])
 def cancel_authorization():
@@ -35,82 +36,16 @@ def data_request():
     if not data:
         abort(400, "Invalid request payload")
     
-    # find patient id
-    patient_user_id = data["meta-data"]["patient"].get(
-        data["authentication"]["patient"].get("source", None), 
-    None)
-    if not patient_user_id:
-        abort(400, "Error, patient user_id not provided.")
+    if "fitbit" not in data["request_type"] and "IVR" not in data["request_type"]:
+        abort(400, "Error, request type not provided.")
+    verify_resources(data)
+    instances = get_or_create_instances(data)
     
-    # find patient email
-    patient_email = data["meta-data"]["patient"].get(
-        data["authorisation"]["patient"].get("source", None),
-    None)
-    if not patient_email:
-        abort(400, "Error, patient email not provided.")
-
-    # find practitioner id
-    practitioner_user_id = data["meta-data"]["practitioner"].get(
-        data["authentication"]["practitioner"].get("source", None), 
-    None)
-    if not practitioner_user_id:
-        abort(400, "Error, practitioner user_id not provided.")
-    
-    # find patient in database
-    patient = Patient.query.filter_by(user_id=patient_user_id).first()
-    if patient is None:
-        patient = Patient(
-                name=data["meta-data"]["patient"].get("name", ""),
-                user_id=patient_user_id, 
-                phone_number=data["meta-data"]["patient"].get("phone_number", ""),
-                email=patient_email) # No name for now
-        db.session.add(patient)
-        db.session.flush() # To get the patient_id
-        
-    # check if practitioner exists
-    practitioner = Practitioner.query.filter_by(user_id=practitioner_user_id).first()
-    if practitioner is None:
-        practitioner = Practitioner(
-                name=data["meta-data"]["practitioner"].get("name", ""),
-                user_id=practitioner_user_id,
-                phone_number=data["meta-data"]["practitioner"].get("phone_number", ""),
-                email=data["meta-data"]["practitioner"].get("email", ""))
-        db.session.add(practitioner)
-        db.session.flush()
-    
-    ehr_system = EHRSystem.query.filter_by(
-            name=data["meta-data"]["application"].get("name", "")).first()
-    if ehr_system is None:
-        ehr_system = EHRSystem(
-                name=data["meta-data"]["application"].get("name", ""))
-        db.session.add(ehr_system)
-        db.session.flush()
-
-
-    organization = Organization.query.filter_by(
-            name=data["meta-data"]["organization"].get("org_id", "")).first()
-    if organization is None:
-        organization = Organization(
-                name=data["meta-data"]["organization"].get("name", ""),
-                org_id=data["meta-data"]["organization"].get("org_id", ""),
-                email=data["meta-data"]["organization"].get("email", ""),
-                address=data["meta-data"]["organization"].get("address", ""))
-        db.session.add(organization)
-        db.session.flush()
-    
-    identity = Identity.query.filter_by(
-            patient_id=patient.patient_id, 
-            practitioner_id=practitioner.practitioner_id).first()
-    if identity is None:
-        identity = Identity(
-                organization_id=organization.organization_id,
-                ehr_system_id=ehr_system.ehr_system_id,
-                patient_id=patient.patient_id, 
-                practitioner_id=practitioner.practitioner_id)
-        db.session.add(identity)
-        db.session.flush()
-
-    db.session.commit()
+    patient = instances["patient"]
+    practitioner = instances["practitioner"]
+    ehr_system = instances["ehr_system"]
+    identity = instances["identity"]
+    organization = instances["organization"]
     
     query_params = {
         "request_data_type": data["request_data_type"],
@@ -119,10 +54,10 @@ def data_request():
         "end_date": data.get("end_date", None)
     }
 
-    if "fitbit" not in data["request_type"] and "IVR" not in data["request_type"]:
-        abort(400, "Error, request type not provided.")
     if data["request_type"] == "fitbit":
         if load_tokens_from_db(patient.patient_id):
+            if not session.get('patient_id', None):
+                return redirect(url_for('portal.patient_login'))
             return redirect(url_for(
                     "wearable.fetch_fitbit_data", 
                     id=identity.identity_id, 
@@ -146,112 +81,7 @@ def data_request():
         
         # Create new practitioner instance
         # print(practitioner.query.delete())
-    elif data["request_type"] == "IVR":
-        
-        if not data["meta-data"]["patient"].get("phone_number", None):
-            abort(400, "Error, phone_number not provided.")
-        
-        # Define namespace
-        pghdprovo = Namespace("https://w3id.org/pghdprovo/")
-        prov = Namespace("http://www.w3.org/ns/prov#")
-        foaf = Namespace("http://xmlns.com/foaf/0.1/gender")
-
-        destination_url = data.get("destination_url", None)
-        phone_number = data["meta-data"]["patient"].get('phone_number', None)
-        start_date = data.get("start_date", date.today().strftime("%Y-%m-%dT%H-%M-%S"))
-        end_date = data.get("end_date", date.today().strftime("%Y-%m-%dT%H-%M-%S"))
-        
-        # Validate date
-        if not is_timestamp(start_date, format="%Y-%m-%d"):
-            start_date = date.today().strftime("%Y-%m-%dT00:00:00")
-        else:
-            # Convert date to datetime
-            start_date = start_date + "T00:00:00"
-            print(start_date)
-
-        # Validate date
-        if not is_timestamp(end_date, format="%Y-%m-%d"):
-            end_date = date.today().strftime("%Y-%m-%dT23:59:59")
-        else:
-            # Convert date to datetime
-            end_date = end_date + "T23:59:59"
-            print(end_date)
-
-        # Find existing rdf file for the patient
-        former_session = CallSession.query.filter(
-            CallSession.phone_number==phone_number, 
-            CallSession.rdf_file != None
-        ).first()
-
-        if not former_session:          
-            abort(404, f"No record found for {phone_number}")
-        # Load the RDF graph
-        new_g = Graph()
-        # new_g.parse(former_session.rdf_file, format="turtle")
-        tripple_store = Graph()
-        tripple_store_loc = "static/rdf_files/wearpghdprovo-onto-store.ttl"
-        tripple_store.parse(tripple_store_loc, format="turtle")
-        
-        request_data = Request(
-                identity_id=identity.identity_id,
-                startedAtTime=datetime.now(),
-                endedAtTime=datetime.now(),
-                description='Fetch patient data collected via a phone call.')
-        db.session.add(request_data)
-        db.session.commit()
-        new_instances = add_metadata_to_graph(new_g, identity)
-        if new_instances.get("PGHDRequest", None):
-            query_header = """
-                PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
-                PREFIX owl: <http://www.w3.org/2002/07/owl#>
-                PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-                PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
-                PREFIX foaf: <http://xmlns.com/foaf/0.1/>
-                PREFIX prov: <http://www.w3.org/ns/prov#>
-                PREFIX s4wear: <https://saref.etsi.org/saref4wear/>
-                PREFIX pghdprovo: <https://w3id.org/pghdprovo/>
-                PREFIX : <https://w3id.org/wearpghdprovo/>
-                PREFIX wearpghdprovo: <https://w3id.org/wearpghdprovo/>
-            """
-
-            # Find patient instance
-            number_end = phone_number[-10:]
-            find_patient = f"""
-            SELECT ?instance ?patient ?number ?timestamp
-            WHERE {{
-                ?patient pghdprovo:phoneNumber ?number .
-                ?patient a pghdprovo:Patient .
-                FILTER(STRENDS(?number, '{number_end}')).
-                ?instance prov:wasAttributedTo ?patient .
-                ?instance pghdprovo:hasTimestamp  ?timestamp .
-                FILTER (?timestamp >= "{start_date}"^^xsd:dateTime && ?timestamp <= "{end_date}"^^xsd:dateTime)
-            }}
-            """
-            result = tripple_store.query(query_header + find_patient)
-            for row in result:
-                new_g.add((row.instance, prov.wasGeneratedBy, new_instances["PGHDRequest"]))
-            
-            # save data in store
-            for s, p, o in new_g:
-                tripple_store.add((s, p, o))
-            tripple_store.serialize(tripple_store_loc, format="turtle")
-            #g.serialize(former_session.rdf_file, format="turtle")
-            
-            result_prototype = {"IVR_link": '/' + tripple_store_loc}
-            if data.get("destination_url", None):
-                headers = {"Content-Type": "application/json"}
-                # Make the POST request to Fitbit API
-                response_data = requests.post(
-                        destination_url, 
-                        headers=headers, 
-                        data=result_prototype)
-                
-                if response_data.status_code != 200:
-                    print(f"data shared to {destination_url} successfully")
-                else:
-                    print(f"Failed to share data to {destination_url} successfully")
-            return jsonify(result_prototype)
-    # to know the patient who authorize access to his account
+    
     
 
 @wearable.route('/request_fitbit_auth', methods=['GET'])
@@ -303,7 +133,7 @@ def get_access_token():
     payload = {
         "grant_type": "authorization_code",
         "code": authorization_code,
-        "redirect_uri": redirect_uri,
+        "redirect_uri": REDIRECT_URI,
         "code_verifier": code_verifier
     }
     
@@ -328,7 +158,7 @@ def get_access_token():
         abort(404)
     if not session.get('patient_id', None):
         query_params = auth_session.data
-        print(auth_session.identity)
+        
         return redirect(url_for(
                 'wearable.fetch_fitbit_data', 
                 id=auth_session.identity_id,
@@ -341,7 +171,6 @@ def fetch_fitbit_data():
     # verify user
     practitioner_id = request.args.get('practitioner_id', session.get('practitioner_id',  None))
     identity_id = request.args.get('id', None)
-
     identity = Identity.query.get_or_404(identity_id)
     # verify user access
     practitioner = identity.practitioner
@@ -351,6 +180,9 @@ def fetch_fitbit_data():
         return redirect(url_for('portal.practitioner_login'))
     patient = identity.patient
     
+    if not session.get('request_data', None):
+        return Response("<h1>Sorry, an error occured. Request not found")
+    r_data = session["request_data"]
     org = identity.organization
     request_data_type = request.args.get('request_data_type', "steps")
     destination_url = request.args.get('destination_url', None)
@@ -426,7 +258,6 @@ def fetch_fitbit_data():
                     "date": fitbit_time_data["activities-tracker-steps"][i]["dateTime"],
                     "value": fitbit_time_data["activities-tracker-steps"][i]["value"]
                 })
-        
         #return jsonify(prepared_data)
 
         request_data.endedAtTime = datetime.now()
@@ -453,9 +284,10 @@ def fetch_fitbit_data():
             "VitalSign": [],
             "Others": [],
         }
-
+        found = False
         # Add data to graph
         for data_set in prepared_data:
+            found = True
             declared_data_property = False
             for s, p, o in g.triples((wearpghdprovo[data_set["name"]], RDF.type, OWL.DatatypeProperty)):
                 declared_data_property = True
@@ -499,7 +331,7 @@ def fetch_fitbit_data():
             # Assign patient instance to data
             if new_instances.get("Wearable", None):
                 new_g.add((instance, prov.wasDerivedFrom, new_instances["Wearable"]))
-            
+            """
             # Add instance to a data category
             if declared_data_property:
                 data_property_class = next(g.objects(wearpghdprovo[data_set["name"]], RDFS.domain))
@@ -508,20 +340,37 @@ def fetch_fitbit_data():
                     category[class_name].append(instance)
             else:
                 category['Others'].append(instance)
-        
+            """
         #str_time = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
         #file_loc = "static/rdf_files/wearpghdprovo_" + str_time + ".ttl"
         tripple_store = Graph()
         tripple_store_loc = "static/rdf_files/wearpghdprovo-onto-store.ttl"
         tripple_store.parse(tripple_store_loc, format="turtle")
+        
         for s, p, o in new_g:
             tripple_store.add((s, p, o))
         tripple_store.serialize(tripple_store_loc, format="turtle")
         #request_data.rdf_file = file_loc
         db.session.commit()
-        #print(category)
+        
+        # Validate date
+        if not is_timestamp(start_date, format="%Y-%m-%d"):
+            start_date = date.today().strftime("%Y-%m-%dT00:00:00")
+        else:
+            # Convert date to datetime
+            start_date = start_date + "T00:00:00"
+        r_data["start_date"] = start_date
+
+        if not is_timestamp(end_date, format="%Y-%m-%d"):
+            end_date = date.today().strftime("%Y-%m-%dT23:59:59")
+        else:
+            # Convert date to datetime
+            end_date = end_date + "T23:59:59"
+        r_data["end_date"] = end_date
+        if found:
+            build_fhir_resources(tripple_store, r_data)
+        
         if destination_url:
-            
             headers = {
                 "Content-Type": "application/json"
             }
@@ -539,4 +388,4 @@ def fetch_fitbit_data():
         #return jsonify(fitbit_time_data)
         return render_template('authorization_granted.html')
     else:
-        return Response("Token not found in the database")
+        return Response("<h1>Sorry, an error occured.")

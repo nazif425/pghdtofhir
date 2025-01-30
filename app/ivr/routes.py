@@ -1,4 +1,5 @@
 
+import requests
 from . import ivr, cardio_data_collector, clear_session_data
 from flask import g, Flask, request, jsonify, abort, render_template, Response, flash, redirect, url_for, session
 from sqlalchemy.sql import func
@@ -10,8 +11,8 @@ from rdflib.namespace import RDF, RDFS
 from rdflib import Namespace
 from datetime import datetime, date
 
-from ..utils import unique_id, get_entity_name, is_timestamp, get_main_class
-from ..utils import copy_instance, transform_data, send_authorisation_email
+from ..utils import unique_id, get_entity_name, is_timestamp, get_main_class, get_or_create_instances, build_fhir_resources
+from ..utils import copy_instance, transform_data, send_authorisation_email, add_metadata_to_graph, verify_resources
 
 @ivr.before_request
 def before_request_func():
@@ -279,7 +280,6 @@ def submit():
         result = tripple_store.query(query_header + find_patient)
         
         for row in result:
-            print(row.patient, row.patientrelative, sep=", ")
             if row.patient:
                 patient_instance = row.patient
             if row.patientrelative:
@@ -296,6 +296,21 @@ def submit():
             new_g.add((patient_relative, pghdprovo.relationship, Literal(collection_person)))
             new_g.add((patient_instance, pghdprovo.actedOnBehalfOf, patient_relative))
         
+        # Create state instance. 
+        state = unique_id(pghdprovo.State)
+        new_g.add((state, RDF.type, pghdprovo.State))
+        new_g.add((state, pghdprovo.posture, Literal(collection_position)))
+
+        # Protocol instance. 
+        protocol = unique_id(pghdprovo.Protocol)
+        new_g.add((protocol, RDF.type, pghdprovo.Protocol))
+        new_g.add((protocol, pghdprovo.bodySite, Literal(collection_body_site)))
+
+        # location instance 
+        location = unique_id(pghdprovo.ContextualInfo)
+        new_g.add((location, RDF.type, pghdprovo.ContextualInfo))
+        new_g.add((location, pghdprovo.locationOfPatient, Literal(collection_location)))
+        
         for record in new_records:
             # Define unique PGHD instance name e.g PGHD.f47ac10b
             instance = unique_id(pghdprovo.PGHD)
@@ -310,22 +325,13 @@ def submit():
             time_str = timestamp.isoformat(timespec='seconds')
             new_g.add((instance, pghdprovo.hasTimestamp, Literal(time_str, datatype=XSD.dateTime)))
             
-            # Create state instance. Record body position
-            state = unique_id(pghdprovo.State)
-            new_g.add((state, RDF.type, pghdprovo.State))
-            new_g.add((state, pghdprovo.posture, Literal(collection_position)))
+            # Record body position
             new_g.add((instance, pghdprovo.hasContextualInfo, state))
             
-            # Protocol instance. Record body side
-            protocol = unique_id(pghdprovo.Protocol)
-            new_g.add((protocol, RDF.type, pghdprovo.Protocol))
-            new_g.add((protocol, pghdprovo.bodySite, Literal(collection_body_site)))
+            # Record body side
             new_g.add((instance, pghdprovo.hasContextualInfo, protocol))
 
-            # location instance
-            location = unique_id(pghdprovo.ContextualInfo)
-            new_g.add((location, RDF.type, pghdprovo.ContextualInfo))
-            new_g.add((location, pghdprovo.locationOfPatient, Literal(collection_location)))
+            # Record Location
             new_g.add((instance, pghdprovo.hasContextualInfo, location))
 
             # Assign patient instance to data
@@ -336,21 +342,6 @@ def submit():
                 new_g.add((instance, pghdprovo.wasCollectedBy, patient_relative))
             else:
                 new_g.add((instance, pghdprovo.wasCollectedBy, patient_instance))
-        # save rdf graph into to a file
-        #str_time = timestamp.strftime("%Y-%m-%d-%H-%M-%S")
-        #file_loc = "static/rdf_files/wearpghdprovo_" + str_time + ".ttl"
-        #file_loc = former_session.rdf_file if former_session else file_loc
-        #G.serialize(file_loc, format="turtle")
-        # Insert rdf file dir to current session record
-        #sessionId = request.values.get('sessionId', None)
-        #current_session = CallSession.query.filter(CallSession.session_id==sessionId).first()
-        #if current_session:
-        #    current_session.rdf_file = file_loc
-        #    db.session.commit()
-        #    clear_session_data()
-        #else:
-        #    print("Failed to save rdf file dir in database")
-        #    return '<Response><Reject/></Response>'
         
         # Save to local tripple store
         for s, p, o in new_g:
@@ -360,3 +351,144 @@ def submit():
     else:
         clear_session_data()
         return '<Response><Reject/></Response>'
+
+@ivr.route('/test_fhir', methods=['GET'])
+def test_fhir():
+    #http://hapi.abdullahikawu.org/Patient?identifier=9e0003ae-4e5e-4442-aeab-838203fa2f5f
+    headers = {'Content-Type': 'application/json', 'Accept': 'application/json'}  
+    response = requests.get(f"http://hapi.abdullahikawu.org/fhir/Patient?identifier=9e0003ae-4e5e-4442-aeab-838203fa2f5f",
+            headers=headers)
+    if response.status_code != 200:
+        abort(500, f"Error querying resource: {response.text}")
+    return jsonify(response.json())
+
+@ivr.route('/data_request', methods=['POST'])
+def data_request():
+    data = request.get_json()
+    if not data:
+        abort(400, "Invalid request payload")
+    
+    if "IVR" not in data["request_type"]:
+        abort(400, "Error, request type not provided.")
+    verify_resources(data)
+    instances = get_or_create_instances(data)
+    
+    patient = instances["patient"]
+    practitioner = instances["practitioner"]
+    ehr_system = instances["ehr_system"]
+    identity = instances["identity"]
+    organization = instances["organization"]
+
+    if not data["meta-data"]["patient"].get("phone_number", None):
+        abort(400, "Error, phone_number not provided.")
+    
+    # Define namespace
+    pghdprovo = Namespace("https://w3id.org/pghdprovo/")
+    prov = Namespace("http://www.w3.org/ns/prov#")
+    foaf = Namespace("http://xmlns.com/foaf/0.1/gender")
+
+    destination_url = data.get("destination_url", None)
+    phone_number = data["meta-data"]["patient"].get("phone_number", None)
+    start_date = data.get("start_date", date.today().strftime("%Y-%m-%dT%H-%M-%S"))
+    end_date = data.get("end_date", date.today().strftime("%Y-%m-%dT%H-%M-%S"))
+    
+    # Validate date
+    if not is_timestamp(start_date, format="%Y-%m-%d"):
+        start_date = date.today().strftime("%Y-%m-%dT00:00:00")
+    else:
+        # Convert date to datetime
+        start_date = start_date + "T00:00:00"
+    data["start_date"] = start_date
+
+    # Validate date
+    if not is_timestamp(end_date, format="%Y-%m-%d"):
+        end_date = date.today().strftime("%Y-%m-%dT23:59:59")
+    else:
+        # Convert date to datetime
+        end_date = end_date + "T23:59:59"
+    data["end_date"] = end_date
+    
+    # Find existing rdf file for the patient
+    former_session = CallSession.query.filter(
+        CallSession.phone_number==phone_number, 
+        CallSession.rdf_file != None
+    ).first()
+
+    if not former_session:          
+        abort(404, f"No record found for {phone_number}")
+    # Update data in graph with request meta-data
+    
+    new_g = Graph()
+    tripple_store = Graph()
+    tripple_store_loc = "static/rdf_files/wearpghdprovo-onto-store.ttl"
+    tripple_store.parse(tripple_store_loc, format="turtle")
+    
+    request_data = Request(
+            identity_id=identity.identity_id,
+            startedAtTime=datetime.now(),
+            endedAtTime=datetime.now(),
+            description='Fetch patient data collected via a phone call.')
+    db.session.add(request_data)
+    db.session.commit()
+    new_instances = add_metadata_to_graph(new_g, identity)
+    result_prototype = {}
+    found = False
+    if new_instances.get("PGHDRequest", None):
+        query_header = """
+            PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+            PREFIX owl: <http://www.w3.org/2002/07/owl#>
+            PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+            PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+            PREFIX foaf: <http://xmlns.com/foaf/0.1/>
+            PREFIX prov: <http://www.w3.org/ns/prov#>
+            PREFIX s4wear: <https://saref.etsi.org/saref4wear/>
+            PREFIX pghdprovo: <https://w3id.org/pghdprovo/>
+            PREFIX : <https://w3id.org/wearpghdprovo/>
+            PREFIX wearpghdprovo: <https://w3id.org/wearpghdprovo/>
+        """
+
+        # Find patient instance
+        number_end = phone_number[-10:]
+        find_patient = f"""
+        SELECT ?instance ?patient ?number ?timestamp
+        WHERE {{
+            ?patient pghdprovo:phoneNumber ?number .
+            ?patient a pghdprovo:Patient .
+            FILTER(STRENDS(?number, '{number_end}')) .
+            ?instance prov:wasAttributedTo ?patient .
+            ?instance pghdprovo:hasTimestamp  ?timestamp .
+            FILTER (?timestamp >= "{start_date}"^^xsd:dateTime && ?timestamp <= "{end_date}"^^xsd:dateTime)
+        }}
+        """
+        result = tripple_store.query(query_header + find_patient)
+        for row in result:
+            found = True
+            new_g.add((row.instance, prov.wasGeneratedBy, new_instances["PGHDRequest"]))
+        
+        # save data in store
+        for s, p, o in new_g:
+            tripple_store.add((s, p, o))
+        tripple_store.serialize(tripple_store_loc, format="turtle")
+        #g.serialize(former_session.rdf_file, format="turtle")
+        
+        result_prototype = {"IVR_link": '/' + tripple_store_loc}
+    
+    if found:
+        build_fhir_resources(tripple_store, data)
+    else:
+        result_prototype = {"message": 'No result found for the given date.'}
+
+    if data.get("destination_url", None):
+        headers = {"Content-Type": "application/json"}
+        # Make the POST request to Fitbit API
+        response_data = requests.post(
+                destination_url, 
+                headers=headers, 
+                data=result_prototype)
+        
+        if response_data.status_code != 200:
+            print(f"data shared to {destination_url} successfully")
+        else:
+            print(f"Failed to share data to {destination_url} successfully")
+    return jsonify(result_prototype)
+        # to know the patient who authorize access to his account
