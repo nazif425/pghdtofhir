@@ -36,7 +36,7 @@ def data_request():
     if not data:
         abort(400, "Invalid request payload")
     
-    if "fitbit" not in data["request_type"] and "IVR" not in data["request_type"]:
+    if data["request_type"] != "fitbit":
         abort(400, "Error, request type not provided.")
     verify_resources(data)
     instances = get_or_create_instances(data)
@@ -53,34 +53,35 @@ def data_request():
         "start_date": data.get("start_date", None),
         "end_date": data.get("end_date", None)
     }
+    
+    session["request_data"] = data
 
-    if data["request_type"] == "fitbit":
-        if load_tokens_from_db(patient.patient_id):
-            if not session.get('patient_id', None):
-                return redirect(url_for('portal.patient_login'))
-            return redirect(url_for(
-                    "wearable.fetch_fitbit_data", 
-                    id=identity.identity_id, 
-                    practitioner_id=practitioner.practitioner_id, 
-                    **query_params))
-        
-        authsession_data = {
-            "patient_id": patient.patient_id, 
-            "identity_id": identity.identity_id,
-            "data": query_params
-        }
-        auth_link = generate_fitbit_auth_url(**authsession_data)
-        if send_authorisation_email(patient.email, auth_link, practitioner.name):
-            return jsonify({
-                'message': "An email request was successfully sent to patient for access to their fitbit data." 
-            })
-        else:
-            return jsonify({
-                'message': "An error occured. Email request to patient failed." 
-            })
-        
-        # Create new practitioner instance
-        # print(practitioner.query.delete())
+    if load_tokens_from_db(patient.patient_id):
+        #if not session.get('patient_id', None):
+        #    return redirect(url_for('portal.patient_login'))
+        return redirect(url_for(
+                "wearable.fetch_fitbit_data", 
+                id=identity.identity_id, 
+                practitioner_id=practitioner.practitioner_id, 
+                **query_params))
+    
+    authsession_data = {
+        "patient_id": patient.patient_id, 
+        "identity_id": identity.identity_id,
+        "data": query_params
+    }
+    auth_link = generate_fitbit_auth_url(**authsession_data)
+    if send_authorisation_email(patient.email, auth_link, practitioner.name):
+        return jsonify({
+            'message': "An email request was successfully sent to patient for access to their fitbit data." 
+        })
+    else:
+        return jsonify({
+            'message': "An error occured. Email request to patient failed." 
+        })
+    
+    # Create new practitioner instance
+    # print(practitioner.query.delete())
     
     
 
