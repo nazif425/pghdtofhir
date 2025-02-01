@@ -9,8 +9,8 @@ from .models import db
 from .ivr import ivr
 from .wearable import wearable
 from .portal import portal
-#from dotenv import load_dotenv
-#load_dotenv()
+from dotenv import load_dotenv
+load_dotenv()
 
 def create_app():
     #app = Flask(__name__)

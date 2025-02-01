@@ -25,6 +25,9 @@ from fhir.resources.humanname import HumanName
 from pydantic import ValidationError
 from fhir.resources.coding import Coding
 from fhir.resources.period import Period
+from dotenv import load_dotenv
+
+load_dotenv()
 
 CLIENT_ID = os.getenv('CLIENT_ID')
 CLIENT_SECRET = os.getenv('CLIENT_SECRET')
