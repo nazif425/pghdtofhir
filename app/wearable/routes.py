@@ -354,6 +354,8 @@ def fetch_fitbit_data():
         #request_data.rdf_file = file_loc
         db.session.commit()
         
+        start_date = r_data["start_date"]
+        end_date = r_data["end_date"]
         # Validate date
         if not is_timestamp(start_date, format="%Y-%m-%d"):
             start_date = date.today().strftime("%Y-%m-%dT00:00:00")
