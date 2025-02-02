@@ -17,7 +17,7 @@ from . import wearable, get_fitbit_data, store_tokens_in_db, load_tokens_from_db
 from . import refresh_and_store_tokens, generate_fitbit_auth_url
 from ..utils import unique_id, get_entity_name, is_timestamp, get_main_class, REDIRECT_URI, add_metadata_to_graph
 from ..utils import CLIENT_ID, CLIENT_SECRET, transform_data, send_authorisation_email, get_or_create_instances
-from ..utils import verify_resources
+from ..utils import verify_resources, build_fhir_resources
 
 @wearable.route('/cancel_fitbit_auth', methods=['GET'])
 def cancel_authorization():
