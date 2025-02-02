@@ -544,9 +544,9 @@ def build_fhir_resources(g, request_data):
         ?subject pghdprovo:dataSource ?source .
         ?subject pghdprovo:hasTimestamp ?timestamp .
         FILTER (?timestamp >= "{start_date}"^^xsd:dateTime && ?timestamp <= "{end_date}"^^xsd:dateTime) .
-        FILTER (?source = "${request_type}") .
+        FILTER (?source = "{request_type}") .
         OPTIONAL {{
-            FILTER (?name = "${request_data_type}") .
+            FILTER (?name = "{request_data_type}") .
             ?subject rdfs:comment ?description .
             ?subject rdfs:label ?label .
         }}
