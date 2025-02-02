@@ -322,7 +322,7 @@ def check_resource_existence(resource_type, identifier, system=None):
     
     if response.status_code != 200:
         abort(500, f"Error querying {resource_type} resource: {response.text}")
-
+    
     resources = response.json().get("entry", [])
     return len(resources) > 0
 
@@ -452,7 +452,7 @@ def build_fhir_resources(g, request_data):
     request_data_type = request_data.get("request_data_type", None)
     patient_id = request_data["meta-data"]["patient"]["user_id"]
     practitioner_id = request_data["meta-data"]["practitioner"]["user_id"]
-    organization_id = data["meta-data"]["organization"].get("org_id", None)
+    organization_id = request_data["meta-data"]["organization"].get("org_id", None)
     encounter_id = request_data.get("encounter", None)
     organization = None
     encounter = None
