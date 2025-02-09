@@ -4,6 +4,10 @@ from sqlalchemy.sql import func
 from ..models import db, CallSession, ApplicationData, EHRSystem, Identity, Organization
 from ..models import Patient, Practitioner, Fitbit, Request, AuthSession
 
+@portal.route('/query', methods=['GET', 'POST'])
+def data_query():
+    return render_template('query.html')
+
 @portal.route('/ehr', methods=['POST', 'GET'])
 def add_ehr_system():
     if not session.get('practitioner_id', None):

@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Triple Store Query Interface</title>
+    <script src="https://d3js.org/d3.v6.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        h1 {
+            font-size: 24px;
+            margin-bottom: 20px;
+        }
+        textarea {
+            width: 100%;
+            height: 100px;
+            padding: 10px;
+            font-family: monospace;
+            font-size: 14px;
+            margin-bottom: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 14px;
+            cursor: pointer;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            margin-right: 10px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        input[type="text"] {
+            padding: 10px;
+            font-size: 14px;
+            width: 100%;
+            margin-bottom: 20px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        #results {
+            margin-top: 20px;
+        }
+        #tableResults {
+            display: none;
+        }
+        #resultsTable {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        #resultsTable th, #resultsTable td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        #resultsTable th {
+            background-color: #f2f2f2;
+        }
+        #graph-container {
+            position: relative;
+            width: 100%;
+            height: 600px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        #graph {
+            width: 100%;
+            height: 100%;
+        }
+        .node {
+            cursor: pointer;
+            stroke: #333;
+            stroke-width: 1.5px;
+        }
+        .node:hover {
+            stroke: #ff5722;
+            stroke-width: 2px;
+        }
+        .link {
+            stroke: #999;
+            stroke-width: 2px;
+        }
+        #zoom-panel {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            z-index: 10;
+        }
+        #zoom-panel button {
+            display: block;
+            margin-bottom: 5px;
+            padding: 5px 10px;
+            font-size: 12px;
+        }
+        #nodeDetails {
+            display: none;
+            position: absolute;
+            background: white;
+            border: 1px solid #ccc;
+            padding: 10px;
+            z-index: 1000;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            pointer-events: none; /* Prevent the details box from interfering with clicks */
+        }
+        #nodeDetails ul#nodeConnectionsList li {
+            margin-bottom: 8px;
+            padding: 6px;
+            background-color: #f9f9f9;
+            border-left: 4px solid #007bff;
+            border-radius: 4px;
+            font-family: monospace; /* Use monospace font for predicates */
+            color: #333;
+        }
+        #nodeDetails ul#nodeConnectionsList li strong {
+            color: #007bff;
+        }
+        #nodeDetails {
+            display: none;
+            position: absolute;
+            background: white;
+            border: 1px solid #ccc;
+            padding: 15px;
+            /*max-width: 300px;*/
+            z-index: 1000;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+            pointer-events: none; /* Prevent the details box from interfering with clicks */
+            font-family: Arial, sans-serif;
+            color: #333;
+            font-weight: bold;
+        }
+
+        #nodeDetails h3 {
+            margin: 0 0 10px 0;
+            font-size: 18px;
+            font-weight: bold;
+            color: #007bff;
+        }
+
+        #nodeDetails ul {
+            list-style-type: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        #nodeDetails ul li {
+            padding: 5px 0;
+            border-bottom: 1px solid #eee;
+            font-size: 14px;
+        }
+
+        #nodeDetails ul li:last-child {
+            border-bottom: none;
+        }
+
+        #nodeDetails h4 {
+            margin: 10px 0 5px 0;
+            font-size: 16px;
+            font-weight: bold;
+            color: #555;
+        }
+
+        .comment-text {
+            font-style: italic;
+            color: #555;
+        }
+    </style>
+</head>
+<body>
+    <h1>SPARQL Query Interface</h1>
+    <textarea id="queryField" placeholder="Enter your SPARQL query here..."></textarea>
+    <button onclick="executeQuery()">Execute Query</button>
+    <input type="text" id="filterField" placeholder="Filter results..." oninput="filterResults()">
+    
+    <div>
+        <button onclick="switchView('table')">Table View</button>
+        <button onclick="switchView('graph')">Graph View</button>
+    </div>
+    
+    <div id="results">
+        <div id="tableResults">
+            <table id="resultsTable" border="1"></table>
+        </div>
+        <div id="graphResults">
+            <div id="graph-container">
+                <div id="zoom-panel">
+                    <button onclick="zoomIn()" style="width: 50px">+</button>
+                    <button onclick="zoomOut()" style="width: 50px">-</button>
+                    <button onclick="resetZoom()" style="width: 50px">100%</button>
+                </div>
+                <svg id="graph"></svg>
+            </div>
+            <div id="nodeDetails">
+                <h3 id="nodeDetailsTitle"></h3>
+                <ul id="nodeDetailsList"></ul>
+                <h4>Properties:</h4>
+                <ul id="nodeConnectionsList"></ul>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentData = [];
+        let zoom = d3.zoom();
+        let svg, simulation;
+        let nodeDetailsDiv = document.getElementById('nodeDetails');
+        let nodeDetailsTitle = document.getElementById('nodeDetailsTitle');
+        let nodeDetailsList = document.getElementById('nodeDetailsList');
+        let nodeConnectionsList = document.getElementById('nodeConnectionsList');
+
+        function executeQuery() {
+            const query = document.getElementById('queryField').value;
+            fetch('http://127.0.0.1:3030/pghd_db/query', {
+                method: 'POST',
+                headers: {
+                    'Accept': 'application/sparql-results+json',
+                    'Content-Type': 'application/sparql-query'
+                },
+                body: query
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (!data.results || !data.results.bindings) {
+                    console.error('Invalid data format:', data);
+                    return;
+                }
+                currentData = data.results.bindings;
+                displayTable(currentData);
+                displayGraph(currentData);
+            })
+            .catch(error => console.error('Error:', error));
+        }
+
+        function displayTable(data) {
+            const table = document.getElementById('resultsTable');
+            table.innerHTML = '';
+            if (data.length === 0) return;
+
+            const headers = Object.keys(data[0]);
+            const headerRow = document.createElement('tr');
+            headers.forEach(header => {
+                const th = document.createElement('th');
+                th.textContent = header;
+                headerRow.appendChild(th);
+            });
+            table.appendChild(headerRow);
+
+            data.forEach(row => {
+                const tr = document.createElement('tr');
+                headers.forEach(header => {
+                    const td = document.createElement('td');
+                    td.textContent = row[header].value;
+                    tr.appendChild(td);
+                });
+                table.appendChild(tr);
+            });
+            document.getElementById('tableResults').style.display = 'block';
+            document.getElementById('graphResults').style.display = 'none';
+        }
+
+        function displayGraph(data) {
+            const graphDiv = document.getElementById('graphResults');
+            graphDiv.style.display = 'block';
+            document.getElementById('tableResults').style.display = 'none';
+
+            // Hide the nodeDetails panel when redrawing the graph
+            nodeDetailsDiv.style.display = 'none';
+
+            const width = document.getElementById('graph-container').clientWidth;
+            const height = document.getElementById('graph-container').clientHeight;
+
+            // Clear the existing graph
+            d3.select('#graph').selectAll('*').remove();
+
+            svg = d3.select('#graph')
+                .attr('width', width)
+                .attr('height', height);
+
+            const defs = svg.append("defs"); // Define markers for arrowheads
+
+            defs.append("marker")
+                .attr("id", "arrowhead")
+                .attr("viewBox", "0 -5 10 10")
+                .attr("refX", 15)  // Position at end of line
+                .attr("refY", 0)
+                .attr("markerWidth", 6)
+                .attr("markerHeight", 6)
+                .attr("orient", "auto")
+                .append("path")
+                .attr("d", "M0,-5L10,0L0,5") // Triangle shape
+                .attr("fill", "#999");
+
+            const links = data.map(d => ({
+                source: d.subject.value,
+                target: d.object.value,
+                property: d.property.value
+            }));
+
+            const nodes = Array.from(new Set(links.flatMap(l => [l.source, l.target]))).map(d => ({ id: d }));
+
+            simulation = d3.forceSimulation(nodes)
+                .force('link', d3.forceLink(links).id(d => d.id).distance(100))
+                .force('charge', d3.forceManyBody().strength(-400))
+                .force('center', d3.forceCenter(width / 2, height / 2));
+
+            // Add links (edges) with arrows
+            const link = svg.append('g')
+                .attr('class', 'links')
+                .selectAll('line')
+                .data(links)
+                .enter().append('line')
+                .attr('class', 'link')
+                .attr('stroke', '#999')
+                .attr('stroke-width', 2)
+                .attr('marker-end', 'url(#arrowhead)'); // Attach arrowhead
+
+            // Add hover tooltips to links
+            link.append('title')
+                .text(d => d.property); // Show predicate name on hover
+
+            // Add nodes
+            const node = svg.append('g')
+                .attr('class', 'nodes')
+                .selectAll('circle')
+                .data(nodes)
+                .enter().append('circle')
+                .attr('class', 'node')
+                .attr('r', 10)
+                .call(d3.drag()
+                    .on('start', dragstarted)
+                    .on('drag', dragged)
+                    .on('end', dragended))
+                .on('click', (event, d) => showNodeDetails(d));
+
+            node.append('title')
+                .text(d => d.id);
+
+            simulation.on('tick', () => {
+                link
+                    .attr('x1', d => d.source.x)
+                    .attr('y1', d => d.source.y)
+                    .attr('x2', d => d.target.x)
+                    .attr('y2', d => d.target.y);
+
+                node
+                    .attr('cx', d => d.x)
+                    .attr('cy', d => d.y);
+            });
+
+            zoom.on('zoom', (event) => {
+                svg.attr('transform', event.transform);
+            });
+
+            svg.call(zoom);
+        }
+
+
+        function showNodeDetails(d) {
+            const nodeId = d.id;
+            const nodeData = currentData.filter(item => item.subject.value === nodeId || item.object.value === nodeId);
+            nodeDetailsTitle.textContent = nodeId;
+            nodeDetailsList.innerHTML = '';
+            nodeConnectionsList.innerHTML = '';
+
+            const predicates = new Set();
+            let comment = null; // Variable to store rdfs:comment if available
+
+            nodeData.forEach(item => {
+                predicates.add(item.property.value);
+                
+                // Capture rdfs:comment if it exists
+                if (item.property.value === "http://www.w3.org/2000/01/rdf-schema#comment") {
+                    comment = item.object.value; 
+                }
+            });
+
+            // Display predicates
+            predicates.forEach(predicate => {
+                const li = document.createElement('li');
+                li.textContent = predicate;
+                nodeConnectionsList.appendChild(li);
+            });
+
+            // Show rdfs:comment if available
+            if (comment) {
+                const commentElement = document.createElement('p');
+                commentElement.textContent = `"${comment}"`;
+                commentElement.classList.add('node-comment');  // Separate styling via CSS
+                nodeDetailsList.appendChild(commentElement);
+            }
+
+            // Get the node element
+            const svgNode = d3.selectAll('.node').filter(n => n.id === d.id).node();
+            if (!svgNode) return;
+
+            // Get the node's position in the SVG coordinate system
+            const nodeRect = svgNode.getBoundingClientRect();
+
+            // Position the details panel near the clicked node
+            nodeDetailsDiv.style.left = `${nodeRect.left + window.scrollX + 15}px`; // Offset to the right
+            nodeDetailsDiv.style.top = `${nodeRect.top + window.scrollY + 15}px`;  // Offset below
+            nodeDetailsDiv.style.display = 'block';
+        }
+
+
+        // Hide nodeDetails when clicking outside the panel
+        document.addEventListener('click', (event) => {
+            const isClickInsidePanel = nodeDetailsDiv.contains(event.target);
+            const isClickOnNode = event.target.classList.contains('node'); // Check if the click is on a node
+
+            if (!isClickInsidePanel && !isClickOnNode) {
+                nodeDetailsDiv.style.display = 'none';
+            }
+        });
+
+        function dragstarted(event, d) {
+            if (!event.active) simulation.alphaTarget(0.3).restart();
+            d.fx = d.x;
+            d.fy = d.y;
+        }
+
+        function dragged(event, d) {
+            d.fx = event.x;
+            d.fy = event.y;
+        }
+
+        function dragended(event, d) {
+            if (!event.active) simulation.alphaTarget(0);
+            d.fx = null;
+            d.fy = null;
+        }
+
+        function zoomIn() {
+            svg.transition().call(zoom.scaleBy, 1.2);
+        }
+
+        function zoomOut() {
+            svg.transition().call(zoom.scaleBy, 0.8);
+        }
+
+        function resetZoom() {
+            //svg.transition().call(zoom.scaleTo, 1);
+            const svgElement = d3.select("#graph");
+            const container = document.getElementById("graph-container");
+
+            // Reset zoom and pan
+            svgElement.transition()
+                .duration(500) // Smooth transition
+                .call(zoom.transform, d3.zoomIdentity);
+
+            // Re-center the graph
+            simulation.alpha(1).restart(); // Ensure the force layout stabilizes
+            simulation.force("center", d3.forceCenter(container.clientWidth / 2, container.clientHeight / 2));
+        }
+
+        function switchView(view) {
+            if (view === 'table') {
+                document.getElementById('tableResults').style.display = 'block';
+                document.getElementById('graphResults').style.display = 'none';
+            } else if (view === 'graph') {
+                document.getElementById('tableResults').style.display = 'none';
+                document.getElementById('graphResults').style.display = 'block';
+            }
+        }
+
+        function filterResults() {
+            const filter = document.getElementById('filterField').value.toLowerCase();
+            const filteredData = currentData.filter(d => 
+                Object.values(d).some(v => v.value.toLowerCase().includes(filter))
+            );
+            displayTable(filteredData);
+        }
+
+        window.addEventListener('resize', () => {
+            displayGraph(currentData);
+        });
+    </script>
+</body>
+</html>
