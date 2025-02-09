@@ -12,12 +12,12 @@ from datetime import date, datetime
 from rdflib import Graph, URIRef, Literal, XSD, OWL
 from rdflib.namespace import RDF, RDFS
 from rdflib import Namespace
-
+from rdflib.plugins.stores.sparqlstore import SPARQLStore
 from . import wearable, get_fitbit_data, store_tokens_in_db, load_tokens_from_db
 from . import refresh_and_store_tokens, generate_fitbit_auth_url
 from ..utils import unique_id, get_entity_name, is_timestamp, get_main_class, REDIRECT_URI, add_metadata_to_graph
 from ..utils import CLIENT_ID, CLIENT_SECRET, transform_data, send_authorisation_email, get_or_create_instances
-from ..utils import verify_resources, build_fhir_resources
+from ..utils import verify_resources, build_fhir_resources, store, insert_data_to_triplestore
 
 @wearable.route('/cancel_fitbit_auth', methods=['GET'])
 def cancel_authorization():
@@ -344,15 +344,10 @@ def fetch_fitbit_data():
             """
         #str_time = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
         #file_loc = "static/rdf_files/wearpghdprovo_" + str_time + ".ttl"
-        tripple_store = Graph()
-        tripple_store_loc = "static/rdf_files/wearpghdprovo-onto-store.ttl"
-        tripple_store.parse(tripple_store_loc, format="turtle")
-        
-        for s, p, o in new_g:
-            tripple_store.add((s, p, o))
-        tripple_store.serialize(tripple_store_loc, format="turtle")
-        #request_data.rdf_file = file_loc
-        db.session.commit()
+        triple_store = Graph(store=store)
+
+        # store data to remote store
+        insert_data_to_triplestore(new_g, store.update_endpoint)
         
         start_date = r_data["start_date"]
         end_date = r_data["end_date"]
@@ -371,7 +366,7 @@ def fetch_fitbit_data():
             end_date = end_date + "T23:59:59"
         r_data["end_date"] = end_date
         if found:
-            build_fhir_resources(tripple_store, r_data)
+            build_fhir_resources(triple_store, r_data)
         
         if destination_url:
             headers = {

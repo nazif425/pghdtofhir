@@ -13,6 +13,8 @@ from datetime import date, datetime, timedelta
 from rdflib import Graph, URIRef, Literal, XSD, OWL
 from rdflib.namespace import RDF, RDFS
 from rdflib import Namespace
+from SPARQLWrapper import SPARQLWrapper
+from rdflib.plugins.stores.sparqlstore import SPARQLUpdateStore
 from fhir.resources.patient import Patient as FhirPatient
 from fhir.resources.organization import Organization as FhirOrganization
 from fhir.resources.practitioner import Practitioner as FhirPractitioner
@@ -33,7 +35,17 @@ CLIENT_ID = os.getenv('CLIENT_ID')
 CLIENT_SECRET = os.getenv('CLIENT_SECRET')
 REDIRECT_URI = os.getenv('REDIRECT_URI')
 FHIR_SERVER_URL = os.getenv('FHIR_SERVER_URL')
+TRIPLESTORE_URL = os.getenv('TRIPLESTORE_URL')
 
+# Create triplestore instance
+query_endpoint = TRIPLESTORE_URL + "/sparql"
+update_endpoint = TRIPLESTORE_URL + "/update"
+store = SPARQLUpdateStore(
+    query_endpoint=query_endpoint,
+    update_endpoint=update_endpoint
+)
+
+# RDF Namespaces
 pghdprovo = Namespace("https://w3id.org/pghdprovo/")
 wearpghdprovo = Namespace("https://w3id.org/wearpghdprovo/")
 prov = Namespace("http://www.w3.org/ns/prov#")
@@ -51,6 +63,7 @@ query_header = """
     PREFIX : <https://w3id.org/wearpghdprovo/>
     PREFIX wearpghdprovo: <https://w3id.org/wearpghdprovo/>
 """
+
 def unique_id(uri_class):
     return URIRef(str(uri_class) + "." + uuid.uuid4().hex[:8])
 
@@ -530,9 +543,9 @@ def build_fhir_resources(g, request_data):
         "activity": ["steps", "sleepDuration", "calories"]
     }
     
-    tripple_store = Graph()
-    tripple_store_loc = "static/rdf_files/wearpghdprovo-onto-store.ttl"
-    tripple_store.parse(tripple_store_loc, format="turtle")
+    triple_store = Graph(store=store)
+    # triple_store_loc = "static/rdf_files/wearpghdprovo-onto-store.ttl"
+    # triple_store.parse(triple_store_loc, format="turtle")
 
     query = f"""
     SELECT ?subject ?property ?object ?name ?value ?source ?timestamp ?description ?label
@@ -552,7 +565,7 @@ def build_fhir_resources(g, request_data):
         }}
     }}
     """
-    result = tripple_store.query(query_header + query)
+    result = triple_store.query(query_header + query)
     
     counter = 0
     observations = []
@@ -683,3 +696,47 @@ def build_fhir_resources(g, request_data):
     # Print response
     print(f"Status Code: {response.status_code}")
     print(f"Response: {response.json()}")
+
+def insert_data_to_triplestore(graph, update_endpoint=update_endpoint):
+    """
+    Insert RDF triples from a graph into a SPARQL endpoint.
+
+    Parameters:
+    - new_g (rdflib.Graph): The RDF graph containing the data to be inserted.
+    - update_endpoint (str): URL of the SPARQL update endpoint.
+
+    Returns:
+    - str: The response from the SPARQL endpoint.
+
+    Raises:
+    - Exception: If the SPARQL query fails or the response indicates an error.
+    """
+    # Create a SPARQLWrapper object
+    sparql = SPARQLWrapper(update_endpoint)
+
+    # Serialize the graph to N-Triples
+    ntriples_data = graph.serialize(format='nt')
+
+    # Define the SPARQL INSERT query
+    insert_query = f"""
+        INSERT DATA {{
+            {ntriples_data}
+        }}
+    """
+
+    # Set the query and execute it
+    sparql.setQuery(insert_query)
+    sparql.setMethod('POST')  # Use POST for updates
+    try:
+        response = sparql.query()
+        
+        # Check if the operation was successful
+        if response.response.status == 200:
+            print("Triples inserted successfully!")
+            return response.response.read().decode('utf-8')
+        else:
+            print(f"Failed to insert triples. Status code: {response.response.status}")
+            return f"Error: {response.response.read().decode('utf-8')}"
+    except Exception as e:
+        print(f"An error occurred during the SPARQL update: {str(e)}")
+        raise

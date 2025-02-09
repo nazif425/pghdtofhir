@@ -6,13 +6,34 @@ from sqlalchemy.sql import func
 from ..models import db, CallSession, ApplicationData, EHRSystem, Identity, Organization
 from ..models import Patient, Practitioner, Fitbit, Request, AuthSession
 from datetime import date, datetime
-from rdflib import Graph, URIRef, Literal, XSD, OWL
+from rdflib import Graph, URIRef, Literal, XSD, OWL, BNode
 from rdflib.namespace import RDF, RDFS
 from rdflib import Namespace
+from rdflib.plugins.stores.sparqlstore import SPARQLStore
 from datetime import datetime, date
 
 from ..utils import unique_id, get_entity_name, is_timestamp, get_main_class, get_or_create_instances, build_fhir_resources
 from ..utils import copy_instance, transform_data, send_authorisation_email, add_metadata_to_graph, verify_resources
+from ..utils import store, insert_data_to_triplestore
+
+# RDF namespace
+pghdprovo = Namespace("https://w3id.org/pghdprovo/")
+prov = Namespace("http://www.w3.org/ns/prov#")
+foaf = Namespace("http://xmlns.com/foaf/0.1/gender")
+
+
+query_header = """
+    PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+    PREFIX owl: <http://www.w3.org/2002/07/owl#>
+    PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+    PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+    PREFIX foaf: <http://xmlns.com/foaf/0.1/>
+    PREFIX prov: <http://www.w3.org/ns/prov#>
+    PREFIX s4wear: <https://saref.etsi.org/saref4wear/>
+    PREFIX pghdprovo: <https://w3id.org/pghdprovo/>
+    PREFIX : <https://w3id.org/wearpghdprovo/>
+    PREFIX wearpghdprovo: <https://w3id.org/wearpghdprovo/>
+"""
 
 @ivr.before_request
 def before_request_func():
@@ -222,10 +243,6 @@ def submit():
             }
         ]
         
-        # define namespace
-        pghdprovo = Namespace("https://w3id.org/pghdprovo/")
-        prov = Namespace("http://www.w3.org/ns/prov#")
-        foaf = Namespace("http://xmlns.com/foaf/0.1/gender")
 
         phone_number = request.values.get('callerNumber', None)
         default_rdf = "static/rdf_files/wearpghdprovo-onto-template.ttl"
@@ -243,22 +260,9 @@ def submit():
         #else:
         #G.parse(default_rdf, format="turtle")
         new_g = Graph()
-        tripple_store = Graph()
-        tripple_store_loc = "static/rdf_files/wearpghdprovo-onto-store.ttl"
-        tripple_store.parse(tripple_store_loc, format="turtle")
-
-        query_header = """
-            PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
-            PREFIX owl: <http://www.w3.org/2002/07/owl#>
-            PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-            PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
-            PREFIX foaf: <http://xmlns.com/foaf/0.1/>
-            PREFIX prov: <http://www.w3.org/ns/prov#>
-            PREFIX s4wear: <https://saref.etsi.org/saref4wear/>
-            PREFIX pghdprovo: <https://w3id.org/pghdprovo/>
-            PREFIX : <https://w3id.org/wearpghdprovo/>
-            PREFIX wearpghdprovo: <https://w3id.org/wearpghdprovo/>
-        """
+        triple_store = Graph(store=store)
+        # triple_store_loc = "static/rdf_files/wearpghdprovo-onto-store.ttl"
+        # triple_store.parse(triple_store_loc, format="turtle")
 
         # Find patient instance
         number_end = phone_number[-10:]
@@ -277,7 +281,7 @@ def submit():
         patient_instance = None
         patient_relative = None
 
-        result = tripple_store.query(query_header + find_patient)
+        result = triple_store.query(query_header + find_patient)
         
         for row in result:
             if row.patient:
@@ -343,10 +347,8 @@ def submit():
             else:
                 new_g.add((instance, pghdprovo.wasCollectedBy, patient_instance))
         
-        # Save to local tripple store
-        for s, p, o in new_g:
-            tripple_store.add((s, p, o))
-        tripple_store.serialize(tripple_store_loc, format="turtle")
+        # Save to remote tripple store
+        insert_data_to_triplestore(new_g, store.update_endpoint)
         return '<Response><Say>Your data has been saved, thank you for your time</Say><Reject/></Response>'
     else:
         clear_session_data()
@@ -381,11 +383,6 @@ def data_request():
 
     if not data["meta-data"]["patient"].get("phone_number", None):
         abort(400, "Error, phone_number not provided.")
-    
-    # Define namespace
-    pghdprovo = Namespace("https://w3id.org/pghdprovo/")
-    prov = Namespace("http://www.w3.org/ns/prov#")
-    foaf = Namespace("http://xmlns.com/foaf/0.1/gender")
 
     destination_url = data.get("destination_url", None)
     phone_number = data["meta-data"]["patient"].get("phone_number", None)
@@ -419,9 +416,9 @@ def data_request():
     # Update data in graph with request meta-data
     
     new_g = Graph()
-    tripple_store = Graph()
-    tripple_store_loc = "static/rdf_files/wearpghdprovo-onto-store.ttl"
-    tripple_store.parse(tripple_store_loc, format="turtle")
+    triple_store = Graph(store=store)
+    # triple_store_loc = "static/rdf_files/wearpghdprovo-onto-store.ttl"
+    # triple_store.parse(triple_store_loc, format="turtle")
     
     request_data = Request(
             identity_id=identity.identity_id,
@@ -434,19 +431,7 @@ def data_request():
     result_prototype = {}
     found = False
     if new_instances.get("PGHDRequest", None):
-        query_header = """
-            PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
-            PREFIX owl: <http://www.w3.org/2002/07/owl#>
-            PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-            PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
-            PREFIX foaf: <http://xmlns.com/foaf/0.1/>
-            PREFIX prov: <http://www.w3.org/ns/prov#>
-            PREFIX s4wear: <https://saref.etsi.org/saref4wear/>
-            PREFIX pghdprovo: <https://w3id.org/pghdprovo/>
-            PREFIX : <https://w3id.org/wearpghdprovo/>
-            PREFIX wearpghdprovo: <https://w3id.org/wearpghdprovo/>
-        """
-
+        
         # Find patient instance
         number_end = phone_number[-10:]
         find_patient = f"""
@@ -460,21 +445,18 @@ def data_request():
             FILTER (?timestamp >= "{start_date}"^^xsd:dateTime && ?timestamp <= "{end_date}"^^xsd:dateTime)
         }}
         """
-        result = tripple_store.query(query_header + find_patient)
+        result = triple_store.query(query_header + find_patient)
         for row in result:
             found = True
             new_g.add((row.instance, prov.wasGeneratedBy, new_instances["PGHDRequest"]))
         
-        # save data in store
-        for s, p, o in new_g:
-            tripple_store.add((s, p, o))
-        tripple_store.serialize(tripple_store_loc, format="turtle")
-        #g.serialize(former_session.rdf_file, format="turtle")
+        # save data in remote store
+        insert_data_to_triplestore(new_g, store.update_endpoint)
         
-        result_prototype = {"IVR_link": '/' + tripple_store_loc}
+        result_prototype = {"IVR_link": '/' + triple_store_loc}
     
     if found:
-        build_fhir_resources(tripple_store, data)
+        build_fhir_resources(triple_store, data)
     else:
         result_prototype = {"message": 'No result found for the given date.'}
 
