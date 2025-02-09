@@ -3,10 +3,29 @@ from flask import g, Flask, request, jsonify, abort, render_template, Response, 
 from sqlalchemy.sql import func
 from ..models import db, CallSession, ApplicationData, EHRSystem, Identity, Organization
 from ..models import Patient, Practitioner, Fitbit, Request, AuthSession
+from dotenv import load_dotenv
+
+load_dotenv()
+TRIPLESTORE_URL = os.getenv('TRIPLESTORE_URL')
 
 @portal.route('/query', methods=['GET', 'POST'])
 def data_query():
-    return render_template('query.html')
+    if request.method == 'GET':
+        return render_template('query.html')
+
+    elif request.method == 'POST':
+        query = request.data.decode('utf-8')  # Get SPARQL query from frontend
+
+        # Send query to Fuseki
+        headers = {
+            'Accept': 'application/sparql-results+json',
+            'Content-Type': 'application/sparql-query'
+        }
+        try:
+            response = requests.post(TRIPLESTORE_URL + "/query", data=query, headers=headers)
+            return jsonify(response.json()), response.status_code
+        except requests.exceptions.RequestException as e:
+            return jsonify({"error": str(e)}), 500
 
 @portal.route('/ehr', methods=['POST', 'GET'])
 def add_ehr_system():
