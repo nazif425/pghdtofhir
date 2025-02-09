@@ -4,7 +4,7 @@ from sqlalchemy.sql import func
 from ..models import db, CallSession, ApplicationData, EHRSystem, Identity, Organization
 from ..models import Patient, Practitioner, Fitbit, Request, AuthSession
 from dotenv import load_dotenv
-
+import os
 load_dotenv()
 TRIPLESTORE_URL = os.getenv('TRIPLESTORE_URL')
 
