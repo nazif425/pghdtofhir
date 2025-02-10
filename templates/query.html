@@ -259,7 +259,7 @@
                 const tr = document.createElement('tr');
                 headers.forEach(header => {
                     const td = document.createElement('td');
-                    td.textContent = row[header].value;
+                    td.textContent = row[header].value ?? "N/A";
                     tr.appendChild(td);
                 });
                 table.appendChild(tr);
@@ -301,9 +301,9 @@
                 .attr("fill", "#999");
 
             const links = data.map(d => ({
-                source: d.subject.value,
-                target: d.object.value,
-                property: d.property.value
+                source: d.subject.value ?? "Unknown",
+                target: d.object.value ?? "Unknown",
+                property: d.property.value ?? "Unknown"
             }));
 
             const nodes = Array.from(new Set(links.flatMap(l => [l.source, l.target]))).map(d => ({ id: d }));
@@ -459,8 +459,10 @@
                 .call(zoom.transform, d3.zoomIdentity);
 
             // Re-center the graph
-            simulation.alpha(1).restart(); // Ensure the force layout stabilizes
-            simulation.force("center", d3.forceCenter(container.clientWidth / 2, container.clientHeight / 2));
+            if(simulation) {
+                simulation.alpha(1).restart(); // Ensure the force layout stabilizes
+                simulation.force("center", d3.forceCenter(container.clientWidth / 2, container.clientHeight / 2));
+            }
         }
 
         function switchView(view) {
