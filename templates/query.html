@@ -323,7 +323,7 @@
             table.innerHTML = '';
             if (data.length === 0) return;
 
-            const headers = Object.keys(data[0]).slice(-1);
+            const headers = Object.keys(data[0]).reverse();
             const headerRow = document.createElement('tr');
             headers.forEach(header => {
                 const th = document.createElement('th');
