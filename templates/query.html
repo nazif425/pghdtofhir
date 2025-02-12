@@ -211,6 +211,7 @@
 
     <script>
         let currentData = [];
+        let predicateList = [];
         let zoom = d3.zoom();
         let svg, simulation;
         let nodeDetailsDiv = document.getElementById('nodeDetails');
@@ -218,9 +219,65 @@
         let nodeDetailsList = document.getElementById('nodeDetailsList');
         let nodeConnectionsList = document.getElementById('nodeConnectionsList');
 
-        function executeQuery() {
+        // 1️⃣ Fetch all predicates before running the query
+        async function fetchAllPredicates(endpointUrl) {
+            const query = `SELECT DISTINCT ?p WHERE { ?s ?p ?o }`;
+            const url = `${endpointUrl}?query=${encodeURIComponent(query)}&format=json`;
+        
+            try {
+                const response = await fetch(url);
+                const data = await response.json();
+                return data.results.bindings.map(row => row.p.value);
+            } catch (error) {
+                console.error("Error fetching predicates:", error);
+                return [];
+            }
+        }
+        
+        // 2️⃣ Identify subject, predicate, and object dynamically
+        function identifyTripleStructure(bindings, variableNames, predicateList) {
+            let predicateVar = null;
+            let subjectVar = null;
+            let objectVar = null;
+            let extraVars = [];
+        
+            // Identify predicate
+            for (let varName of variableNames) {
+                let isPredicate = bindings.every(row => 
+                    row[varName]?.type === "uri" && predicateList.includes(row[varName].value)
+                );
+                if (isPredicate) {
+                    predicateVar = varName;
+                    break;
+                }
+            }
+        
+            // Identify subject & object
+            let remainingVars = variableNames.filter(v => v !== predicateVar);
+            if (remainingVars.length >= 2) {
+                let uriCounts = {};
+                remainingVars.forEach(varName => {
+                    uriCounts[varName] = bindings.filter(row => row[varName]?.type === "uri").length;
+                });
+        
+                remainingVars.sort((a, b) => uriCounts[b] - uriCounts[a]);
+                subjectVar = remainingVars[0];
+                objectVar = remainingVars[1];
+                extraVars = remainingVars.slice(2);
+            }
+        
+            return { subjectVar, predicateVar, objectVar, extraVars };
+        }
+        
+        // 3️⃣ Fetch predicates and execute the query
+        async function executeQuery() {
+            const endpointUrl = 'https://pghdonfhir.abdullahikawu.org/portal/query';
             const query = document.getElementById('queryField').value;
-            fetch('https://pghdonfhir.abdullahikawu.org/portal/query', {
+        
+            // Fetch predicates first
+            predicateList = await fetchAllPredicates(endpointUrl);
+        
+            fetch(endpointUrl, {
                 method: 'POST',
                 headers: {
                     'Accept': 'application/sparql-results+json',
@@ -234,9 +291,22 @@
                     console.error('Invalid data format:', data);
                     return;
                 }
+                
                 currentData = data.results.bindings;
+                
+                // Identify the structure
+                const variableNames = Object.keys(currentData[0]);
+                const { subjectVar, predicateVar, objectVar } = identifyTripleStructure(currentData, variableNames, predicateList);
+        
+                // Convert data into graph format
+                const graphData = currentData.map(d => ({
+                    subject: d[subjectVar]?.value ?? "Unknown",
+                    predicate: d[predicateVar]?.value ?? "Unknown",
+                    object: d[objectVar]?.value ?? "Unknown"
+                }));
+        
                 displayTable(currentData);
-                displayGraph(currentData);
+                displayGraph(graphData);
             })
             .catch(error => console.error('Error:', error));
         }
@@ -300,10 +370,10 @@
                 .attr("d", "M0,-5L10,0L0,5") // Triangle shape
                 .attr("fill", "#999");
 
-            const links = data.map(d => ({
-                source: d.subject.value ?? "Unknown",
-                target: d.object.value ?? "Unknown",
-                property: d.property.value ?? "Unknown"
+            const links = graphData.map(d => ({
+                source: d.subject,
+                target: d.object,
+                property: d.predicate
             }));
 
             const nodes = Array.from(new Set(links.flatMap(l => [l.source, l.target]))).map(d => ({ id: d }));
