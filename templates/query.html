@@ -225,7 +225,14 @@
             const url = `${endpointUrl}?query=${encodeURIComponent(query)}&format=json`;
         
             try {
-                const response = await fetch(url);
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Accept': 'application/sparql-results+json',
+                        'Content-Type': 'application/sparql-query'
+                    },
+                    body: query
+                });
                 const data = await response.json();
                 return data.results.bindings.map(row => row.p.value);
             } catch (error) {
