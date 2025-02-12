@@ -222,8 +222,8 @@
         // 1️⃣ Fetch all predicates before running the query
         async function fetchAllPredicates(endpointUrl) {
             const query = `SELECT DISTINCT ?p WHERE { ?s ?p ?o }`;
-            const url = `${endpointUrl}?query=${encodeURIComponent(query)}&format=json`;
-        
+            const url = `${endpointUrl}`;
+            
             try {
                 const response = await fetch(url, {
                     method: 'POST',
@@ -323,7 +323,7 @@
             table.innerHTML = '';
             if (data.length === 0) return;
 
-            const headers = Object.keys(data[0]);
+            const headers = Object.keys(data[0])[-1:];
             const headerRow = document.createElement('tr');
             headers.forEach(header => {
                 const th = document.createElement('th');
