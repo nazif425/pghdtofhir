@@ -274,6 +274,7 @@
         let zoom = d3.zoom();
         let svg, simulation;
         let resizeTimeout;
+        let graphData;
         let nodeDetailsDiv = document.getElementById('nodeDetails');
         let nodeDetailsTitle = document.getElementById('nodeDetailsTitle');
         let nodeDetailsList = document.getElementById('nodeDetailsList');
@@ -283,9 +284,11 @@
         function getEntityName(uri) {
             // Split on '#' and take the last part
             let entity = uri.split('#').pop();
-            // Split on '/' and take the last part
+            // Split on '/'
             entity = entity.split('/');
+            // Split on '/'
             const label = entity.pop();
+            // if last part is empty take the part before
             return label || entity.pop();
         }
         
@@ -380,7 +383,7 @@
                 const { subjectVar, predicateVar, objectVar } = identifyTripleStructure(currentData, variableNames, predicateList);
         
                 // Convert data into graph format
-                const graphData = currentData.map(d => ({
+                graphData = currentData.map(d => ({
                     subject: d[subjectVar]?.value ?? "Unknown",
                     predicate: d[predicateVar]?.value ?? "Unknown",
                     object: d[objectVar]?.value ?? "Unknown"
@@ -556,30 +559,29 @@
 
         function showNodeDetails(d) {
             const nodeId = d.id;
-            const nodeData = currentData.filter(item => item.subject.value === nodeId || item.object.value === nodeId);
+            const nodeData = graphData.filter(item => item.subject === nodeId);
             nodeDetailsTitle.textContent = nodeId;
             nodeDetailsList.innerHTML = '';
             nodeConnectionsList.innerHTML = '';
 
             const predicates = new Set();
             let comment = null; // Variable to store rdfs:comment if available
-
+            
             nodeData.forEach(item => {
-                predicates.add(item.property.value);
-                
+                //predicates.add(item.predicate);
                 // Capture rdfs:comment if it exists
-                if (item.property.value === "http://www.w3.org/2000/01/rdf-schema#comment") {
-                    comment = item.object.value; 
+                if (item.predicate === "http://www.w3.org/2000/01/rdf-schema#comment") {
+                    comment = item.object; 
                 }
             });
-
+            /*
             // Display predicates
             predicates.forEach(predicate => {
                 const li = document.createElement('li');
                 li.textContent = predicate;
                 nodeConnectionsList.appendChild(li);
             });
-
+            */
             // Show rdfs:comment if available
             if (comment) {
                 const commentElement = document.createElement('p');
@@ -657,19 +659,24 @@
         }
 
         function resetZoom() {
-            //svg.transition().call(zoom.scaleTo, 1);
             const svgElement = d3.select("#graph");
             const container = document.getElementById("graph-container");
 
-            // Reset zoom and pan
+            // Reset zoom and pan to the identity transform
             svgElement.transition()
-                .duration(500) // Smooth transition
-                .call(zoom.transform, d3.zoomIdentity);
+                .duration(500) // Smooth transition over 500ms
+                .call(zoom.transform, d3.zoomIdentity); // Reset to no zoom/pan
 
             // Re-center the graph
-            if(simulation) {
-                simulation.alpha(1).restart(); // Ensure the force layout stabilizes
-                simulation.force("center", d3.forceCenter(container.clientWidth / 2, container.clientHeight / 2));
+            if (simulation) {
+                const width = container.clientWidth;
+                const height = container.clientHeight;
+
+                // Update the center force to the new dimensions
+                simulation.force("center", d3.forceCenter(width / 2, height / 2));
+
+                // Restart the simulation to apply changes
+                simulation.alpha(1).restart();
             }
         }
 
@@ -707,10 +714,30 @@
 				.call(zoom.transform, d3.zoomIdentity.translate(translate[0], translate[1]).scale(scale));
 		}
 
+        function updateGraphDimensions() {
+            const container = document.getElementById('graph-container');
+            const width = container.clientWidth;
+            const height = container.clientHeight;
+
+            // Update SVG dimensions
+            svg.attr('width', width)
+            .attr('height', height);
+
+            // Re-center the simulation
+            simulation.force('center', d3.forceCenter(width / 2, height / 2));
+            simulation.alpha(1).restart(); // Restart the simulation to apply changes
+
+            // Re-apply the current zoom transform
+            const currentTransform = d3.zoomTransform(svg.node());
+            svg.call(zoom.transform, currentTransform);
+        }
+
         window.addEventListener('resize', () => {
             clearTimeout(resizeTimeout);
 			resizeTimeout = setTimeout(() => {
-				displayGraph(currentData);
+                if (graphData) {
+                    updateGraphDimensions();
+                }
 			}, 200); // Adjust debounce time as needed
         });
     </script>
