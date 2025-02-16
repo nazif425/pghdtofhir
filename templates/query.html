@@ -174,6 +174,43 @@
             font-style: italic;
             color: #555;
         }
+		
+		/* Loading Indicator Styles */
+		.loading-indicator {
+			display: none; /* Hidden by default */
+			position: fixed;
+			top: 50%;
+			left: 50%;
+			transform: translate(-50%, -50%);
+			background-color: rgba(255, 255, 255, 0.9);
+			padding: 20px;
+			border-radius: 10px;
+			box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+			text-align: center;
+			z-index: 1000;
+		}
+
+		.loading-indicator p {
+			margin: 10px 0 0;
+			font-size: 16px;
+			color: #333;
+		}
+
+		/* Spinner Animation */
+		.spinner {
+			border: 4px solid rgba(0, 0, 0, 0.1);
+			border-top: 4px solid #007bff;
+			border-radius: 50%;
+			width: 40px;
+			height: 40px;
+			animation: spin 1s linear infinite;
+			margin: 0 auto;
+		}
+
+		@keyframes spin {
+			0% { transform: rotate(0deg); }
+			100% { transform: rotate(360deg); }
+		}
     </style>
 </head>
 <body>
@@ -193,6 +230,10 @@
         </div>
         <div id="graphResults">
             <div id="graph-container">
+				<div id="loadingIndicator" class="loading-indicator">
+					<div class="spinner"></div>
+					<p>Loading...</p>
+				</div>
                 <div id="zoom-panel">
                     <button onclick="zoomIn()" style="width: 50px">+</button>
                     <button onclick="zoomOut()" style="width: 50px">-</button>
@@ -278,6 +319,8 @@
         
         // 3️⃣ Fetch predicates and execute the query
         async function executeQuery() {
+			// Show the loading indicator
+			document.getElementById('loadingIndicator').style.display = 'block';
             const endpointUrl = 'https://pghdonfhir.abdullahikawu.org/portal/query';
             const query = document.getElementById('queryField').value;
         
@@ -294,6 +337,8 @@
             })
             .then(response => response.json())
             .then(data => {
+				// Hide the loading indicator when data is ready
+				document.getElementById('loadingIndicator').style.display = 'none';
                 if (!data.results || !data.results.bindings) {
                     console.error('Invalid data format:', data);
                     return;
@@ -315,7 +360,11 @@
                 displayTable(currentData);
                 displayGraph(graphData);
             })
-            .catch(error => console.error('Error:', error));
+            .catch(error => {
+				console.error('Error:', error);
+				// Hide the loading indicator in case of an error
+				document.getElementById('loadingIndicator').style.display = 'none';
+			});
         }
 
         function displayTable(data) {
@@ -386,9 +435,12 @@
             const nodes = Array.from(new Set(links.flatMap(l => [l.source, l.target]))).map(d => ({ id: d }));
 
             simulation = d3.forceSimulation(nodes)
-                .force('link', d3.forceLink(links).id(d => d.id).distance(100))
-                .force('charge', d3.forceManyBody().strength(-400))
-                .force('center', d3.forceCenter(width / 2, height / 2));
+                .force('link', d3.forceLink(links).id(d => d.id).distance(150))
+                .force('charge', d3.forceManyBody().strength(-500))
+                .force('center', d3.forceCenter(width / 2, height / 2))
+				.force('collide', d3.forceCollide().radius(20).strength(1)) // Prevent overlap;
+				.force('x', d3.forceX(width / 2).strength(0.05)) // Gently pull nodes to the center horizontally
+				.force('y', d3.forceY(height / 2).strength(0.05)); // Gently pull nodes to the center vertically
 
             // Add links (edges) with arrows
             const link = svg.append('g')
@@ -433,8 +485,11 @@
                     .attr('cx', d => d.x)
                     .attr('cy', d => d.y);
             });
-
-            zoom.on('zoom', (event) => {
+			
+			// Call autoZoom after the simulation stabilizes
+			simulation.on('end', autoZoom);
+            zoom.scaleExtent([0.1, 5]) // Set min and max zoom levels
+			.on('zoom', (event) => {
                 svg.attr('transform', event.transform);
             });
 
@@ -487,6 +542,25 @@
             nodeDetailsDiv.style.left = `${nodeRect.left + window.scrollX + 15}px`; // Offset to the right
             nodeDetailsDiv.style.top = `${nodeRect.top + window.scrollY + 15}px`;  // Offset below
             nodeDetailsDiv.style.display = 'block';
+			
+			// Ensure the panel stays within the viewport
+			const panelWidth = nodeDetailsDiv.clientWidth;
+			const panelHeight = nodeDetailsDiv.clientHeight;
+			const viewportWidth = window.innerWidth;
+			const viewportHeight = window.innerHeight;
+
+			let left = nodeRect.left + window.scrollX + 15;
+			let top = nodeRect.top + window.scrollY + 15;
+
+			if (left + panelWidth > viewportWidth) {
+				left = viewportWidth - panelWidth - 10; // Adjust to fit
+			}
+			if (top + panelHeight > viewportHeight) {
+				top = viewportHeight - panelHeight - 10; // Adjust to fit
+			}
+			nodeDetailsDiv.style.left = `${left}px`;
+			nodeDetailsDiv.style.top = `${top}px`;
+			nodeDetailsDiv.style.display = 'block';
         }
 
 
@@ -559,9 +633,28 @@
             );
             displayTable(filteredData);
         }
+		function autoZoom() {
+			const bounds = svg.node().getBBox();
+			const parentWidth = svg.node().parentElement.clientWidth;
+			const parentHeight = svg.node().parentElement.clientHeight;
+			const fullWidth = bounds.width + 100; // Add padding
+			const fullHeight = bounds.height + 100; // Add padding
+			const midX = bounds.x + bounds.width / 2;
+			const midY = bounds.y + bounds.height / 2;
+
+			const scale = Math.min(parentWidth / fullWidth, parentHeight / fullHeight);
+			const translate = [parentWidth / 2 - scale * midX, parentHeight / 2 - scale * midY];
+
+			svg.transition()
+				.duration(500)
+				.call(zoom.transform, d3.zoomIdentity.translate(translate[0], translate[1]).scale(scale));
+		}
 
         window.addEventListener('resize', () => {
-            displayGraph(currentData);
+            clearTimeout(resizeTimeout);
+			resizeTimeout = setTimeout(() => {
+				displayGraph(currentData);
+			}, 200); // Adjust debounce time as needed
         });
     </script>
 </body>
