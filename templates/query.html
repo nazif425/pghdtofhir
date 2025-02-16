@@ -211,6 +211,24 @@
 			0% { transform: rotate(0deg); }
 			100% { transform: rotate(360deg); }
 		}
+
+        /* Node Labels */
+        .node-labels text {
+            font-family: Arial, sans-serif;
+            font-size: 12px;
+            fill: #333;
+            font-weight: bold;
+        }
+
+        /* Link Labels */
+        .link-labels text {
+            font-family: Arial, sans-serif;
+            font-size: 10px;
+            fill: #555;
+            background-color: rgba(255, 255, 255, 0.8); /* Add a background for better visibility */
+            padding: 2px;
+            border-radius: 3px;
+        }
     </style>
 </head>
 <body>
@@ -255,11 +273,22 @@
         let predicateList = [];
         let zoom = d3.zoom();
         let svg, simulation;
+        let resizeTimeout;
         let nodeDetailsDiv = document.getElementById('nodeDetails');
         let nodeDetailsTitle = document.getElementById('nodeDetailsTitle');
         let nodeDetailsList = document.getElementById('nodeDetailsList');
         let nodeConnectionsList = document.getElementById('nodeConnectionsList');
 
+
+        function getEntityName(uri) {
+            // Split on '#' and take the last part
+            let entity = uri.split('#').pop();
+            // Split on '/' and take the last part
+            entity = entity.split('/');
+            const label = entity.pop();
+            return label || entity.pop();
+        }
+        
         // 1️⃣ Fetch all predicates before running the query
         async function fetchAllPredicates(endpointUrl) {
             const query = `SELECT DISTINCT ?p WHERE { ?s ?p ?o }`;
@@ -453,9 +482,17 @@
                 .attr('stroke-width', 2)
                 .attr('marker-end', 'url(#arrowhead)'); // Attach arrowhead
 
-            // Add hover tooltips to links
-            link.append('title')
-                .text(d => d.property); // Show predicate name on hover
+            // Add text labels to links
+            const linkLabels = svg.append('g')
+                .attr('class', 'link-labels')
+                .selectAll('text')
+                .data(links)
+                .enter().append('text')
+                .text(d => getEntityName(d.property)) // Use getEntityName to extract the property label
+                .attr('text-anchor', 'middle') // Center the text
+                .style('fill', '#555') // Text color
+                .style('font-size', '10px')
+                .style('pointer-events', 'none'); // Prevent text from blocking link clicks
 
             // Add nodes
             const node = svg.append('g')
@@ -471,8 +508,18 @@
                     .on('end', dragended))
                 .on('click', (event, d) => showNodeDetails(d));
 
-            node.append('title')
-                .text(d => d.id);
+            // Add text labels to nodes
+            const nodeLabels = svg.append('g')
+                .attr('class', 'node-labels')
+                .selectAll('text')
+                .data(nodes)
+                .enter().append('text')
+                .text(d => getEntityName(d.id)) // Use getEntityName to extract the label
+                .attr('text-anchor', 'middle') // Center the text
+                .attr('dy', -15) // Position the label above the node
+                .style('fill', '#333') // Text color
+                .style('font-size', '12px')
+                .style('pointer-events', 'none'); // Prevent text from blocking node clicks
 
             simulation.on('tick', () => {
                 link
@@ -484,6 +531,16 @@
                 node
                     .attr('cx', d => d.x)
                     .attr('cy', d => d.y);
+                
+                // Update node label positions
+                nodeLabels
+                    .attr('x', d => d.x)
+                    .attr('y', d => d.y);
+
+                // Update link label positions
+                linkLabels
+                    .attr('x', d => (d.source.x + d.target.x) / 2) // Position label in the middle of the link
+                    .attr('y', d => (d.source.y + d.target.y) / 2);
             });
 			
 			// Call autoZoom after the simulation stabilizes
