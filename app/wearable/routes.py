@@ -54,9 +54,9 @@ def data_request():
         "end_date": data.get("end_date", None)
     }
     
-    session["request_data"] = data
 
     if load_tokens_from_db(patient.patient_id):
+        session["request_data"] = data
         #if not session.get('patient_id', None):
         #    return redirect(url_for('portal.patient_login'))
         return redirect(url_for(
@@ -65,10 +65,14 @@ def data_request():
                 practitioner_id=practitioner.practitioner_id, 
                 **query_params))
     
+    store_data = {}
+    store_data['query_params'] = query_params
+    store_data['request_data'] = data
+    
     authsession_data = {
         "patient_id": patient.patient_id, 
         "identity_id": identity.identity_id,
-        "data": query_params
+        "data": store_data
     }
     auth_link = generate_fitbit_auth_url(**authsession_data)
     if send_authorisation_email(patient.email, auth_link, practitioner.name):
@@ -158,7 +162,8 @@ def get_access_token():
         print(token_response)
         abort(404)
     if not session.get('patient_id', None):
-        query_params = auth_session.data
+        query_params = auth_session.data.get('query_params', {})
+        session["request_data"] = auth_session.data.get('request_data', None)
         
         return redirect(url_for(
                 'wearable.fetch_fitbit_data', 
