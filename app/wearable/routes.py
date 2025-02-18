@@ -77,7 +77,7 @@ def data_request():
     auth_link = generate_fitbit_auth_url(**authsession_data)
     if send_authorisation_email(patient.email, auth_link, practitioner.name):
         return jsonify({
-            'message': "An email request was successfully sent to patient for access to their fitbit data." 
+            'message': f"A request for access to fitbit data was successfully sent to {patient.email}." 
         })
     else:
         return jsonify({
