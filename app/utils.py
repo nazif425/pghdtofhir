@@ -516,7 +516,7 @@ def build_fhir_resources(g, request_data):
         encounter_id = f"Encounter?identifier={encounter_id}"
     
     # create device resource
-    if request_type == "fitbit":
+    if request_type == "Wearable":
         try:
             device = Device(
                 id="device-1",
