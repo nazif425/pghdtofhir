@@ -548,10 +548,9 @@ def build_fhir_resources(g, request_data):
     # triple_store.parse(triple_store_loc, format="turtle")
 
     query = f"""
-    SELECT ?subject ?property ?object ?name ?value ?source ?timestamp ?description ?label
+    SELECT ?subject ?name ?value ?source ?timestamp ?description ?label
     WHERE {{
         ?subject a pghdprovo:PGHD .
-        ?subject ?property ?object .
         ?subject pghdprovo:name ?name .
         ?subject pghdprovo:value ?value .
         ?subject pghdprovo:dataSource ?source .
