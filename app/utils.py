@@ -37,6 +37,11 @@ REDIRECT_URI = os.getenv('REDIRECT_URI')
 FHIR_SERVER_URL = os.getenv('FHIR_SERVER_URL')
 TRIPLESTORE_URL = os.getenv('TRIPLESTORE_URL')
 
+SENDER_EMAIL = os.getenv('SENDER_EMAIL')
+SMTP_SERVER = os.getenv('SMTP_SERVER')
+SMTP_PASSWORD = os.getenv('SMTP_PASSWORD')
+SMTP_PORT = os.getenv('SMTP_PORT')
+
 # Create triplestore instance
 query_endpoint = TRIPLESTORE_URL + "/sparql"
 update_endpoint = TRIPLESTORE_URL + "/update"
@@ -152,15 +157,14 @@ def transform_data(data, output_data=None, last_path=None, ignore_list=False, se
         output_data.append(data_set)
 
 def send_authorisation_email(receiver_email, auth_link, name=""):
-    smtp_server = "emr.abdullahikawu.org"
-    smtp_port = 465  # SSL port
-    sender_email = "info@emr.abdullahikawu.org"
-    password = "[,p@cO$ai4B5"
-    #receiver_email = "receiver@example.com"  # Replace with the actual recipient's email
+    sender_email = SENDER_EMAIL
+    smtp_server = SMTP_SERVER
+    password = SMTP_PASSWORD
+    smtp_port = SMTP_PORT
 
     # Create the email
     message = MIMEMultipart()
-    message["From"] = "Healthcare Provider <info@emr.abdullahikawu.org>"
+    message["From"] = f"Healthcare Provider <{sender_email}>"
     message["To"] = receiver_email
     message["Subject"] = "Authorize Fitbit Data Access"
 
@@ -479,7 +483,13 @@ def build_fhir_resources(g, request_data):
         try:
             organization = FhirOrganization(
                 id="organization-1",
-                name=org_name
+                name=org_name,
+                identifier=[
+                    {
+                        "system": "urn:uuid",
+                        "value": str(uuid.uuid4())
+                    }
+                ],
             )
         except ValueError as e:
             print(e.errors())
@@ -500,6 +510,12 @@ def build_fhir_resources(g, request_data):
                         "system":"http://terminology.hl7.org/CodeSystem/v3-ActCode"
                     }]
                 }],
+                identifier=[
+                    {
+                        "system": "urn:uuid",
+                        "value": str(uuid.uuid4())
+                    }
+                ],
                 subject={"reference": f"Patient?identifier={patient_id}"},
                 participant=[{
                     "actor": {"reference": f"Practitioner?identifier={practitioner_id}"},
@@ -520,6 +536,12 @@ def build_fhir_resources(g, request_data):
         try:
             device = Device(
                 id="device-1",
+                identifier=[
+                    {
+                        "system": "urn:uuid",
+                        "value": str(uuid.uuid4())
+                    }
+                ],
                 type={"text": "Wearable device"},
                 manufacturer="Fitbit",
                 model="fitbit verse 4",
@@ -583,6 +605,12 @@ def build_fhir_resources(g, request_data):
             observations.append(Observation(
                 id=f"observation-{counter}",
                 status="final",
+                identifier=[
+                    {
+                        "system": "urn:uuid",
+                        "value": str(uuid.uuid4())
+                    }
+                ],
                 category=category,
                 code={
                     "coding": [
@@ -603,6 +631,12 @@ def build_fhir_resources(g, request_data):
     try:
         provenance = Provenance(
             id="prov1",
+            identifier=[
+                {
+                    "system": "urn:uuid",
+                    "value": str(uuid.uuid4())
+                }
+            ],
             target=[{"reference": f"urn:uuid:observation-{i+1}"} for i in range(counter)],
             recorded=now,  # Commented out as per your example
             agent=[{
