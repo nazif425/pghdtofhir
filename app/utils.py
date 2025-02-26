@@ -628,6 +628,7 @@ def build_fhir_resources(g, request_data):
     now = datetime.now().isoformat() + 'Z'
     
     # Create Provenance resource
+    provenance = None
     try:
         provenance = Provenance(
             id="prov1",
