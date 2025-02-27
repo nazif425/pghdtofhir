@@ -632,12 +632,6 @@ def build_fhir_resources(g, request_data):
     try:
         provenance = Provenance(
             id="prov1",
-            identifier=[
-                {
-                    "system": "urn:uuid",
-                    "value": str(uuid.uuid4())
-                }
-            ],
             target=[{"reference": f"urn:uuid:observation-{i+1}"} for i in range(counter)],
             recorded=now,  # Commented out as per your example
             agent=[{
