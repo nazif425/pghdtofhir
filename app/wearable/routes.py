@@ -211,8 +211,8 @@ def fetch_fitbit_data():
                                     refresh_token=token_dict['refresh_token'],
                                     refresh_cb=lambda t: refresh_and_store_tokens(t, patient_id))
         # fitbit data for a day
-        this_date = datetime.now()
-        fitbit_data = get_fitbit_data(fitbit_client, base_date=this_date)
+        # this_date = datetime.now()
+        # fitbit_data = get_fitbit_data(fitbit_client, base_date=this_date)
         
         # fitbit data for a given date range (time series)
         time_series_endpoints = [
@@ -250,7 +250,7 @@ def fetch_fitbit_data():
                     "date": fitbit_time_data["activities-heart"][i]["dateTime"],
                     "value": fitbit_time_data["activities-heart"][i]["value"].get("restingHeartRate", 0)
                 })
-        elif request_data_type == "sleep":
+        elif request_data_type == "sleepDuration":
             for i in range(len(fitbit_time_data["sleep"])):
                 prepared_data.append({
                     "name": "sleepDuration",
