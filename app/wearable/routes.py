@@ -391,7 +391,7 @@ def fetch_fitbit_data():
         
         # Save to remote fhir server
         if found:
-            result["fhir"] = build_fhir_resources(triple_store, data)
+            result["fhir"] = build_fhir_resources(triple_store, r_data)
         
             if destination_url:
                 headers = {
