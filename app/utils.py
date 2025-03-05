@@ -637,7 +637,13 @@ def build_fhir_resources(g, request_data):
                 },
                 "who": {"reference": f"Practitioner?identifier={practitioner_id}"},
                 "onBehalfOf": {"reference": organization_id}
-            }]
+            }],
+            entity=[{
+                "role": "source",
+                "what": {
+                    "reference": {"reference": "urn:uuid:device-1"} 
+                }
+            }] if device else None
         )
     except ValueError as e:
         print(e.errors())
