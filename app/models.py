@@ -50,6 +50,9 @@ class Patient(db.Model):
     name = db.Column(db.String(255), nullable=True)
     phone_number = db.Column(db.String(15), nullable=True)
     email = db.Column(db.String(255), nullable=True)
+    gender = db.Column(db.String(10), nullable=True)
+    birthday = db.Column(db.String(50), nullable=True)
+    address = db.Column(db.String(255), nullable=True)
     created_at = db.Column(db.DateTime(timezone=True), server_default=func.now())
 
     auth_session = db.relationship('AuthSession', back_populates='patient', uselist=False)
@@ -66,6 +69,10 @@ class Practitioner(db.Model):
     name = db.Column(db.String(255), nullable=True)
     phone_number = db.Column(db.String(15), nullable=True)
     email = db.Column(db.String(255), nullable=True)
+    gender = db.Column(db.String(10), nullable=True)
+    birthday = db.Column(db.String(50), nullable=True)
+    address = db.Column(db.String(255), nullable=True)
+    role = db.Column(db.String(50), nullable=True)
     created_at = db.Column(db.DateTime(timezone=True), server_default=func.now())
 
     identity = db.relationship('Identity', back_populates='practitioner', uselist=False)
