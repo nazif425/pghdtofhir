@@ -54,7 +54,7 @@ def before_request_func():
     # Perform tasks before each request handling
     #remove data if the call is ended
     if request.values.get('isActive', None) == 0:
-        clear_session_data()
+        #clear_session_data()
         abort(200, "Session ended")
     sessionId = request.values.get('sessionId', None)
     if sessionId:
