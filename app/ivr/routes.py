@@ -59,12 +59,12 @@ def before_request_func():
     sessionId = request.values.get('sessionId', None)
     if sessionId:
         print("for with sess", request.values.get('sessionId', None))
-        session = CallSession.query.filter(CallSession.session_id==sessionId).first()
-        if session:
-            g.ses_data["data"] = session.data
-            g.ses_data["validated"] = session.validated
-            g.ses_data["practitioner_id"] = session.practitioner_id
-            g.ses_data["patient_id"] = session.patient_id
+        call_session = CallSession.query.filter(CallSession.session_id==sessionId).first()
+        if call_session:
+            g.ses_data["data"] = call_session.data
+            g.ses_data["validated"] = call_session.validated
+            g.ses_data["practitioner_id"] = call_session.practitioner_id
+            g.ses_data["patient_id"] = call_session.patient_id
         else:
             print("for without sess", request.values.get('sessionId', None))
             data = {
@@ -83,12 +83,13 @@ def after_request_func(response):
         # Perform tasks after each request handling
     sessionId = request.values.get('sessionId', None)
     if sessionId:
-        session = CallSession.query.filter(CallSession.session_id==sessionId).first()
-        if session:
-            session.validated = g.ses_data["validated"]
-            session.data = g.ses_data["data"]
-            session.practitioner_id = g.ses_data["practitioner_id"]
-            session.patient_id = g.ses_data["patient_id"]
+        call_session = CallSession.query.filter(CallSession.session_id==sessionId).first()
+        if call_session:
+            call_session.validated = g.ses_data["validated"]
+            call_session.data = g.ses_data["data"]
+            call_session.practitioner_id = g.ses_data["practitioner_id"]
+            call_session.patient_id = g.ses_data["patient_id"]
+            call_session.completed_at = datetime.now()
             db.session.commit()
     return response
 
@@ -213,108 +214,159 @@ def submit():
     # send_data_to_cedar()
     # send_data_to_openmrs()
     if digits == '1':
-        heart_rate = g.ses_data["data"].get('heart_rate', None)
-        systolic_bp = g.ses_data["data"].get('systolic_blood_pressure', None)
-        diastolic_bp = g.ses_data["data"].get('diastolic_blood_pressure', None)
-        collection_position = g.ses_data["data"].get('collection_position', None)
-        collection_location = g.ses_data["data"].get('collection_location', None)
-        collection_person = g.ses_data["data"].get('collection_person', None)
-        collection_body_site = g.ses_data["data"].get('collection_body_site', None)
-        timestamp =  datetime.now()
+        return '<Response><Say>Your data has been saved, thank you for your time</Say><Reject/></Response>'
+    else:
+        clear_session_data()
+        return '<Response><Reject/></Response>'
 
-        new_records = [
-            {
-                'name': "Heart rate", 
-                'value': heart_rate, 
-                'code': "364075005", 
-                'system': " http://snomed.info/sct",
-            },
-            {
-                'name': "Systolic blood pressure", 
-                'value': systolic_bp, 
-                'code': "271649006", 
-                'system': " http://snomed.info/sct",
-            },
-            {
-                'name': "Diastolic blood pressure", 
-                'value': diastolic_bp, 
-                'code': "271650006", 
-                'system': " http://snomed.info/sct",
-            }
-        ]
-        
+@ivr.route('/test_fhir', methods=['GET'])
+def test_fhir():
+    #http://hapi.abdullahikawu.org/Patient?identifier=9e0003ae-4e5e-4442-aeab-838203fa2f5f
+    headers = {'Content-Type': 'application/json', 'Accept': 'application/json'}  
+    response = requests.get(f"http://hapi.abdullahikawu.org/fhir/Patient?identifier=9e0003ae-4e5e-4442-aeab-838203fa2f5f",
+            headers=headers)
+    if response.status_code != 200:
+        abort(500, f"Error querying resource: {response.text}")
+    return jsonify(response.json())
 
-        phone_number = request.values.get('callerNumber', None)
-        default_rdf = "static/rdf_files/wearpghdprovo-onto-template.ttl"
-        
-        # find existing rdf file for the patient
-        #former_session = CallSession.query.filter(
-        #    CallSession.phone_number==phone_number, 
-        #    CallSession.rdf_file != None
-        #).first()
+@ivr.route('/data_request', methods=['POST'])
+def data_request():
+    # triple_store_loc = "static/rdf_files/wearpghdprovo-onto-store.ttl"
+    # triple_store.parse(triple_store_loc, format="turtle")
 
-        # Load the RDF graph
-        #G = Graph()
-        #if former_session:          
-        #    G.parse(former_session.rdf_file, format="turtle")
-        #else:
-        #G.parse(default_rdf, format="turtle")
-        new_g = Graph()
-        triple_store = Graph(store=store)
-        # triple_store_loc = "static/rdf_files/wearpghdprovo-onto-store.ttl"
-        # triple_store.parse(triple_store_loc, format="turtle")
+    # Find patient instance
+    #number_end = phone_number[-10:]
+    #find_patient = """
+    #SELECT ?patient ?number ?patientrelative
+    #WHERE {
+    #    ?patient pghdprovo:phoneNumber ?number .
+    #    ?patient a pghdprovo:Patient .
+    #    FILTER(STRENDS(?number, '""" + number_end + """'))
+    #    OPTIONAL {
+    #        ?patientrelative prov:actedOnBehalfOf ?patient
+    #    }
+    #}
+    #"""
+    data = request.get_json()
+    if not data:
+        abort(400, "Invalid request payload")
+    
+    if "IVR" not in data["request_type"]:
+        abort(400, "Error, request type not provided.")
+    verify_resources(data)
+    instances = get_or_create_instances(data)
+    
+    patient = instances["patient"]
+    practitioner = instances["practitioner"]
+    ehr_system = instances["ehr_system"]
+    identity = instances["identity"]
+    organization = instances["organization"]
 
-        # Find patient instance
-        number_end = phone_number[-10:]
-        find_patient = """
-        SELECT ?patient ?number ?patientrelative
-        WHERE {
-            ?patient pghdprovo:phoneNumber ?number .
-            ?patient a pghdprovo:Patient .
-            FILTER(STRENDS(?number, '""" + number_end + """'))
-            OPTIONAL {
-                ?patientrelative prov:actedOnBehalfOf ?patient
-            }
-        }
-        """
-        
-        patient_instance = None
+    phone_number = data["meta-data"]["patient"].get("phone_number", None)
+    if not phone_number:
+        abort(400, "Error, phone_number not provided.")
+
+    if phone_number[0] != '+':
+        abort(400, "Error, invalid phone_number.")
+    
+    destination_url = data.get("destination_url", None)
+    start_date = data.get("start_date", None)
+    end_date = data.get("end_date", None)
+    
+    # Validate date
+    if not is_timestamp(start_date, format="%Y-%m-%d"):
+        start_date = date.today().strftime("%Y-%m-%dT00:00:00")
+    else:
+        # Convert date to datetime
+        start_date = start_date + "T00:00:00"
+    data["start_date"] = start_date
+
+    # Validate date
+    if not is_timestamp(end_date, format="%Y-%m-%d"):
+        end_date = date.today().strftime("%Y-%m-%dT23:59:59")
+    else:
+        # Convert date to datetime
+        end_date = end_date + "T23:59:59"
+    data["end_date"] = end_date
+    
+    start_date_obj.strptime(start_date, "%Y-%m-%dT%H:%M:%S")
+    end_date_obj.strptime(end_date, "%Y-%m-%dT%H:%M:%S")
+    
+    # Find calls for the within the datetime range
+    call_sessions = CallSession.query.filter(
+        CallSession.completed_at.between(start_date_obj, end_date_obj),
+        CallSession.phone_number==phone_number, 
+    )
+
+    if not call_sessions:          
+        abort(404, f"No record found for {phone_number} with given date range")
+    
+    # Prepare Fetched data 
+    sessions_data = []
+    for call_session in call_sessions:
+        sessions_data.append({
+            "collection_position": call_session.data.get('collection_position', None),
+            "collection_location": call_session.data.get('collection_location', None),
+            "collection_person": call_session.data.get('collection_person', None),
+            "collection_body_site": call_session.data.get('collection_body_site', None),
+            "timestamp": call_session.completed_at,
+            "new_records": [
+                {
+                    'name': "Heart rate", 
+                    'value': call_session.data.get('heart_rate', None)
+                },
+                {
+                    'name': "Systolic blood pressure", 
+                    'value': call_session.data.get('systolic_blood_pressure', None)
+                },
+                {
+                    'name': "Diastolic blood pressure", 
+                    'value': call_session.data.get('diastolic_blood_pressure', None)
+                }
+            ]
+        })
+
+    
+    new_g = Graph()
+    triple_store = Graph(store=store)
+    
+    request_data = Request(
+            identity_id=identity.identity_id,
+            startedAtTime=datetime.now(),
+            endedAtTime=datetime.now(),
+            description='Fetch patient data collected via a phone call.')
+    
+    db.session.add(request_data)
+    db.session.commit()
+    
+    new_instances = add_metadata_to_graph(new_g, identity)
+
+    patient_instance = new_instances["Patient"]
+
+    for row in sessions_data:
         patient_relative = None
-
-        result = triple_store.query(query_header + find_patient)
-        
-        for row in result:
-            if row.patient:
-                patient_instance = row.patient
-            if row.patientrelative:
-                patient_relative = row.patientrelative
-
-        if not patient_instance:
-            patient_instance = unique_id(pghdprovo.Patient)
-            new_g.add((patient_instance, RDF.type, pghdprovo.Patient))
-            new_g.add((patient_instance, pghdprovo.phoneNumber, Literal(phone_number)))
-        
         if not patient_relative and collection_person == "Caregiver":
             patient_relative = unique_id(pghdprovo.PatientRelative)
             new_g.add((patient_relative, RDF.type, pghdprovo.PatientRelative))
-            new_g.add((patient_relative, pghdprovo.relationship, Literal(collection_person)))
+            new_g.add((patient_relative, pghdprovo.relationship, Literal(row["collection_person"])))
             new_g.add((patient_instance, pghdprovo.actedOnBehalfOf, patient_relative))
-        
+    
         # Create state instance. 
         state = unique_id(pghdprovo.State)
         new_g.add((state, RDF.type, pghdprovo.State))
-        new_g.add((state, pghdprovo.posture, Literal(collection_position)))
+        new_g.add((state, pghdprovo.posture, Literal(row["collection_position"])))
 
         # Protocol instance. 
         protocol = unique_id(pghdprovo.Protocol)
         new_g.add((protocol, RDF.type, pghdprovo.Protocol))
-        new_g.add((protocol, pghdprovo.bodySite, Literal(collection_body_site)))
+        new_g.add((protocol, pghdprovo.bodySite, Literal(row["collection_body_site"])))
 
         # location instance 
         location = unique_id(pghdprovo.ContextualInfo)
         new_g.add((location, RDF.type, pghdprovo.ContextualInfo))
-        new_g.add((location, pghdprovo.locationOfPatient, Literal(collection_location)))
-        
+        new_g.add((location, pghdprovo.locationOfPatient, Literal(row["collection_location"])))
+    
+        new_records = row["new_records"]
         for record in new_records:
             # Define unique PGHD instance name e.g PGHD.f47ac10b
             instance = unique_id(pghdprovo.PGHD)
@@ -326,7 +378,7 @@ def submit():
             new_g.add((instance, pghdprovo.name, Literal(record['name'])))
             new_g.add((instance, pghdprovo.value, Literal(record['value'])))
             new_g.add((instance, pghdprovo.dataSource, Literal('IVR')))
-            time_str = timestamp.isoformat(timespec='seconds')
+            time_str = row["timestamp"].isoformat(timespec='seconds')
             new_g.add((instance, pghdprovo.hasTimestamp, Literal(time_str, datatype=XSD.dateTime)))
             
             # Record body position
@@ -346,119 +398,12 @@ def submit():
                 new_g.add((instance, pghdprovo.wasCollectedBy, patient_relative))
             else:
                 new_g.add((instance, pghdprovo.wasCollectedBy, patient_instance))
-        
-        # Save to remote tripple store
-        insert_data_to_triplestore(new_g, store.update_endpoint)
-        return '<Response><Say>Your data has been saved, thank you for your time</Say><Reject/></Response>'
-    else:
-        clear_session_data()
-        return '<Response><Reject/></Response>'
-
-@ivr.route('/test_fhir', methods=['GET'])
-def test_fhir():
-    #http://hapi.abdullahikawu.org/Patient?identifier=9e0003ae-4e5e-4442-aeab-838203fa2f5f
-    headers = {'Content-Type': 'application/json', 'Accept': 'application/json'}  
-    response = requests.get(f"http://hapi.abdullahikawu.org/fhir/Patient?identifier=9e0003ae-4e5e-4442-aeab-838203fa2f5f",
-            headers=headers)
-    if response.status_code != 200:
-        abort(500, f"Error querying resource: {response.text}")
-    return jsonify(response.json())
-
-@ivr.route('/data_request', methods=['POST'])
-def data_request():
-    data = request.get_json()
-    if not data:
-        abort(400, "Invalid request payload")
     
-    if "IVR" not in data["request_type"]:
-        abort(400, "Error, request type not provided.")
-    verify_resources(data)
-    instances = get_or_create_instances(data)
-    
-    patient = instances["patient"]
-    practitioner = instances["practitioner"]
-    ehr_system = instances["ehr_system"]
-    identity = instances["identity"]
-    organization = instances["organization"]
-
-    if not data["meta-data"]["patient"].get("phone_number", None):
-        abort(400, "Error, phone_number not provided.")
-
-    destination_url = data.get("destination_url", None)
-    phone_number = data["meta-data"]["patient"].get("phone_number", None)
-    start_date = data.get("start_date", date.today().strftime("%Y-%m-%dT%H-%M-%S"))
-    end_date = data.get("end_date", date.today().strftime("%Y-%m-%dT%H-%M-%S"))
-    
-    # Validate date
-    if not is_timestamp(start_date, format="%Y-%m-%d"):
-        start_date = date.today().strftime("%Y-%m-%dT00:00:00")
-    else:
-        # Convert date to datetime
-        start_date = start_date + "T00:00:00"
-    data["start_date"] = start_date
-
-    # Validate date
-    if not is_timestamp(end_date, format="%Y-%m-%d"):
-        end_date = date.today().strftime("%Y-%m-%dT23:59:59")
-    else:
-        # Convert date to datetime
-        end_date = end_date + "T23:59:59"
-    data["end_date"] = end_date
-    
-    # Find existing rdf file for the patient
-    former_session = CallSession.query.filter(
-        CallSession.phone_number==phone_number, 
-        CallSession.rdf_file != None
-    ).first()
-
-    if not former_session:          
-        abort(404, f"No record found for {phone_number}")
-    # Update data in graph with request meta-data
-    
-    new_g = Graph()
-    triple_store = Graph(store=store)
-    # triple_store_loc = "static/rdf_files/wearpghdprovo-onto-store.ttl"
-    # triple_store.parse(triple_store_loc, format="turtle")
-    
-    request_data = Request(
-            identity_id=identity.identity_id,
-            startedAtTime=datetime.now(),
-            endedAtTime=datetime.now(),
-            description='Fetch patient data collected via a phone call.')
-    db.session.add(request_data)
-    db.session.commit()
-    new_instances = add_metadata_to_graph(new_g, identity)
-    result_prototype = {}
-    found = False
-    if new_instances.get("PGHDRequest", None):
-        
-        # Find patient instance
-        number_end = phone_number[-10:]
-        find_patient = f"""
-        SELECT ?instance ?patient ?number ?timestamp
-        WHERE {{
-            ?patient pghdprovo:phoneNumber ?number .
-            ?patient a pghdprovo:Patient .
-            FILTER(STRENDS(?number, '{number_end}')) .
-            ?instance prov:wasAttributedTo ?patient .
-            ?instance pghdprovo:hasTimestamp  ?timestamp .
-            FILTER (?timestamp >= "{start_date}"^^xsd:dateTime && ?timestamp <= "{end_date}"^^xsd:dateTime)
-        }}
-        """
-        result = triple_store.query(query_header + find_patient)
-        for row in result:
-            found = True
-            new_g.add((row.instance, prov.wasGeneratedBy, new_instances["PGHDRequest"]))
-        
-        # save data in remote store
-        insert_data_to_triplestore(new_g, store.update_endpoint)
-        
-        result_prototype = {"IVR_link": '/' + triple_store_loc}
-    
-    if found:
-        build_fhir_resources(triple_store, data)
-    else:
-        result_prototype = {"message": 'No result found for the given date.'}
+    result = {}
+    # Save to remote tripple store
+    result["triplestore"] = insert_data_to_triplestore(new_g, store.update_endpoint)
+    # Save to remote fhir server
+    result["fhir"] = build_fhir_resources(triple_store, data)
 
     if data.get("destination_url", None):
         headers = {"Content-Type": "application/json"}
@@ -466,11 +411,11 @@ def data_request():
         response_data = requests.post(
                 destination_url, 
                 headers=headers, 
-                data=result_prototype)
+                data=result)
         
         if response_data.status_code != 200:
             print(f"data shared to {destination_url} successfully")
         else:
             print(f"Failed to share data to {destination_url} successfully")
-    return jsonify(result_prototype)
-        # to know the patient who authorize access to his account
+    return jsonify(result)
+    
