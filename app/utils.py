@@ -533,9 +533,16 @@ def build_fhir_resources(g, request_data):
                         "value": str(uuid.uuid4())
                     }
                 ],
-                type={"text": "Wearable device"},
-                manufacturer="Fitbit",
-                model="fitbit verse 4",
+                type={
+                    "coding": [
+                        {
+                            "system": "http://snomed.info/sct",
+                            "code": "49062001",
+                            "display": "Device"
+                        }
+                    ]
+                },
+                manufacturer="Fitbit Inc.",
                 owner={"reference": f"Patient?identifier={patient_id}"}
             )
         except ValueError as e:
