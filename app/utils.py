@@ -219,20 +219,20 @@ def add_metadata_to_graph(new_g, identity, other_data=None):
     meta_data = {
         "pghdprovo:Patient":{
             "givenName": identity.patient.name,
-            "birthday":"",
-            "address":"",
-            "gender":"",
+            "birthday":identity.patient.birthday,
+            "gender":identity.patient.gender,
             "userid":identity.patient.user_id,
             "phoneNumber":identity.patient.phone_number,
+            "address":identity.patient.address
         },
         "pghdprovo:Practitioner":{
             "givenName":identity.practitioner.name,
-            "birthday":"",
-            "address":"",
-            "gender":"",
+            "birthday":identity.practitioner.birthday,
+            "gender":identity.practitioner.gender,
             "userid": identity.practitioner.user_id,
             "phoneNumber": identity.practitioner.phone_number,
-            "role":""
+            "address":identity.practitioner.address,
+            "role":identity.practitioner.role
         },
         "prov:Organization":{
             "orgAddress": identity.organization.address,
@@ -246,24 +246,8 @@ def add_metadata_to_graph(new_g, identity, other_data=None):
             "endedAtTime": identity.request.endedAtTime.strftime("%Y-%m-%dT%H:%M:%S"),
             "description": identity.request.description,
         },
-        "pghdprovo:PGHD":{
-            "name":"",
-            "value":"",
-            'unit': "",
-            'hasTimestamp': "",
-            "dataSource":""
-        },
         "pghdprovo:Application": {
             "appName": identity.ehr_system.name
-        },
-        "pghdprovo:PatientRelative":{
-            "givenName":"",
-            "birthday":"",
-            "address":"",
-            "gender":"",
-            "userid":"",
-            "phoneNumber":"",
-            "relationship":""
         }
     }
     if wearable_name:
@@ -406,6 +390,9 @@ def get_or_create_instances(data):
                 name=data["meta-data"]["patient"].get("name", ""),
                 user_id=patient_user_id, 
                 phone_number=data["meta-data"]["patient"].get("phone_number", ""),
+                birthday=data["meta-data"]["patient"].get("birthday", ""),
+                gender=data["meta-data"]["patient"].get("gender", ""),
+                address=data["meta-data"]["patient"].get("address", ""),
                 email=patient_email) # No name for now
         db.session.add(patient)
         db.session.flush() # To get the patient_id
@@ -417,6 +404,10 @@ def get_or_create_instances(data):
                 name=data["meta-data"]["practitioner"].get("name", ""),
                 user_id=practitioner_user_id,
                 phone_number=data["meta-data"]["practitioner"].get("phone_number", ""),
+                birthday=data["meta-data"]["practitioner"].get("birthday", ""),
+                address=data["meta-data"]["practitioner"].get("address", ""),
+                gender=data["meta-data"]["practitioner"].get("gender", ""),
+                role=data["meta-data"]["practitioner"].get("role", ""),
                 email=data["meta-data"]["practitioner"].get("email", ""))
         db.session.add(practitioner)
         db.session.flush()
@@ -724,6 +715,7 @@ def build_fhir_resources(g, request_data):
     # Print response
     print(f"Status Code: {response.status_code}")
     print(f"Response: {response.json()}")
+    return response.json()
 
 def insert_data_to_triplestore(graph, update_endpoint=update_endpoint):
     """
@@ -766,5 +758,4 @@ def insert_data_to_triplestore(graph, update_endpoint=update_endpoint):
             print(f"Failed to insert triples. Status code: {response.response.status}")
             return f"Error: {response.response.read().decode('utf-8')}"
     except Exception as e:
-        print(f"An error occurred during the SPARQL update: {str(e)}")
-        raise
+        return f"An error occurred during the SPARQL update: {str(e)}"
