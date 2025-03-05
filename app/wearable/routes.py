@@ -103,6 +103,19 @@ def request_authorization():
         'auth_url': auth_url,
     })
 
+@wearable.route('/data', methods=['GET', 'POST'])
+def get_data():
+    if request.method == 'POST':
+        data = request.get_json()
+        if data:
+            print(data)
+            return jsonify({
+                "message": "success"
+            })
+    return jsonify({
+        "message": "Invalid request"
+    }), 400
+
 @wearable.route('/fitbit_auth_callback', methods=['GET'])
 def get_access_token():
     # After the user has granted access, the authorization server
@@ -169,6 +182,7 @@ def get_access_token():
                 'wearable.fetch_fitbit_data', 
                 id=auth_session.identity_id,
                 practitioner_id=auth_session.identity.practitioner_id,
+                from_auth=True,
                 **query_params))
     return redirect(url_for('portal.patient_dashboard'))
 
@@ -234,6 +248,9 @@ def fetch_fitbit_data():
                     base_date=base_date,
                     end_date=end_date,
                     time_series=endpoint["url"]))
+        
+        if not fitbit_time_data:
+            abort(500, "Failed to retrieve Fitbit data")
         
         # prepare data
         if request_data_type == "calories":
@@ -350,9 +367,10 @@ def fetch_fitbit_data():
         #str_time = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
         #file_loc = "static/rdf_files/wearpghdprovo_" + str_time + ".ttl"
         triple_store = Graph(store=store)
-
-        # store data to remote store
-        insert_data_to_triplestore(new_g, store.update_endpoint)
+        
+        result = {}
+        # Save to remote tripple store
+        result["triplestore"] = insert_data_to_triplestore(new_g, store.update_endpoint)
         
         start_date = r_data["start_date"]
         end_date = r_data["end_date"]
@@ -370,25 +388,29 @@ def fetch_fitbit_data():
             # Convert date to datetime
             end_date = end_date + "T23:59:59"
         r_data["end_date"] = end_date
-        if found:
-            build_fhir_resources(triple_store, r_data)
         
-        if destination_url:
-            headers = {
-                "Content-Type": "application/json"
-            }
-            
-            # Make the POST request to Fitbit API
-            response_data = requests.post(
-                    destination_url, 
-                    headers=headers, 
-                    data={"prepared_data" : prepared_data})
-            
-            if response_data.status_code != 200:
-                print(f"data shared to {destination_url} successfully")
-            else:
-                print(f"Failed to share data to {destination_url} successfully")
-        #return jsonify(fitbit_time_data)
-        return render_template('authorization_granted.html')
+        # Save to remote fhir server
+        if found:
+            result["fhir"] = build_fhir_resources(triple_store, data)
+        
+            if destination_url:
+                headers = {
+                    "Content-Type": "application/json"
+                }
+                
+                # Make the POST request to Fitbit API
+                response_data = requests.post(
+                        destination_url, 
+                        headers=headers, 
+                        data={"prepared_data" : prepared_data})
+                
+                if response_data.status_code != 200:
+                    print(f"data shared to {destination_url} successfully")
+                else:
+                    print(f"Failed to share data to {destination_url} successfully")
+            if request.args.get('from_auth', None):
+                return render_template('authorization_granted.html')
+            return jsonify(result)
+        abort(404, "No data found")
     else:
         return Response("<h1>Sorry, an error occured.")
