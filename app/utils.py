@@ -483,7 +483,7 @@ def build_fhir_resources(g, request_data):
                 ],
             )
         except ValueError as e:
-            print(e.errors())
+            print("Organizartion error: ", e.errors())
     else:
         organization_id = f"Organization?identifier={organization_id}"
     
@@ -518,7 +518,7 @@ def build_fhir_resources(g, request_data):
                 serviceProvider={"reference": organization_id},
             )
         except ValueError as e:
-            print(e.errors())
+            print("Encounter error: ", e.errors())
     else:
         encounter_id = f"Encounter?identifier={encounter_id}"
     
@@ -546,7 +546,7 @@ def build_fhir_resources(g, request_data):
                 owner={"reference": f"Patient?identifier={patient_id}"}
             )
         except ValueError as e:
-            print(e.errors())
+            print("Device error: ", e.errors())
 
     
     
@@ -622,7 +622,7 @@ def build_fhir_resources(g, request_data):
                 effectiveDateTime=(record.timestamp.value).strftime("%Y-%m-%dT%H:%M:%SZ")
             ))
         except ValueError as e:
-            print(e.errors())
+            print("observation error: ", e.errors())
     now = datetime.now().isoformat() + 'Z'
     
     # Create Provenance resource
