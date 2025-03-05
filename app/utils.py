@@ -641,9 +641,9 @@ def build_fhir_resources(g, request_data):
             entity=[{
                 "role": "source",
                 "what": {
-                    "reference": {"reference": "urn:uuid:device-1"} 
+                    "reference": {"reference": "urn:uuid:device-1"}  if device else None
                 }
-            }] if device else None
+            }]
         )
     except ValueError as e:
         print(e.errors())
