@@ -289,8 +289,8 @@ def data_request():
         end_date = end_date + "T23:59:59"
     data["end_date"] = end_date
     
-    start_date_obj.strptime(start_date, "%Y-%m-%dT%H:%M:%S")
-    end_date_obj.strptime(end_date, "%Y-%m-%dT%H:%M:%S")
+    start_date_obj = strptime(start_date, "%Y-%m-%dT%H:%M:%S")
+    end_date_obj = strptime(end_date, "%Y-%m-%dT%H:%M:%S")
     
     # Find calls for the within the datetime range
     call_sessions = CallSession.query.filter(
