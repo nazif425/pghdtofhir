@@ -619,8 +619,8 @@ def build_fhir_resources(g, request_data):
             bodysite_coding_key = "left_arm" if record.posture.value == "Left arm" else "right_arm"
             bodysite_coding = codings.get(bodysite_coding_key, None)
         
-        deviceName = record.deviceName.value or deviceName
-        deviceModel = record.deviceModel.value or deviceModel
+        deviceName = record.deviceName.value if record.deviceName else deviceName
+        deviceModel = record.deviceModel.value if record.deviceName else deviceModel
         # create observation resources
         try:
             observations.append(Observation(
