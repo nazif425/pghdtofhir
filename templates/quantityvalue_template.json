@@ -1,5 +1,5 @@
 {
-    "Heart rate": {
+    "heart_rate": {
         "value": 0,
         "unit": "beats/minute",
         "system": "http://unitsofmeasure.org",
@@ -11,13 +11,13 @@
     "system": "http://unitsofmeasure.org",
     "code": "/min"
     },
-    "Systolic blood pressure": {
+    "systolic_blood_pressure": {
         "value": 0,
         "unit": "mmHg",
         "system": "http://unitsofmeasure.org",
         "code": "mm[Hg]"
     },
-    "Diastolic blood pressure": {
+    "diastolic_blood_pressure": {
         "value": 0,
         "unit": "mmHg",
         "system": "http://unitsofmeasure.org",
