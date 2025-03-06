@@ -240,6 +240,7 @@ def fetch_fitbit_data():
         end_date = request.args.get('end_date', today)
         fitbit_time_data = {}
         prepared_data = []
+        fitbit_device_info = fitbit_client.device()
 
         for endpoint in time_series_endpoints:
             if request_data_type == endpoint["request_data_type"]:
@@ -297,7 +298,8 @@ def fetch_fitbit_data():
         g.parse("static/rdf_files/wearpghdprovo-onto-template.ttl", format="turtle")
         new_g = Graph()
         other_data = {
-            "wearable_name": "FITBIT"
+            "wearable_name": "FITBIT",
+            "wearable_model": fitbit_device_info[0].get("deviceVersion", "") if len(fitbit_device_info) else ""
         }
         new_instances = add_metadata_to_graph(new_g, identity, other_data=other_data)
 

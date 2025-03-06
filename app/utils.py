@@ -210,6 +210,7 @@ def add_metadata_to_graph(new_g, identity, other_data=None):
     wearable_name = ""
     if other_data:
         wearable_name = other_data.get("wearable_name", "")
+        wearable_model = other_data.get("wearable_model", "")
     # add a instance
     # g.add((subject, predicate, object))
 
@@ -254,7 +255,7 @@ def add_metadata_to_graph(new_g, identity, other_data=None):
         meta_data.update({
             "s4wear:Wearable": {
                 "deviceName": wearable_name,
-                "deviceModel":""
+                "deviceModel": wearable_model
             }
         })
     #print(meta_data)
@@ -524,6 +525,7 @@ def build_fhir_resources(g, request_data):
     
     # create device resource
     if request_type == "Wearable":
+
         try:
             device = Device(
                 id="device-1",
@@ -542,7 +544,8 @@ def build_fhir_resources(g, request_data):
                         }
                     ]
                 }],
-                manufacturer="Fitbit Inc.",
+                manufacturer="Fitbit",
+                modelNumber="Charge 2",
                 owner={"reference": f"Patient?identifier={patient_id}"}
             )
         except ValueError as e:
@@ -559,7 +562,7 @@ def build_fhir_resources(g, request_data):
         value_quantities = json.load(file)
     
     categories_list = {
-        "vital-signs": ["Diastolic blood pressure", "Systolic blood pressure", "Heart rate", "restingHeartRate"],
+        "vital-signs": ["diastolic_blood_pressure", "systolic_blood_pressure", "heart_rate", "restingHeartRate"],
         "activity": ["steps", "sleepDuration", "calories"]
     }
     
@@ -568,7 +571,7 @@ def build_fhir_resources(g, request_data):
     # triple_store.parse(triple_store_loc, format="turtle")
 
     query = f"""
-    SELECT ?subject ?name ?value ?source ?timestamp ?description ?label
+    SELECT ?subject ?name ?value ?source ?timestamp ?description ?label ?posture ?deviceName ?deviceModel   
     WHERE {{
         ?subject a pghdprovo:PGHD .
         ?subject pghdprovo:name ?name .
@@ -577,15 +580,30 @@ def build_fhir_resources(g, request_data):
         ?subject pghdprovo:hasTimestamp ?timestamp .
         FILTER (?timestamp >= "{start_date}"^^xsd:dateTime && ?timestamp <= "{end_date}"^^xsd:dateTime) .
         FILTER (?source = "{request_type}") .
+        FILTER (?name = "{request_data_type}") .
+        ?subject prov:wasAttributedTo ?patient .
+        ?patient pghdprovo:userid ?userid .
+        FILTER (?userid = "{patient_id}") .
+        OPTIONAL {{?subject rdfs:comment ?description .}}
+        OPTIONAL {{?subject rdfs:label ?label .}}
         OPTIONAL {{
-            FILTER (?name = "{request_data_type}") .
-            ?subject rdfs:comment ?description .
-            ?subject rdfs:label ?label .
+            ?subject pghdprovo:hasContextualInfo ?state .
+            ?state a pghdprovo:State .
+            ?state pghdprovo:posture ?posture .
+        }}
+        OPTIONAL {{
+            ?subject prov:wasDerivedFrom ?Wearable .
+            ?Wearable pghdprovo:deviceName ?deviceName .
+        }}
+        OPTIONAL {{
+            ?subject prov:wasDerivedFrom ?Wearable .
+            ?Wearable pghdprovo:deviceModel ?deviceModel .
         }}
     }}
     """
     result = triple_store.query(query_header + query)
-    
+    deviceName = None
+    deviceModel = None
     counter = 0
     observations = []
     for record in result:
@@ -597,7 +615,12 @@ def build_fhir_resources(g, request_data):
 
         value_set = value_quantities[record.name.value]
         value_set["value"] = record.value.value
+        if record.posture.value:
+            bodysite_coding_key = "left_arm" if record.posture.value == "Left arm" else "right_arm"
+            bodysite_coding = codings.get(bodysite_coding_key, None)
         
+        deviceName = record.deviceName.value or deviceName
+        deviceModel = record.deviceModel.value or deviceModel
         # create observation resources
         try:
             observations.append(Observation(
@@ -615,6 +638,11 @@ def build_fhir_resources(g, request_data):
                         codings[record.name.value]
                     ]
                 },
+                bodySite={
+                    "coding": [
+                        bodysite_coding
+                    ]
+                } if bodysite_coding else None,
                 subject={"reference": f"Patient?identifier={patient_id}"},
                 encounter={"reference": encounter_id},
                 device={"reference": "urn:uuid:device-1"} if device else None,
@@ -683,6 +711,8 @@ def build_fhir_resources(g, request_data):
 
     # Add Device resource (if defined)
     if device:
+        device.manufacturer = deviceName
+        device.modelNumber = deviceModel
         bundle.entry.append(BundleEntry(
             resource=device,
             request={
