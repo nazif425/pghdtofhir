@@ -240,7 +240,7 @@ def fetch_fitbit_data():
         end_date = request.args.get('end_date', today)
         fitbit_time_data = {}
         prepared_data = []
-        fitbit_device_info = fitbit_client.device()
+        fitbit_device_info = fitbit_client.get_devices()
 
         for endpoint in time_series_endpoints:
             if request_data_type == endpoint["request_data_type"]:
