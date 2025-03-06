@@ -602,6 +602,8 @@ def build_fhir_resources(g, request_data):
     }}
     """
     result = triple_store.query(query_header + query)
+    bodysite_coding_key = None
+    bodysite_coding = None
     deviceName = None
     deviceModel = None
     counter = 0
@@ -615,7 +617,6 @@ def build_fhir_resources(g, request_data):
 
         value_set = value_quantities[record.name.value]
         value_set["value"] = record.value.value
-        
         if record.get("posture", None):
             bodysite_coding_key = "left_arm" if record.posture.value == "Left arm" else "right_arm"
             bodysite_coding = codings.get(bodysite_coding_key, None)
@@ -641,11 +642,7 @@ def build_fhir_resources(g, request_data):
                         codings[record.name.value]
                     ]
                 },
-                bodySite={
-                    "coding": [
-                        bodysite_coding
-                    ]
-                } if bodysite_coding else None,
+                bodySite={"coding": [bodysite_coding]} if bodysite_coding else None,
                 subject={"reference": f"Patient?identifier={patient_id}"},
                 encounter={"reference": encounter_id},
                 device={"reference": "urn:uuid:device-1"} if device else None,
