@@ -615,7 +615,7 @@ def build_fhir_resources(g, request_data):
 
         value_set = value_quantities[record.name.value]
         value_set["value"] = record.value.value
-        if record.posture.value:
+        if record.posture:
             bodysite_coding_key = "left_arm" if record.posture.value == "Left arm" else "right_arm"
             bodysite_coding = codings.get(bodysite_coding_key, None)
         
