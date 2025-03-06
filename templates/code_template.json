@@ -4,17 +4,17 @@
         "code": "444981005",
         "display": "Resting heart rate"
     },  
-    "Heart rate": {
+    "heart_rate": {
         "system": "http://snomed.info/sct",
         "code": "364075005",
         "display": "Heart rate"
     },
-    "Systolic blood pressure": {
+    "systolic_blood_pressure": {
         "system": " http://snomed.info/sct",
         "code": "271649006", 
         "display": "Systolic blood pressure"
     },
-    "Diastolic blood pressure": {
+    "diastolic_blood_pressure": {
         "system": " http://snomed.info/sct",
         "code": "271650006", 
         "display": "Diastolic blood pressure"
@@ -33,5 +33,15 @@
         "system": " http://snomed.info/sct",
         "code": "248263006", 
         "display": "Duration of sleep"
+    },
+    "left_arm": {
+        "system": "http://snomed.info/sct",
+        "code": "368208006",
+        "display": "Left upper arm"
+    },
+    "right_arm": {
+        "system": "http://snomed.info/sct",
+        "code": "368209003",
+        "display": "Right upper arm"
     }
 }

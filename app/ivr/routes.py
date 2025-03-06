@@ -312,15 +312,15 @@ def data_request():
             "timestamp": call_session.completed_at,
             "new_records": [
                 {
-                    'name': "Heart rate", 
+                    'name': "heart_rate", 
                     'value': call_session.data.get('heart_rate', None) or 0
                 },
                 {
-                    'name': "Systolic blood pressure", 
+                    'name': "systolic_blood_pressure", 
                     'value': call_session.data.get('systolic_blood_pressure', None) or 0
                 },
                 {
-                    'name': "Diastolic blood pressure", 
+                    'name': "diastolic_blood_pressure", 
                     'value': call_session.data.get('diastolic_blood_pressure', None) or 0
                 }
             ]
