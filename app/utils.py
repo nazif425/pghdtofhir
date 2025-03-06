@@ -533,7 +533,7 @@ def build_fhir_resources(g, request_data):
                         "value": str(uuid.uuid4())
                     }
                 ],
-                type={
+                type=[{
                     "coding": [
                         {
                             "system": "http://snomed.info/sct",
@@ -541,7 +541,7 @@ def build_fhir_resources(g, request_data):
                             "display": "Device"
                         }
                     ]
-                },
+                }],
                 manufacturer="Fitbit Inc.",
                 owner={"reference": f"Patient?identifier={patient_id}"}
             )
