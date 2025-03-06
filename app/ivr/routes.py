@@ -305,23 +305,23 @@ def data_request():
     sessions_data = []
     for call_session in call_sessions:
         sessions_data.append({
-            "collection_position": call_session.data.get('collection_position', ""),
-            "collection_location": call_session.data.get('collection_location', ""),
-            "collection_person": call_session.data.get('collection_person', ""),
-            "collection_body_site": call_session.data.get('collection_body_site', ""),
+            "collection_position": call_session.data.get('collection_position', None) or "",
+            "collection_location": call_session.data.get('collection_location', None) or "",
+            "collection_person": call_session.data.get('collection_person', None) or "",
+            "collection_body_site": call_session.data.get('collection_body_site', None) or "",
             "timestamp": call_session.completed_at,
             "new_records": [
                 {
                     'name': "Heart rate", 
-                    'value': call_session.data.get('heart_rate', 0)
+                    'value': call_session.data.get('heart_rate', None) or 0
                 },
                 {
                     'name': "Systolic blood pressure", 
-                    'value': call_session.data.get('systolic_blood_pressure', 0)
+                    'value': call_session.data.get('systolic_blood_pressure', None) or 0
                 },
                 {
                     'name': "Diastolic blood pressure", 
-                    'value': call_session.data.get('diastolic_blood_pressure', 0)
+                    'value': call_session.data.get('diastolic_blood_pressure', None) or 0
                 }
             ]
         })
