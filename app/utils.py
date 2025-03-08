@@ -156,26 +156,20 @@ def transform_data(data, output_data=None, last_path=None, ignore_list=False, se
     if data_set:
         output_data.append(data_set)
 
-def send_authorisation_email(receiver_email, auth_link, name=""):
+def send_authorisation_email(receiver_email, auth_link, name="", data_source="Fitbit"):
     sender_email = SENDER_EMAIL
     smtp_server = SMTP_SERVER
     password = SMTP_PASSWORD
     smtp_port = SMTP_PORT
 
-    # Create the email
-    message = MIMEMultipart()
-    message["From"] = f"Healthcare Provider <{sender_email}>"
-    message["To"] = receiver_email
-    message["Subject"] = "Authorize Fitbit Data Access"
-
-    # Minimal HTML Email Body
-    body = f"""
+    # Email template
+    email_template = """
     <html>
     <body style="font-family: Arial, sans-serif; line-height: 1.6; margin: 0; padding: 10px; background-color: #f9fafc;">
         <div style="max-width: 600px; margin: 0 auto; background: #ffffff; border: 1px solid #e0e0e0; padding: 15px; border-radius: 5px;">
         <h2 style="color: #2c3e50; text-align: center;">Healthcare Data Authorization</h2>
         <p><strong>Dear Patient,</strong></p>
-        <p>Please click the button below to authorize access to your Fitbit data for your healthcare provider {name}.</p>
+        <p>Please click the button below to authorize access to your {data_source} data for your healthcare provider {name}.</p>
         <p style="text-align: center; margin: 20px 0;">
             <a href="{auth_link}" 
             style="background-color: #0078d7; color: #ffffff; text-decoration: none; padding: 10px 20px; border-radius: 5px; display: inline-block;">
@@ -183,8 +177,8 @@ def send_authorisation_email(receiver_email, auth_link, name=""):
             </a>
         </p>
         <p style="font-size: 12px; color: #555555; margin-top: 20px;">
-            <em>Note:</em> By authorizing access to your Fitbit data, you consent to its use for clinical decision-making and research. 
-            You can revoke this access anytime from your Fitbit account.
+            <em>Note:</em> By authorizing access to your {data_source} data, you consent to its use for clinical decision-making and research.
+            {revoke_note}
         </p>
         <p style="text-align: center; font-size: 10px; color: #888888; margin-top: 20px; border-top: 1px solid #eeeeee; padding-top: 10px;">
             This is an automated message. Please do not reply.
@@ -193,6 +187,27 @@ def send_authorisation_email(receiver_email, auth_link, name=""):
     </body>
     </html>
     """
+
+    # Add revoke note only for Fitbit
+    revoke_note = (
+        "You can revoke this access anytime from your Fitbit account." 
+        if data_source == "Fitbit" 
+        else ""
+    )
+
+    # Format the email body with dynamic content
+    body = email_template.format(
+        data_source=data_source,
+        name=name,
+        auth_link=auth_link,
+        revoke_note=revoke_note
+    )
+
+    # Create the email
+    message = MIMEMultipart()
+    message["From"] = f"Healthcare Provider <{sender_email}>"
+    message["To"] = receiver_email
+    message["Subject"] = f"Authorize {data_source} Data Access"
     message.attach(MIMEText(body, "html"))
 
     try:

@@ -99,5 +99,10 @@ def generate_fitbit_auth_url(**kwargs):
             '+oxygen_saturation+profile+respiratory_rate+settings+sleep+social+temperature+weight'
     return "https://www.fitbit.com/oauth2/authorize?" + urlencode(params) + scope
 
+def generate_healthconnect_auth_url(patient_user_id, request_data_type, start_date, end_date):
+    base_url = "https://emr.abdullahikawu.org/deeplink/"
+    auth_link = f"{base_url}?id={patient_user_id}&request_data_type={request_data_type}&start_date={start_date}&end_date={end_date}"
+    return auth_link
+
 from . import routes
 

@@ -14,7 +14,7 @@ from rdflib.namespace import RDF, RDFS
 from rdflib import Namespace
 from rdflib.plugins.stores.sparqlstore import SPARQLStore
 from . import wearable, get_fitbit_data, store_tokens_in_db, load_tokens_from_db
-from . import refresh_and_store_tokens, generate_fitbit_auth_url
+from . import refresh_and_store_tokens, generate_fitbit_auth_url, generate_healthconnect_auth_url
 from ..utils import unique_id, get_entity_name, is_timestamp, get_main_class, REDIRECT_URI, add_metadata_to_graph
 from ..utils import CLIENT_ID, CLIENT_SECRET, transform_data, send_authorisation_email, get_or_create_instances
 from ..utils import verify_resources, build_fhir_resources, store, insert_data_to_triplestore
@@ -36,8 +36,9 @@ def data_request():
     if not data:
         abort(400, "Invalid request payload")
     
-    if data["request_type"] != "fitbit":
+    if data["request_type"] not in ["fitbit", "healthconnect"]:
         abort(400, "Error, request type not provided.")
+    
     verify_resources(data)
     instances = get_or_create_instances(data)
     
@@ -54,35 +55,49 @@ def data_request():
         "end_date": data.get("end_date", None)
     }
     
-
-    if load_tokens_from_db(patient.patient_id):
-        session["request_data"] = data
-        #if not session.get('patient_id', None):
-        #    return redirect(url_for('portal.patient_login'))
-        return redirect(url_for(
-                "wearable.fetch_fitbit_data", 
-                id=identity.identity_id, 
-                practitioner_id=practitioner.practitioner_id, 
-                **query_params))
+    if data["request_type"] == "fitbit":
+        if load_tokens_from_db(patient.patient_id):
+            session["request_data"] = data
+            return redirect(url_for(
+                    "wearable.fetch_fitbit_data", 
+                    id=identity.identity_id, 
+                    practitioner_id=practitioner.practitioner_id, 
+                    **query_params))
+        
+        store_data = {}
+        store_data['query_params'] = query_params
+        store_data['request_data'] = data
+        
+        authsession_data = {
+            "patient_id": patient.patient_id, 
+            "identity_id": identity.identity_id,
+            "data": store_data
+        }
+        auth_link = generate_fitbit_auth_url(**authsession_data)
+        if send_authorisation_email(patient.email, auth_link, practitioner.name, "Fitbit"):
+            return jsonify({
+                'message': f"A request for access to Fitbit data was successfully sent to {patient.email}." 
+            })
+        else:
+            return jsonify({
+                'message': "An error occurred. Email request to patient failed." 
+            })
     
-    store_data = {}
-    store_data['query_params'] = query_params
-    store_data['request_data'] = data
-    
-    authsession_data = {
-        "patient_id": patient.patient_id, 
-        "identity_id": identity.identity_id,
-        "data": store_data
-    }
-    auth_link = generate_fitbit_auth_url(**authsession_data)
-    if send_authorisation_email(patient.email, auth_link, practitioner.name):
-        return jsonify({
-            'message': f"A request for access to fitbit data was successfully sent to {patient.email}." 
-        })
-    else:
-        return jsonify({
-            'message': "An error occured. Email request to patient failed." 
-        })
+    elif data["request_type"] == "healthconnect":
+        auth_link = generate_healthconnect_auth_url(
+            patient_user_id=data["meta-data"]["patient"]["user_id"],
+            request_data_type=data["request_data_type"],
+            start_date=data["start_date"],
+            end_date=data["end_date"]
+        )
+        if send_authorisation_email(patient.email, auth_link, practitioner.name, "HealthConnect"):
+            return jsonify({
+                'message': f"A request for access to HealthConnect data was successfully sent to {patient.email}." 
+            })
+        else:
+            return jsonify({
+                'message': "An error occurred. Email request to patient failed." 
+            })
     
     # Create new practitioner instance
     # print(practitioner.query.delete())
