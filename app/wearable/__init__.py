@@ -104,7 +104,7 @@ def generate_healthconnect_auth_url(auth_session, request_data):
     return auth_link
 
 def fetch_fitbit_data(patient, request_data):
-    token_dict = load_tokens_from_db(patient.id)
+    token_dict = load_tokens_from_db(patient.patient_id)
     if not token_dict:
         raise Exception("No Fitbit tokens found for the patient.")
 
@@ -112,7 +112,7 @@ def fetch_fitbit_data(patient, request_data):
         CLIENT_ID, CLIENT_SECRET, oauth2=True,
         access_token=token_dict['access_token'],
         refresh_token=token_dict['refresh_token'],
-        refresh_cb=lambda t: refresh_and_store_tokens(t, patient.id)
+        refresh_cb=lambda t: refresh_and_store_tokens(t, patient.patient_id)
     )
 
     time_series_endpoints = [
