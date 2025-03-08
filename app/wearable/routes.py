@@ -13,8 +13,8 @@ from rdflib import Graph, URIRef, Literal, XSD, OWL
 from rdflib.namespace import RDF, RDFS
 from rdflib import Namespace
 from rdflib.plugins.stores.sparqlstore import SPARQLStore
-from . import wearable, get_fitbit_data, store_tokens_in_db, load_tokens_from_db
-from . import refresh_and_store_tokens, generate_fitbit_auth_url, generate_healthconnect_auth_url
+from . import wearable, get_fitbit_data, store_tokens_in_db, load_tokens_from_db, fetch_fitbit_data, process_and_send_data
+from . import refresh_and_store_tokens, generate_fitbit_auth_url, generate_healthconnect_auth_url, prepare_data
 from ..utils import unique_id, get_entity_name, is_timestamp, get_main_class, REDIRECT_URI, add_metadata_to_graph
 from ..utils import CLIENT_ID, CLIENT_SECRET, transform_data, send_authorisation_email, get_or_create_instances
 from ..utils import verify_resources, build_fhir_resources, store, insert_data_to_triplestore
@@ -36,7 +36,7 @@ def data_request():
     if not data:
         abort(400, "Invalid request payload")
     
-    if data["request_type"] not in ["fitbit", "healthconnect"]:
+    if data.get("request_type", "") not in ["fitbit", "healthconnect"]:
         abort(400, "Error, request type not provided.")
     
     verify_resources(data)
@@ -48,32 +48,43 @@ def data_request():
     identity = instances["identity"]
     organization = instances["organization"]
     
-    query_params = {
-        "request_data_type": data["request_data_type"],
-        "destination_url": data["destination_url"],
-        "start_date": data.get("start_date", None),
-        "end_date": data.get("end_date", None)
-    }
+    # Validate date
+    start_date = data["start_date"]
+    end_date = data["end_date"]
+    if not is_timestamp(start_date, format="%Y-%m-%d"):
+        start_date = date.today().strftime("%Y-%m-%dT00:00:00")
+    else:
+        # Convert date to datetime
+        start_date = start_date + "T00:00:00"
+
+    if not is_timestamp(end_date, format="%Y-%m-%d"):
+        end_date = date.today().strftime("%Y-%m-%dT23:59:59")
+    else:
+        # Convert date to datetime
+        end_date = end_date + "T23:59:59"
     
+    data["start_date"] = start_date
+    data["end_date"] = end_date
+        
+    
+    store_data = {'request_data': data}
+    
+    authsession_data = {
+        "state": str(uuid.uuid4()),
+        "patient_id": patient.patient_id, 
+        "identity_id": identity.identity_id,
+        "data": store_data
+    }
+
+    auth_session = AuthSession(**authsession_data)
+    db.session.add(auth_session)
+    db.session.commit()
+
     if data["request_type"] == "fitbit":
         if load_tokens_from_db(patient.patient_id):
-            session["request_data"] = data
-            return redirect(url_for(
-                    "wearable.fetch_fitbit_data", 
-                    id=identity.identity_id, 
-                    practitioner_id=practitioner.practitioner_id, 
-                    **query_params))
+            return redirect(url_for("wearable.data", state=auth_session.state))
         
-        store_data = {}
-        store_data['query_params'] = query_params
-        store_data['request_data'] = data
-        
-        authsession_data = {
-            "patient_id": patient.patient_id, 
-            "identity_id": identity.identity_id,
-            "data": store_data
-        }
-        auth_link = generate_fitbit_auth_url(**authsession_data)
+        auth_link = generate_fitbit_auth_url(auth_session)
         if send_authorisation_email(patient.email, auth_link, practitioner.name, "Fitbit"):
             return jsonify({
                 'message': f"A request for access to Fitbit data was successfully sent to {patient.email}." 
@@ -84,12 +95,7 @@ def data_request():
             })
     
     elif data["request_type"] == "healthconnect":
-        auth_link = generate_healthconnect_auth_url(
-            patient_user_id=data["meta-data"]["patient"]["user_id"],
-            request_data_type=data["request_data_type"],
-            start_date=data["start_date"],
-            end_date=data["end_date"]
-        )
+        auth_link = generate_healthconnect_auth_url(auth_session, data)
         if send_authorisation_email(patient.email, auth_link, practitioner.name, "HealthConnect"):
             return jsonify({
                 'message': f"A request for access to HealthConnect data was successfully sent to {patient.email}." 
@@ -97,12 +103,7 @@ def data_request():
         else:
             return jsonify({
                 'message': "An error occurred. Email request to patient failed." 
-            })
-    
-    # Create new practitioner instance
-    # print(practitioner.query.delete())
-    
-    
+            }) 
 
 @wearable.route('/request_fitbit_auth', methods=['GET'])
 def request_authorization():
@@ -118,18 +119,7 @@ def request_authorization():
         'auth_url': auth_url,
     })
 
-@wearable.route('/data', methods=['GET', 'POST'])
-def get_data():
-    if request.method == 'POST':
-        data = request.get_json()
-        if data:
-            print(data)
-            return jsonify({
-                "message": "success"
-            })
-    return jsonify({
-        "message": "Invalid request"
-    }), 400
+
 
 @wearable.route('/fitbit_auth_callback', methods=['GET'])
 def get_access_token():
@@ -194,15 +184,71 @@ def get_access_token():
         session["request_data"] = auth_session.data.get('request_data', None)
         
         return redirect(url_for(
-                'wearable.fetch_fitbit_data', 
-                id=auth_session.identity_id,
-                practitioner_id=auth_session.identity.practitioner_id,
-                from_auth=True,
-                **query_params))
+            'wearable.data', 
+            state=auth_session.state
+        ))
     return redirect(url_for('portal.patient_dashboard'))
 
+@wearable.route('/data', methods=['GET', 'POST'])
+def data():
+    data = {}
+    if request.method == 'GET':
+        state = request.args.get('state', None)
+        if not state:
+            return jsonify({"message": "Invalid request, state arg not provided.", "status": 400}), 400
+    elif request.method == 'POST':
+        data = request.get_json()
+        print(data)
+        if not data:
+            return jsonify({"message": "Invalid payload", "status": 400}), 400
+        metadata = data.get("metadata", None)
+        if not metadata:
+            return jsonify({"message": "Invalid payload, metadata missing.", "status": 400}), 400
+        if not metadata.get("user_id", None):
+            return jsonify({"message": "Invalid payload, user_id not provided.", "status": 400}), 400
+        state = metadata.get("user_id", None)
+    auth_session = AuthSession.query.filter_by(state=state).first()
+    if auth_session is None:
+        return jsonify({"message": "Error, could not identify request id", "status": 400}), 400
+    
+    identity_id = auth_session.identity_id
+    identity = Identity.query.get_or_404(identity_id)
+    patient = identity.patient
+    request_data = auth_session.data.get("request_data", None)
+    request_info = Request(
+        identity_id=identity.identity_id,
+        startedAtTime=datetime.now(),
+        description=f'Fetch patient data from {request_data["request_type"]}',
+    )
+    db.session.add(request_info)
+    db.session.flush()
+    
+    metadata = {}
+    try:
+        if request_data["request_type"] == "fitbit":
+            fitbit_data = fetch_fitbit_data(patient, request_data)
+            data = fitbit_data["data"]
+            metadata.update(fitbit_data["metadata"])
+        
+        prepared_data = prepare_data(data, request_data)
+        if not prepared_data:
+            raise Exception("No data found")
+
+        result = process_and_send_data(identity, prepared_data, request_data, other_data=metadata)
+        
+        request_info.endedAtTime = datetime.now()
+        db.session.commit()
+    except Exception as e:
+        request_info.endedAtTime = datetime.now()
+        db.session.commit()
+        return jsonify({"message": str(e)}), 500
+    
+    if request.args.get('from_auth', None):
+        return render_template('authorization_granted.html')
+    return jsonify(result)
+
 @wearable.route('/fetch_fitbit_data', methods=['GET'])
-def fetch_fitbit_data():
+def fetch_fitbit_data2():
     # verify user
     practitioner_id = request.args.get('practitioner_id', session.get('practitioner_id',  None))
     identity_id = request.args.get('id', None)
