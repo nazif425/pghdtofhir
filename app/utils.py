@@ -472,7 +472,6 @@ def build_fhir_resources(g, request_data):
     start_date = request_data.get("start_date", None)
     end_date = request_data.get("end_date", None)
     request_type = request_data.get("request_type", None)
-    request_type = "Wearable" if request_type != "IVR" else request_type
     request_data_type = request_data.get("request_data_type", None)
     patient_id = request_data["meta-data"]["patient"]["user_id"]
     practitioner_id = request_data["meta-data"]["practitioner"]["user_id"]
@@ -594,7 +593,7 @@ def build_fhir_resources(g, request_data):
         ?subject pghdprovo:dataSource ?source .
         ?subject pghdprovo:hasTimestamp ?timestamp .
         FILTER (?timestamp >= "{start_date}"^^xsd:dateTime && ?timestamp <= "{end_date}"^^xsd:dateTime) .
-        FILTER (?source = "{request_type}") .
+        FILTER (STRSTARTS(?source, "{request_type}")) .
         FILTER (?name = "{request_data_type}") .
         ?subject prov:wasAttributedTo ?patient .
         ?patient pghdprovo:userid ?userid .

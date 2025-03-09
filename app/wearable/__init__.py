@@ -151,72 +151,96 @@ def fetch_fitbit_data(patient, request_data):
 def prepare_data(raw_data, request_data):
     prepared_data = []
     
+    def get_data_source(source_names):
+        """Helper function to create a unique dataSource string."""
+        unique_sources = sorted(set(source_names))  # Ensure uniqueness
+        return "healthconnect - " + ", ".join(unique_sources)
+    
     if request_data["request_type"] == "fitbit":
         if request_data["request_data_type"] == "calories":
             for entry in raw_data["activities-calories"]:
                 prepared_data.append({
                     "name": "calories",
                     "date": entry["dateTime"],
-                    "value": entry["value"]
+                    "value": entry["value"],
+                    "dataSource": "fitbit"  # Only "fitbit" for fitbit data
                 })
         elif request_data["request_data_type"] == "restingHeartRate":
             for entry in raw_data["activities-heart"]:
                 prepared_data.append({
                     "name": "restingHeartRate",
                     "date": entry["dateTime"],
-                    "value": entry["value"].get("restingHeartRate", 0)
+                    "value": entry["value"].get("restingHeartRate", 0),
+                    "dataSource": "fitbit"  # Only "fitbit" for fitbit data
                 })
         elif request_data["request_data_type"] == "sleepDuration":
             for entry in raw_data["sleep"]:
                 prepared_data.append({
                     "name": "sleepDuration",
                     "date": entry["dateOfSleep"],
-                    "value": entry["timeInBed"]
+                    "value": entry["timeInBed"],
+                    "dataSource": "fitbit"  # Only "fitbit" for fitbit data
                 })
         elif request_data["request_data_type"] == "steps":
             for entry in raw_data["activities-steps"]:
                 prepared_data.append({
                     "name": "steps",
                     "date": entry["dateTime"],
-                    "value": entry["value"]
+                    "value": entry["value"],
+                    "dataSource": "fitbit"  # Only "fitbit" for fitbit data
                 })
     
     elif request_data["request_type"] == "healthconnect":
         # Group data by date
         daily_data = defaultdict(list)
+        source_names = defaultdict(list)  # Track source_names for each date
+        
         for entry in raw_data["data"]:
             # Extract the date part only
             date = entry["date"].split(" ")[0]
             # Extract the numeric value from the string
             value = int(entry["value"].split(":")[1].strip())
+            # Extract the last part of the source_name (e.g., "shealth" from "com.sec.android.app.shealth")
+            source_name = entry["source_name"].split(".")[-1]
+            
             daily_data[date].append(value)
+            source_names[date].append(source_name)  # Track source_names
         
         if request_data["request_data_type"] == "SLEEP_SESSION":
             for date, values in daily_data.items():
                 # Sum all sleep durations for the same day
                 total_sleep = sum(values)
+                # Create a unique dataSource string
+                data_source = get_data_source(source_names[date])
                 prepared_data.append({
                     "name": "sleepDuration",
                     "date": date,
-                    "value": total_sleep
+                    "value": total_sleep,
+                    "dataSource": data_source  # e.g., "healthconnect - shealth, fitness"
                 })
         elif request_data["request_data_type"] == "STEPS":
             for date, values in daily_data.items():
                 # Sum all steps for the same day
                 total_steps = sum(values)
+                # Create a unique dataSource string
+                data_source = get_data_source(source_names[date])
                 prepared_data.append({
                     "name": "steps",
                     "date": date,
-                    "value": total_steps
+                    "value": total_steps,
+                    "dataSource": data_source  # e.g., "healthconnect - shealth, fitness"
                 })
         elif request_data["request_data_type"] == "HEART_RATE":
             for date, values in daily_data.items():
                 # Calculate the average heart rate for the same day
                 avg_heart_rate = sum(values) / len(values)
+                # Create a unique dataSource string
+                data_source = get_data_source(source_names[date])
                 prepared_data.append({
                     "name": "heartRate",
                     "date": date,
-                    "value": round(avg_heart_rate, 2)  # Round to 2 decimal places
+                    "value": round(avg_heart_rate, 2),  # Round to 2 decimal places
+                    "dataSource": data_source  # e.g., "healthconnect - shealth, fitness"
                 })
     
     return prepared_data
@@ -243,7 +267,7 @@ def process_and_send_data(identity, prepared_data, request_data, other_data=None
         new_g.add((instance, RDF.type, pghdprovo.PGHD))
         new_g.add((instance, pghdprovo.name, Literal(data_set["name"])))
         new_g.add((instance, pghdprovo.value, Literal(data_set["value"])))
-        new_g.add((instance, pghdprovo.dataSource, Literal('Wearable')))
+        new_g.add((instance, pghdprovo.dataSource, Literal(data_set["dataSource"])))
         timestamp = datetime.strptime(data_set["date"], "%Y-%m-%d")
         time_str = timestamp.isoformat(timespec='seconds')
         new_g.add((instance, pghdprovo.hasTimestamp, Literal(time_str, datatype=XSD.dateTime)))
