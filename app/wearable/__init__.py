@@ -117,9 +117,9 @@ def fetch_fitbit_data(patient, request_data):
 
     time_series_endpoints = [
         {"url": "sleep", "request_data_type": "sleepDuration"},
-        {"url": "activities/tracker/steps", "request_data_type": "steps"},
+        {"url": "activities/steps", "request_data_type": "steps"},
         {"url": "activities/heart", "request_data_type": "restingHeartRate"},
-        {"url": "activities/tracker/calories", "request_data_type": "calories"}
+        {"url": "activities/calories", "request_data_type": "calories"}
     ]
 
     fitbit_device_info = fitbit_client.get_devices()
