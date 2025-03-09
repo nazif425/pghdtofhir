@@ -96,11 +96,13 @@ def generate_fitbit_auth_url(auth_session):
 
 def generate_healthconnect_auth_url(auth_session, request_data):
     state = auth_session.state
+    start_date = request_data["start_date"].split("T")[0]
+    end_date = request_data["end_date"].split("T")[0]
     base_url = "https://emr.abdullahikawu.org/deeplink/"
     auth_link = f'{base_url}?id={id}&'\
                 f'request_data_type={request_data["request_data_type"]}&'\
-                f'start_date={request_data["start_date"]}&'\
-                f'end_date={request_data["end_date"]}'
+                f'start_date={start_date}&'\
+                f'end_date={end_date}'
     return auth_link
 
 def fetch_fitbit_data(patient, request_data):
@@ -148,34 +150,70 @@ def fetch_fitbit_data(patient, request_data):
 def prepare_data(raw_data, request_data):
     prepared_data = []
     
-    if request_data["request_data_type"] == "calories":
-        for entry in raw_data["activities-calories"]:
-            prepared_data.append({
-                "name": "calories",
-                "date": entry["dateTime"],
-                "value": entry["value"]
-            })
-    elif request_data["request_data_type"] == "restingHeartRate":
-        for entry in raw_data["activities-heart"]:
-            prepared_data.append({
-                "name": "restingHeartRate",
-                "date": entry["dateTime"],
-                "value": entry["value"].get("restingHeartRate", 0)
-            })
-    elif request_data["request_data_type"] == "sleepDuration":
-        for entry in raw_data["sleep"]:
-            prepared_data.append({
-                "name": "sleepDuration",
-                "date": entry["dateOfSleep"],
-                "value": entry["timeInBed"]
-            })
-    elif request_data["request_data_type"] == "steps":
-        for entry in raw_data["activities-steps"]:
-            prepared_data.append({
-                "name": "steps",
-                "date": entry["dateTime"],
-                "value": entry["value"]
-            })
+    if request_data["request_type"] == "fitbit":
+        if request_data["request_data_type"] == "calories":
+            for entry in raw_data["activities-calories"]:
+                prepared_data.append({
+                    "name": "calories",
+                    "date": entry["dateTime"],
+                    "value": entry["value"]
+                })
+        elif request_data["request_data_type"] == "restingHeartRate":
+            for entry in raw_data["activities-heart"]:
+                prepared_data.append({
+                    "name": "restingHeartRate",
+                    "date": entry["dateTime"],
+                    "value": entry["value"].get("restingHeartRate", 0)
+                })
+        elif request_data["request_data_type"] == "sleepDuration":
+            for entry in raw_data["sleep"]:
+                prepared_data.append({
+                    "name": "sleepDuration",
+                    "date": entry["dateOfSleep"],
+                    "value": entry["timeInBed"]
+                })
+        elif request_data["request_data_type"] == "steps":
+            for entry in raw_data["activities-steps"]:
+                prepared_data.append({
+                    "name": "steps",
+                    "date": entry["dateTime"],
+                    "value": entry["value"]
+                })
+    
+    elif request_data["request_type"] == "healthconnect":
+        if request_data["request_data_type"] == "SLEEP_SESSION":
+            for entry in raw_data["data"]:
+                # Extract the numeric value from the string
+                value = int(entry["value"].split(":")[1].strip())
+                # Extract the date part only
+                date = entry["date"].split(" ")[0]
+                prepared_data.append({
+                    "name": "sleepDuration",
+                    "date": date,
+                    "value": value
+                })
+        elif request_data["request_data_type"] == "STEPS":
+            for entry in raw_data["data"]:
+                # Extract the numeric value from the string
+                value = int(entry["value"].split(":")[1].strip())
+                # Extract the date part only
+                date = entry["date"].split(" ")[0]
+                prepared_data.append({
+                    "name": "steps",
+                    "date": date,
+                    "value": value
+                })
+        elif request_data["request_data_type"] == "HEART_RATE":
+            for entry in raw_data["data"]:
+                # Extract the numeric value from the string
+                value = int(entry["value"].split(":")[1].strip())
+                # Extract the date part only
+                date = entry["date"].split(" ")[0]
+                prepared_data.append({
+                    "name": "heartRate",
+                    "date": date,
+                    "value": value
+                })
     
     return prepared_data
 

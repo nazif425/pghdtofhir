@@ -66,14 +66,25 @@ def data_request():
     data["start_date"] = start_date
     data["end_date"] = end_date
         
-    
-    store_data = {'request_data': data}
-    
+    # map request request data type from unified keys to different sources keys
+    if data["request_type"] == "fitbit":
+        if data["request_data_type"] == "sleep":
+            data["request_data_type"] = "sleepDuration"
+        elif data["request_data_type"] == "heart_rate":
+            data["request_data_type"] = "restingHeartRate"
+    if data["request_type"] == "healthconnect":
+        if data["request_data_type"] == "sleep":
+            data["request_data_type"] = "SLEEP_SESSION"
+        elif data["request_data_type"] == "steps":
+            data["request_data_type"] = "STEPS"
+        elif data["request_data_type"] == "heart_rate":
+            data["request_data_type"] = "HEART_RATE"
+        
     authsession_data = {
         "state": str(uuid.uuid4()),
         "patient_id": patient.patient_id, 
         "identity_id": identity.identity_id,
-        "data": store_data
+        "data": {'request_data': data}
     }
 
     auth_session = AuthSession(**authsession_data)
