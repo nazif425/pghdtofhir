@@ -96,11 +96,10 @@ def generate_fitbit_auth_url(auth_session):
 
 def generate_healthconnect_auth_url(auth_session, request_data):
     state = auth_session.state
-    print("state", state)
     start_date = request_data["start_date"].split("T")[0]
     end_date = request_data["end_date"].split("T")[0]
     base_url = "https://emr.abdullahikawu.org/deeplink/"
-    auth_link = f'{base_url}?id={id}&'\
+    auth_link = f'{base_url}?id={state}&'\
                 f'request_data_type={request_data["request_data_type"]}&'\
                 f'start_date={start_date}&'\
                 f'end_date={end_date}'

@@ -90,7 +90,6 @@ def data_request():
     auth_session = AuthSession(**authsession_data)
     db.session.add(auth_session)
     db.session.commit()
-    print(authsession_data)
     if data["request_type"] == "fitbit":
         if load_tokens_from_db(patient.patient_id):
             return redirect(url_for("wearable.data", state=auth_session.state))
