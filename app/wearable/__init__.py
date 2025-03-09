@@ -121,8 +121,8 @@ def fetch_fitbit_data(patient, request_data):
         {"url": "activities/heart", "request_data_type": "restingHeartRate"},
         {"url": "activities/calories", "request_data_type": "calories"}
     ]
-    base_date = datetime.strptime(start_date, "%Y-%m-%dT%H:%M:%S").date()
-    end_date = datetime.strptime(end_date, "%Y-%m-%dT%H:%M:%S").date()
+    base_date = datetime.strptime(request_data["start_date"], "%Y-%m-%dT%H:%M:%S").date()
+    end_date = datetime.strptime(request_data["end_date"], "%Y-%m-%dT%H:%M:%S").date()
     fitbit_device_info = fitbit_client.get_devices()
     fitbit_time_data = {}
     for endpoint in time_series_endpoints:
