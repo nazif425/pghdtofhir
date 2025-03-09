@@ -224,25 +224,25 @@ def data():
     db.session.flush()
     
     metadata = {}
-    try:
-        if request_data["request_type"] == "fitbit":
-            fitbit_data = fetch_fitbit_data(patient, request_data)
-            data = fitbit_data["data"]
-            metadata.update(fitbit_data["metadata"])
-        
-        prepared_data = prepare_data(data, request_data)
-        if not prepared_data:
-            raise Exception("No data found")
-
-        result = process_and_send_data(identity, prepared_data, request_data, other_data=metadata)
-        
-        request_info.endedAtTime = datetime.now()
-        db.session.commit()
-    except Exception as e:
-        request_info.endedAtTime = datetime.now()
-        db.session.commit()
-        return jsonify({"message": str(e)}), 500
+    #try:
+    if request_data["request_type"] == "fitbit":
+        fitbit_data = fetch_fitbit_data(patient, request_data)
+        data = fitbit_data["data"]
+        metadata.update(fitbit_data["metadata"])
     
+    prepared_data = prepare_data(data, request_data)
+    if not prepared_data:
+        raise Exception("No data found")
+
+    result = process_and_send_data(identity, prepared_data, request_data, other_data=metadata)
+    
+    request_info.endedAtTime = datetime.now()
+    db.session.commit()
+    #except Exception as e:
+    #request_info.endedAtTime = datetime.now()
+    #db.session.commit()
+    #return jsonify({"message": str(e)}), 500
+
     if request.args.get('from_auth', None):
         return render_template('authorization_granted.html')
     return jsonify(result)

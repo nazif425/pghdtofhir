@@ -148,7 +148,7 @@ def prepare_data(raw_data, request_data):
     prepared_data = []
     
     if request_data["request_data_type"] == "calories":
-        for entry in raw_data["activities-tracker-calories"]:
+        for entry in raw_data["activities-calories"]:
             prepared_data.append({
                 "name": "calories",
                 "date": entry["dateTime"],
@@ -169,7 +169,7 @@ def prepare_data(raw_data, request_data):
                 "value": entry["timeInBed"]
             })
     elif request_data["request_data_type"] == "steps":
-        for entry in raw_data["activities-tracker-steps"]:
+        for entry in raw_data["activities-steps"]:
             prepared_data.append({
                 "name": "steps",
                 "date": entry["dateTime"],
