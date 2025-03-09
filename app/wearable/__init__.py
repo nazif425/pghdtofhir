@@ -128,8 +128,8 @@ def fetch_fitbit_data(patient, request_data):
         if request_data["request_data_type"] == endpoint["request_data_type"]:
             fitbit_time_data.update(get_fitbit_data(
                 fitbit_client,
-                base_date=request_data["start_date"],
-                end_date=request_data["start_date"],
+                base_date=datetime.strptime(base_date, "%Y-%m-%dT%H:%M:%S").date(),
+                end_date=datetime.strptime(end_date, "%Y-%m-%dT%H:%M:%S").date(),
                 time_series=endpoint["url"]))
     
     if not fitbit_time_data:
