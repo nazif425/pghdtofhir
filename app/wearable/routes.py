@@ -229,7 +229,7 @@ def data():
         fitbit_data = fetch_fitbit_data(patient, request_data)
         data = fitbit_data["data"]
         metadata.update(fitbit_data["metadata"])
-    
+    print(data)
     prepared_data = prepare_data(data, request_data)
     if not prepared_data:
         raise Exception("No data found")
