@@ -239,14 +239,16 @@ def data():
         fitbit_data = fetch_fitbit_data(patient, request_data)
         data = fitbit_data["data"]
         metadata.update(fitbit_data["metadata"])
-    print(data)
+    
+    request_info.endedAtTime = datetime.now()
     prepared_data = prepare_data(data, request_data)
+    
+    print(data)
     if not prepared_data:
         raise Exception("No data found")
 
     result = process_and_send_data(identity, prepared_data, request_data, other_data=metadata)
     
-    request_info.endedAtTime = datetime.now()
     db.session.commit()
     #except Exception as e:
     #request_info.endedAtTime = datetime.now()

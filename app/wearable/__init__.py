@@ -1,5 +1,6 @@
 import sys, os, random, base64, hashlib, secrets, random, string, requests, uuid, json, smtplib
 import fitbit
+from collections import defaultdict
 from urllib.parse import urlencode
 from os import environ
 from flask import Blueprint, Flask, request, jsonify, abort, render_template, Response, flash, redirect, url_for, session
@@ -181,38 +182,41 @@ def prepare_data(raw_data, request_data):
                 })
     
     elif request_data["request_type"] == "healthconnect":
+        # Group data by date
+        daily_data = defaultdict(list)
+        for entry in raw_data["data"]:
+            # Extract the date part only
+            date = entry["date"].split(" ")[0]
+            # Extract the numeric value from the string
+            value = int(entry["value"].split(":")[1].strip())
+            daily_data[date].append(value)
+        
         if request_data["request_data_type"] == "SLEEP_SESSION":
-            for entry in raw_data["data"]:
-                # Extract the numeric value from the string
-                value = int(entry["value"].split(":")[1].strip())
-                # Extract the date part only
-                date = entry["date"].split(" ")[0]
+            for date, values in daily_data.items():
+                # Sum all sleep durations for the same day
+                total_sleep = sum(values)
                 prepared_data.append({
                     "name": "sleepDuration",
                     "date": date,
-                    "value": value
+                    "value": total_sleep
                 })
         elif request_data["request_data_type"] == "STEPS":
-            for entry in raw_data["data"]:
-                # Extract the numeric value from the string
-                value = int(entry["value"].split(":")[1].strip())
-                # Extract the date part only
-                date = entry["date"].split(" ")[0]
+            for date, values in daily_data.items():
+                # Sum all steps for the same day
+                total_steps = sum(values)
                 prepared_data.append({
                     "name": "steps",
                     "date": date,
-                    "value": value
+                    "value": total_steps
                 })
         elif request_data["request_data_type"] == "HEART_RATE":
-            for entry in raw_data["data"]:
-                # Extract the numeric value from the string
-                value = int(entry["value"].split(":")[1].strip())
-                # Extract the date part only
-                date = entry["date"].split(" ")[0]
+            for date, values in daily_data.items():
+                # Calculate the average heart rate for the same day
+                avg_heart_rate = sum(values) / len(values)
                 prepared_data.append({
                     "name": "heartRate",
                     "date": date,
-                    "value": value
+                    "value": round(avg_heart_rate, 2)  # Round to 2 decimal places
                 })
     
     return prepared_data
