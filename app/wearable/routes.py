@@ -31,7 +31,7 @@ def cancel_authorization():
     flash('Fitbit device disconnected successfully')
     return redirect(url_for('portal.patient_dashboard'))
 
-@wearable.route('/data_request', methods=['POST'])
+@wearable.route('/data_request', methods=['POST', 'GET'])
 def data_request():
     if request.method == 'GET':
         state = request.args.get('state', None)
@@ -62,7 +62,7 @@ def data_request():
         return jsonify({"data": record, "status": 200}), 200
 
 
-    else:
+    elif request.method == 'POST':
         data = request.get_json()
         if not data:
             abort(400, "Invalid request payload")
