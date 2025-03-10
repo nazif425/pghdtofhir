@@ -360,7 +360,7 @@ def transform_query_result(query_result):
     for result in query_result:
         record = {
             "name": result.name.value,
-            "date": result.timestamp.value,
+            "date": result.timestamp.value.strftime("%Y-%m-%d"),
             "value": result.value.value,
             "dataSource": result.source.value
         }
