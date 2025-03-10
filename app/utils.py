@@ -558,8 +558,8 @@ def build_fhir_resources(g, request_data):
                         }
                     ]
                 }],
-                manufacturer="Fitbit",
-                modelNumber="Charge 2",
+                manufacturer=None,
+                modelNumber=None,
                 owner={"reference": f"Patient?identifier={patient_id}"}
             )
         except ValueError as e:

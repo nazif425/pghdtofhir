@@ -13,6 +13,7 @@ from rdflib import Graph, URIRef, Literal, XSD, OWL
 from rdflib.namespace import RDF, RDFS
 from rdflib import Namespace
 from rdflib.plugins.stores.sparqlstore import SPARQLStore
+from . import generate_sparql_query, transform_query_result
 from . import wearable, get_fitbit_data, store_tokens_in_db, load_tokens_from_db, fetch_fitbit_data, process_and_send_data
 from . import refresh_and_store_tokens, generate_fitbit_auth_url, generate_healthconnect_auth_url, prepare_data
 from ..utils import unique_id, get_entity_name, is_timestamp, get_main_class, REDIRECT_URI, add_metadata_to_graph
@@ -32,88 +33,124 @@ def cancel_authorization():
 
 @wearable.route('/data_request', methods=['POST'])
 def data_request():
-    data = request.get_json()
-    if not data:
-        abort(400, "Invalid request payload")
-    
-    if data.get("request_type", "") not in ["fitbit", "healthconnect"]:
-        abort(400, "Error, request type not provided.")
-    
-    verify_resources(data)
-    instances = get_or_create_instances(data)
-    
-    patient = instances["patient"]
-    practitioner = instances["practitioner"]
-    ehr_system = instances["ehr_system"]
-    identity = instances["identity"]
-    organization = instances["organization"]
-    
-    # Validate date
-    start_date = data["start_date"]
-    end_date = data["end_date"]
-    if not is_timestamp(start_date, format="%Y-%m-%d"):
-        start_date = date.today().strftime("%Y-%m-%dT00:00:00")
-    else:
-        # Convert date to datetime
-        start_date = start_date + "T00:00:00"
+    if request.method == 'GET':
+        state = request.args.get('state', None)
+        if not state:
+            return jsonify({"message": "Invalid request, state arg not provided.", "status": 400}), 400
+        
+        auth_session = AuthSession.query.filter_by(state=state).first()
+        if auth_session is None:
+            return jsonify({"message": "Error, could not find request", "status": 404}), 404
+        
+        request_data = auth_session.data.get("request_data", None)
+        if not request_data.get("complete", None):
+            return jsonify({"message": "Data request in progress. Data not available yet.", "status": 202}), 202
+        
+        # Generate the SPARQL query
+        sparql_query = generate_sparql_query(request_data)
 
-    if not is_timestamp(end_date, format="%Y-%m-%d"):
-        end_date = date.today().strftime("%Y-%m-%dT23:59:59")
-    else:
-        # Convert date to datetime
-        end_date = end_date + "T23:59:59"
-    
-    data["start_date"] = start_date
-    data["end_date"] = end_date
-        
-    # map request request data type from unified keys to different sources keys
-    if data["request_type"] == "fitbit":
-        if data["request_data_type"] == "sleep":
-            data["request_data_type"] = "sleepDuration"
-        elif data["request_data_type"] == "heart_rate":
-            data["request_data_type"] = "restingHeartRate"
-    if data["request_type"] == "healthconnect":
-        if data["request_data_type"] == "sleep":
-            data["request_data_type"] = "SLEEP_SESSION"
-        elif data["request_data_type"] == "steps":
-            data["request_data_type"] = "STEPS"
-        elif data["request_data_type"] == "heart_rate":
-            data["request_data_type"] = "HEART_RATE"
-        
-    authsession_data = {
-        "state": str(uuid.uuid4()),
-        "patient_id": patient.patient_id, 
-        "identity_id": identity.identity_id,
-        "data": {'request_data': data}
-    }
+        # Execute the SPARQL query (assuming you have a function to do this)
+        triple_store = Graph(store=store)
+        query_result = triple_store.query(sparql_query)
+        # For demonstration, let's assume the query result is as follows:
 
-    auth_session = AuthSession(**authsession_data)
-    db.session.add(auth_session)
-    db.session.commit()
-    if data["request_type"] == "fitbit":
-        if load_tokens_from_db(patient.patient_id):
-            return redirect(url_for("wearable.data", state=auth_session.state))
+        # Transform the query result into the desired format
+        records = transform_query_result(query_result)
         
-        auth_link = generate_fitbit_auth_url(auth_session)
-        if send_authorisation_email(patient.email, auth_link, practitioner.name, "Fitbit"):
-            return jsonify({
-                'message': f"A request for access to Fitbit data was successfully sent to {patient.email}." 
-            })
+        print(records)
+        print(f"Data shared successfully")
+        return jsonify({"data": record, "status": 200}), 200
+
+
+    else:
+        data = request.get_json()
+        if not data:
+            abort(400, "Invalid request payload")
+        
+        if data.get("request_type", "") not in ["fitbit", "healthconnect"]:
+            abort(400, "Error, request type not provided.")
+        
+        verify_resources(data)
+        instances = get_or_create_instances(data)
+        
+        patient = instances["patient"]
+        practitioner = instances["practitioner"]
+        ehr_system = instances["ehr_system"]
+        identity = instances["identity"]
+        organization = instances["organization"]
+        
+        # Validate date
+        start_date = data["start_date"]
+        end_date = data["end_date"]
+        if not is_timestamp(start_date, format="%Y-%m-%d"):
+            start_date = date.today().strftime("%Y-%m-%dT00:00:00")
         else:
-            return jsonify({
-                'message': "An error occurred. Email request to patient failed." 
-            })
-    
-    elif data["request_type"] == "healthconnect":
-        auth_link = generate_healthconnect_auth_url(auth_session, data)
-        if send_authorisation_email(patient.email, auth_link, practitioner.name, "HealthConnect"):
-            return jsonify({
-                'message': f"A request for access to HealthConnect data was successfully sent to {patient.email}." 
-            })
+            # Convert date to datetime
+            start_date = start_date + "T00:00:00"
+
+        if not is_timestamp(end_date, format="%Y-%m-%d"):
+            end_date = date.today().strftime("%Y-%m-%dT23:59:59")
         else:
-            return jsonify({
-                'message': "An error occurred. Email request to patient failed." 
-            }) 
+            # Convert date to datetime
+            end_date = end_date + "T23:59:59"
+        
+        data["start_date"] = start_date
+        data["end_date"] = end_date
+            
+        # map request request data type from unified keys to different sources keys
+        if data["request_type"] == "fitbit":
+            if data["request_data_type"] == "sleep":
+                data["request_data_type"] = "sleepDuration"
+            elif data["request_data_type"] == "heart_rate":
+                data["request_data_type"] = "restingHeartRate"
+        if data["request_type"] == "healthconnect":
+            if data["request_data_type"] == "sleep":
+                data["request_data_type"] = "SLEEP_SESSION"
+            elif data["request_data_type"] == "steps":
+                data["request_data_type"] = "STEPS"
+            elif data["request_data_type"] == "heart_rate":
+                data["request_data_type"] = "HEART_RATE"
+        
+        state = str(uuid.uuid4())
+        data["state"] = state
+        authsession_data = {
+            "state": state,
+            "patient_id": patient.patient_id, 
+            "identity_id": identity.identity_id,
+            "data": {'request_data': data}
+        }
+
+        auth_session = AuthSession(**authsession_data)
+        db.session.add(auth_session)
+        db.session.commit()
+        if data["request_type"] == "fitbit":
+            if load_tokens_from_db(patient.patient_id):
+                return redirect(url_for("wearable.data", state=state))
+            
+            auth_link = generate_fitbit_auth_url(auth_session)
+            if send_authorisation_email(patient.email, auth_link, practitioner.name, "Fitbit"):
+                return jsonify({
+                    'message': f"A request for access to Fitbit data was successfully sent to {patient.email}.",
+                    'state': state
+                })
+            else:
+                return jsonify({
+                    'message': "An error occurred. Email request to patient failed.",
+                    'state': state
+                })
+        
+        elif data["request_type"] == "healthconnect":
+            auth_link = generate_healthconnect_auth_url(auth_session, data)
+            if send_authorisation_email(patient.email, auth_link, practitioner.name, "HealthConnect"):
+                return jsonify({
+                    'message': f"A request for access to HealthConnect data was successfully sent to {patient.email}.",
+                    'state': state
+                })
+            else:
+                return jsonify({
+                    'message': "An error occurred. Email request to patient failed.",
+                    'state': state
+                }) 
 
 @wearable.route('/request_fitbit_auth', methods=['GET'])
 def request_authorization():
@@ -467,22 +504,8 @@ def fetch_fitbit_data2():
         # Save to remote fhir server
         if found:
             result["fhir"] = build_fhir_resources(triple_store, r_data)
-        
-            if destination_url:
-                headers = {
-                    "Content-Type": "application/json"
-                }
-                
-                # Make the POST request to Fitbit API
-                response_data = requests.post(
-                        destination_url, 
-                        headers=headers, 
-                        data={"prepared_data" : prepared_data})
-                
-                if response_data.status_code != 200:
-                    print(f"data shared to {destination_url} successfully")
-                else:
-                    print(f"Failed to share data to {destination_url} successfully")
+
+
             if request.args.get('from_auth', None):
                 return render_template('authorization_granted.html')
             return jsonify(result)

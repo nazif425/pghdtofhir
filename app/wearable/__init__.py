@@ -255,10 +255,6 @@ def process_and_send_data(identity, prepared_data, request_data, other_data=None
     g.parse("static/rdf_files/wearpghdprovo-onto-template.ttl", format="turtle")
     new_g = Graph()
     
-    other_data = {
-        "wearable_name": "FITBIT",  # Replace with HealthConnect if applicable
-        "wearable_model": "Unknown"  # Replace with actual device info if available
-    }
     new_instances = add_metadata_to_graph(new_g, identity, other_data=other_data)
 
     # Add data to graph
@@ -295,20 +291,78 @@ def process_and_send_data(identity, prepared_data, request_data, other_data=None
     # Build FHIR resources
     triple_store = Graph(store=store)
     result["fhir"] = build_fhir_resources(new_g, request_data)
-
-    # Send data to destination
-    if request_data["destination_url"]:
-        headers = {"Content-Type": "application/json"}
-        response_data = requests.post(
-            request_data["destination_url"],
-            headers=headers,
-            json={"prepared_data": prepared_data}
-        )
-        if response_data.status_code == 200:
-            print(f'Data shared to {request_data["destination_url"]} successfully')
-        else:
-            print(f'Failed to share data to {request_data["destination_url"]}')
-
+    
+    # Change data request status
+    request_data["complete"] = True
+    auth_session = AuthSession.query.filter_by(state=request_data.get("state", "")).first()
+    auth_session.data = {"request_data": request_data}
+    db.session.commit()
     return result
+
+def generate_sparql_query(request_data):
+    # Extract necessary information from the request data
+    request_type = request_data.get("request_type", "")
+    request_data_type = request_data.get("request_data_type", "")
+    start_date = request_data.get("start_date", "")
+    end_date = request_data.get("end_date", "")
+    patient_id = request_data.get("meta-data", {}).get("patient", {}).get("user_id", "")
+
+    # Construct the SPARQL query dynamically
+    query = f"""
+    PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+    PREFIX owl: <http://www.w3.org/2002/07/owl#>
+    PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+    PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+    PREFIX foaf: <http://xmlns.com/foaf/0.1/>
+    PREFIX prov: <http://www.w3.org/ns/prov#>
+    PREFIX s4wear: <https://saref.etsi.org/saref4wear/>
+    PREFIX pghdprovo: <https://w3id.org/pghdprovo/>
+    PREFIX : <https://w3id.org/wearpghdprovo/>
+    PREFIX wearpghdprovo: <https://w3id.org/wearpghdprovo/>
+    SELECT ?subject ?name ?value ?source ?timestamp ?description ?label ?posture ?deviceName ?deviceModel   
+    WHERE {{
+        ?subject a pghdprovo:PGHD .
+        ?subject pghdprovo:name ?name .
+        ?subject pghdprovo:value ?value .
+        ?subject pghdprovo:dataSource ?source .
+        ?subject pghdprovo:hasTimestamp ?timestamp .
+        FILTER (?timestamp >= "{start_date}"^^xsd:dateTime && ?timestamp <= "{end_date}"^^xsd:dateTime) .
+        FILTER (STRSTARTS(?source, "{request_type}")) .
+        FILTER (?name = "{request_data_type}") .
+        ?subject prov:wasAttributedTo ?patient .
+        ?patient pghdprovo:userid ?userid .
+        FILTER (?userid = "{patient_id}") .
+        OPTIONAL {{?subject rdfs:comment ?description .}}
+        OPTIONAL {{?subject rdfs:label ?label .}}
+        OPTIONAL {{
+            ?subject pghdprovo:hasContextualInfo ?state .
+            ?state a pghdprovo:State .
+            ?state pghdprovo:posture ?posture .
+        }}
+        OPTIONAL {{
+            ?subject prov:wasDerivedFrom ?Wearable .
+            ?Wearable pghdprovo:deviceName ?deviceName .
+        }}
+        OPTIONAL {{
+            ?subject prov:wasDerivedFrom ?Wearable .
+            ?Wearable pghdprovo:deviceModel ?deviceModel .
+        }}
+    }}
+    """
+    return query
+
+def transform_query_result(query_result):
+    # Transform the query result into the desired array format
+    records = []
+    for result in query_result:
+        record = {
+            "name": result.get("name", ""),
+            "date": result.get("timestamp", ""),
+            "value": result.get("value", ""),
+            "dataSource": result.get("source", "")
+        }
+        records.append(record)
+    return records
+
 from . import routes
 
