@@ -289,9 +289,9 @@ def data():
     if not prepared_data:
         raise Exception("No data found")
 
+    db.session.commit()
     result = process_and_send_data(identity, prepared_data, request_data, other_data=metadata)
     
-    db.session.commit()
     #except Exception as e:
     #request_info.endedAtTime = datetime.now()
     #db.session.commit()
