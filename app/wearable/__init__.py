@@ -296,6 +296,8 @@ def process_and_send_data(identity, prepared_data, request_data, other_data=None
     request_data["complete"] = True
     auth_session = AuthSession.query.filter_by(state=request_data.get("state", "")).first()
     auth_session.data = {"request_data": request_data}
+    print(auth_session)
+    print(request_data)
     db.session.commit()
     return result
 

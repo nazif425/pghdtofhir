@@ -43,6 +43,7 @@ def data_request():
             return jsonify({"message": "Error, could not find request", "status": 404}), 404
         
         request_data = auth_session.data.get("request_data", None)
+        print(request_data)
         if not request_data.get("complete", None):
             return jsonify({"message": "Data request in progress. Data not available yet.", "status": 202}), 202
         
