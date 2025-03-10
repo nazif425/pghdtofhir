@@ -132,26 +132,30 @@ def data_request():
             if send_authorisation_email(patient.email, auth_link, practitioner.name, "Fitbit"):
                 return jsonify({
                     'message': f"A request for access to Fitbit data was successfully sent to {patient.email}.",
-                    'state': state
-                })
+                    'state': state,
+                    'status': 200
+                }), 200
             else:
                 return jsonify({
                     'message': "An error occurred. Email request to patient failed.",
-                    'state': state
-                })
+                    'state': state,
+                    'status': 500
+                }), 500
         
         elif data["request_type"] == "healthconnect":
             auth_link = generate_healthconnect_auth_url(auth_session, data)
             if send_authorisation_email(patient.email, auth_link, practitioner.name, "HealthConnect"):
                 return jsonify({
                     'message': f"A request for access to HealthConnect data was successfully sent to {patient.email}.",
-                    'state': state
-                })
+                    'state': state,
+                    'status': 200
+                }), 200
             else:
                 return jsonify({
                     'message': "An error occurred. Email request to patient failed.",
-                    'state': state
-                }) 
+                    'state': state,
+                    'status': 500
+                }), 500
 
 @wearable.route('/request_fitbit_auth', methods=['GET'])
 def request_authorization():
@@ -297,8 +301,9 @@ def data():
         return render_template('authorization_granted.html')
     return jsonify({
         'message': "Data successfully fetched and stored",
-        'state': state
-    })
+        'state': state,
+        'status': 200
+    }), 200
 
 @wearable.route('/fetch_fitbit_data', methods=['GET'])
 def fetch_fitbit_data2():
