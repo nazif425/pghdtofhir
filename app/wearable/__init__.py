@@ -359,10 +359,10 @@ def transform_query_result(query_result):
     records = []
     for result in query_result:
         record = {
-            "name": result.get("name", ""),
-            "date": result.get("timestamp", ""),
-            "value": result.get("value", ""),
-            "dataSource": result.get("source", "")
+            "name": result.get("name", {}).get("value", ""),
+            "date": result.get("timestamp", {}).get("value", ""),
+            "value": result.get("value", {}).get("value", ""),
+            "dataSource": result.get("source", {}).get("value", "")
         }
         records.append(record)
     return records
