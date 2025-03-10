@@ -294,7 +294,10 @@ def data():
 
     if request.args.get('from_auth', None):
         return render_template('authorization_granted.html')
-    return jsonify(result)
+    return jsonify({
+        'message': "Data successfully fetched and stored",
+        'state': state
+    })
 
 @wearable.route('/fetch_fitbit_data', methods=['GET'])
 def fetch_fitbit_data2():
