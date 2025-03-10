@@ -60,7 +60,7 @@ def data_request():
         
         print(records)
         print(f"Data shared successfully")
-        return jsonify({"data": record, "status": 200}), 200
+        return jsonify({"data": records, "status": 200}), 200
 
 
     elif request.method == 'POST':
