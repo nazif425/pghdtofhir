@@ -156,7 +156,7 @@ def data_request():
         db.session.add(auth_session)
         db.session.commit()
         if data["request_type"] == "fitbit":
-            if not send_access_code(identity.practitioner.email, access_code, practitioner.name, "Fitbit"):
+            if not send_access_code(patient.email, access_code, practitioner.name, "Fitbit"):
                 return jsonify({
                     'message': "An error occurred. Email request to patient failed.",
                     'status': 500
@@ -175,7 +175,7 @@ def data_request():
             
         
         elif data["request_type"] == "healthconnect":
-            if not send_access_code(identity.practitioner.email, access_code, practitioner.name, "HealthConnect"):
+            if not send_access_code(patient.email, access_code, practitioner.name, "HealthConnect"):
                 return jsonify({
                     'message': "An error occurred. Email request to patient failed.",
                     'status': 500
@@ -320,7 +320,7 @@ def data():
     
     print("data from source: ", data)
     print("prepared data: ", prepared_data)
-    
+
     if not prepared_data:
         raise Exception("No data found")
 

@@ -463,7 +463,7 @@ def data_request():
         auth_session = AuthSession(**authsession_data)
         db.session.add(auth_session)
         db.session.commit()
-        if not send_access_code(identity.practitioner.email, access_code, practitioner.name, "IVR Platform"):
+        if not send_access_code(patient.email, access_code, practitioner.name, "IVR Platform"):
             return jsonify({
                 'message': "An error occurred. Email request to patient failed.",
                 'status': 500
