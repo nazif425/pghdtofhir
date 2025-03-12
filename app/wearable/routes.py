@@ -67,7 +67,7 @@ def data_request():
         if not access_code:
             return jsonify({"message": "Invalid request, access code not provided.", "status": 400}), 400
         
-        auth_session = AuthSession.query.filter_by(code=access_code).first()
+        auth_session = AuthSession.query.filter_by(state=access_code).first()
         if auth_session is None:
             return jsonify({"message": "Error, Invalid access code", "status": 403}), 403
         
