@@ -154,7 +154,7 @@ def data_request():
             "state": access_code,
             "patient_id": patient.patient_id, 
             "identity_id": identity.identity_id,
-            "data": {'request_data': data, "status": "authorization"}
+            "data": {'request_data': data, "complete": False}
         }
 
         auth_session = AuthSession(**authsession_data)

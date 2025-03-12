@@ -256,8 +256,8 @@ def data():
 
     phone_number = data["meta-data"]["patient"].get("phone_number", None)
     if not phone_number:
-        abort(400, "Error, phone_number not provided.")
-
+        return jsonify({"message": "Error, phone_number not provided.", "status": 400}), 400
+    
     if phone_number[0] != '+':
         abort(400, "Error, invalid phone_number.")
     
@@ -287,10 +287,13 @@ def data():
     call_sessions = CallSession.query.filter(
         CallSession.completed_at.between(start_date_obj, end_date_obj),
         CallSession.phone_number==phone_number, 
-    )
+    ).all()
 
-    if not call_sessions:          
-        abort(404, f"No record found for {phone_number} with given date range")
+    if not call_sessions:
+        return jsonify({
+            "message": f"No record found for {phone_number} with given date range",
+            "status": 404
+        }), 404
     
     # Prepare Fetched data 
     sessions_data = []
@@ -439,10 +442,10 @@ def data_request():
     elif request.method == 'POST':
         data = request.get_json()
         if not data:
-            abort(400, "Invalid request payload")
+            return jsonify({"message": f"Invalid request payload", "status": 400}), 400
         
         if "IVR" not in data["request_type"]:
-            abort(400, "Error, request type not provided.")
+            return jsonify({"message": f"Error, request type not provided.", "status": 400}), 400
         verify_resources(data)
         instances = get_or_create_instances(data)
         
@@ -457,7 +460,7 @@ def data_request():
             "state": access_code,
             "patient_id": patient.patient_id, 
             "identity_id": identity.identity_id,
-            "data": {'request_data': data, "status": "authorization"}
+            "data": {'request_data': data, "complete": False}
         }
 
         auth_session = AuthSession(**authsession_data)

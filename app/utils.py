@@ -636,39 +636,9 @@ def build_fhir_resources(g, request_data):
     triple_store = Graph(store=store)
     # triple_store_loc = "static/rdf_files/wearpghdprovo-onto-store.ttl"
     # triple_store.parse(triple_store_loc, format="turtle")
-
-    query = f"""
-    SELECT ?subject ?name ?value ?source ?timestamp ?description ?label ?posture ?deviceName ?deviceModel   
-    WHERE {{
-        ?subject a pghdprovo:PGHD .
-        ?subject pghdprovo:name ?name .
-        ?subject pghdprovo:value ?value .
-        ?subject pghdprovo:dataSource ?source .
-        ?subject pghdprovo:hasTimestamp ?timestamp .
-        FILTER (?timestamp >= "{start_date}"^^xsd:dateTime && ?timestamp <= "{end_date}"^^xsd:dateTime) .
-        FILTER (STRSTARTS(?source, "{request_type}")) .
-        FILTER (?name = "{request_data_type}") .
-        ?subject prov:wasAttributedTo ?patient .
-        ?patient pghdprovo:userid ?userid .
-        FILTER (?userid = "{patient_id}") .
-        OPTIONAL {{?subject rdfs:comment ?description .}}
-        OPTIONAL {{?subject rdfs:label ?label .}}
-        OPTIONAL {{
-            ?subject pghdprovo:hasContextualInfo ?state .
-            ?state a pghdprovo:State .
-            ?state pghdprovo:posture ?posture .
-        }}
-        OPTIONAL {{
-            ?subject prov:wasDerivedFrom ?Wearable .
-            ?Wearable pghdprovo:deviceName ?deviceName .
-        }}
-        OPTIONAL {{
-            ?subject prov:wasDerivedFrom ?Wearable .
-            ?Wearable pghdprovo:deviceModel ?deviceModel .
-        }}
-    }}
-    """
-    result = triple_store.query(query_header + query)
+    query = generate_sparql_query(request_data)
+    
+    result = triple_store.query(query)
     bodysite_coding_key = None
     bodysite_coding = None
     deviceName = None
@@ -877,7 +847,15 @@ def generate_sparql_query(request_data):
     start_date = request_data.get("start_date", "")
     end_date = request_data.get("end_date", "")
     patient_id = request_data.get("meta-data", {}).get("patient", {}).get("user_id", "")
-
+    # convert request data type to the standard keywords recorded
+    if data["request_type"] == "healthconnect":
+        if data["request_data_type"] == "SLEEP_SESSION":
+            data["request_data_type"] = "sleep"
+        elif data["request_data_type"] == "STEPS":
+            data["request_data_type"] = "steps"
+        elif data["request_data_type"] == "HEART_RATE":
+            data["request_data_type"] = "heart_rate"
+    
     # Construct the SPARQL query dynamically
     query = f"""
     PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
