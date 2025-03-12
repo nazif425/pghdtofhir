@@ -71,7 +71,12 @@ def data_request():
         if auth_session is None:
             return jsonify({"message": "Error, Invalid access code", "status": 403}), 403
         
+        patient_id = auth_session.patient_id
+        patient = Patient.query.filter_by(patient_id=patient_id).first()
+        if patient is None:
+            return jsonify({"message": "An error occured, patient does not exist", "status": 500}), 500
         request_data = auth_session.data.get("request_data", None)
+        
         print(request_data)
         if not auth_session.data.get("complete", None):
             # fetch data if fitbit token for patient available
