@@ -4,6 +4,7 @@ from os import environ
 from flask import Flask, request, jsonify, abort, render_template, Response, flash, redirect, url_for, session
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
+from flask_cors import CORS
 from .models import db
 
 from .ivr import ivr
@@ -32,7 +33,12 @@ def create_app():
     
     migrate = Migrate(app, db)
     app.secret_key = os.getenv('SQLITE_DB_PATH')
-
+    
+    # CORS Configuration
+    CORS(
+        app,
+        origins=["https://abdullahikawu.org", "https://*.abdullahikawu.org"]
+    )
     # Register Blueprints
     app.register_blueprint(ivr, url_prefix='/ivr')
     app.register_blueprint(wearable, url_prefix='/wearable')
