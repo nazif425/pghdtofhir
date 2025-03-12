@@ -848,13 +848,13 @@ def generate_sparql_query(request_data):
     end_date = request_data.get("end_date", "")
     patient_id = request_data.get("meta-data", {}).get("patient", {}).get("user_id", "")
     # convert request data type to the standard keywords recorded
-    if data["request_type"] == "healthconnect":
-        if data["request_data_type"] == "SLEEP_SESSION":
-            data["request_data_type"] = "sleep"
-        elif data["request_data_type"] == "STEPS":
-            data["request_data_type"] = "steps"
-        elif data["request_data_type"] == "HEART_RATE":
-            data["request_data_type"] = "heart_rate"
+    if request_data["request_type"] == "healthconnect":
+        if request_data["request_data_type"] == "SLEEP_SESSION":
+            request_data["request_data_type"] = "sleep"
+        elif request_data["request_data_type"] == "STEPS":
+            request_data["request_data_type"] = "steps"
+        elif request_data["request_data_type"] == "HEART_RATE":
+            request_data["request_data_type"] = "heart_rate"
     
     # Construct the SPARQL query dynamically
     query = f"""
