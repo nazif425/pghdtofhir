@@ -402,7 +402,7 @@ def data():
     return redirect(url_for("ivr.data_request", code=access_code))
     
 
-@ivr.route('/data_request', methods=['POST'])
+@ivr.route('/data_request', methods=['POST', 'GET'])
 def data_request():
     if request.method == 'GET':
         access_code = request.args.get('code', None)
