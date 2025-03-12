@@ -81,7 +81,7 @@ def data_request():
         if not auth_session.data.get("complete", None):
             # fetch data if fitbit token for patient available
             if request_data.get("request_type", None) == "fitbit" and load_tokens_from_db(patient.patient_id):
-                return redirect(url_for("wearable.data", state=access_code))
+                return redirect(url_for("wearable.data", code=access_code))
             return jsonify({"message": "Data request in progress. Data not available yet.", "status": 202}), 202
 
         # Generate the SPARQL query
