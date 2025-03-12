@@ -11,10 +11,10 @@ from rdflib.namespace import RDF, RDFS
 from rdflib import Namespace
 from rdflib.plugins.stores.sparqlstore import SPARQLStore
 from datetime import datetime, date
-
+from ..utils import generate_sparql_query, transform_query_result, send_access_code
 from ..utils import unique_id, get_entity_name, is_timestamp, get_main_class, get_or_create_instances, build_fhir_resources
 from ..utils import copy_instance, transform_data, send_authorisation_email, add_metadata_to_graph, verify_resources
-from ..utils import store, insert_data_to_triplestore
+from ..utils import store, insert_data_to_triplestore, generate_unique_5_digit
 
 # RDF namespace
 pghdprovo = Namespace("https://w3id.org/pghdprovo/")
@@ -229,38 +229,30 @@ def test_fhir():
         abort(500, f"Error querying resource: {response.text}")
     return jsonify(response.json())
 
-@ivr.route('/data_request', methods=['POST'])
-def data_request():
-    # triple_store_loc = "static/rdf_files/wearpghdprovo-onto-store.ttl"
-    # triple_store.parse(triple_store_loc, format="turtle")
-
-    # Find patient instance
-    #number_end = phone_number[-10:]
-    #find_patient = """
-    #SELECT ?patient ?number ?patientrelative
-    #WHERE {
-    #    ?patient pghdprovo:phoneNumber ?number .
-    #    ?patient a pghdprovo:Patient .
-    #    FILTER(STRENDS(?number, '""" + number_end + """'))
-    #    OPTIONAL {
-    #        ?patientrelative prov:actedOnBehalfOf ?patient
-    #    }
-    #}
-    #"""
-    data = request.get_json()
-    if not data:
-        abort(400, "Invalid request payload")
+@ivr.route('/data', methods=['GET'])
+def data():
+    data = {}
+    if request.method == 'GET':
+        access_code = request.args.get('code', None)
+        if not access_code:
+            return jsonify({"message": "Invalid request, access code not provided.", "status": 400}), 400
+    auth_session = AuthSession.query.filter_by(state=access_code).first()
+    if auth_session is None:
+        return jsonify({"message": "Error, could not identify request id", "status": 400}), 400
     
-    if "IVR" not in data["request_type"]:
-        abort(400, "Error, request type not provided.")
-    verify_resources(data)
-    instances = get_or_create_instances(data)
+    identity_id = auth_session.identity_id
+    identity = Identity.query.get_or_404(identity_id)
+    patient = identity.patient
+    data = auth_session.data.get("request_data", None)
+    request_info = Request(
+        identity_id=identity.identity_id,
+        startedAtTime=datetime.now(),
+        description=f'Fetch patient data from {data["request_type"]}',
+    )
+    db.session.add(request_info)
+    db.session.flush()
     
-    patient = instances["patient"]
-    practitioner = instances["practitioner"]
-    ehr_system = instances["ehr_system"]
-    identity = instances["identity"]
-    organization = instances["organization"]
+    metadata = {}
 
     phone_number = data["meta-data"]["patient"].get("phone_number", None)
     if not phone_number:
@@ -269,7 +261,6 @@ def data_request():
     if phone_number[0] != '+':
         abort(400, "Error, invalid phone_number.")
     
-    destination_url = data.get("destination_url", None)
     start_date = data.get("start_date", None)
     end_date = data.get("end_date", None)
     
@@ -329,15 +320,6 @@ def data_request():
     
     new_g = Graph()
     triple_store = Graph(store=store)
-    
-    request_data = Request(
-            identity_id=identity.identity_id,
-            startedAtTime=datetime.now(),
-            endedAtTime=datetime.now(),
-            description='Fetch patient data collected via a phone call.')
-    
-    db.session.add(request_data)
-    db.session.commit()
     
     new_instances = add_metadata_to_graph(new_g, identity)
 
@@ -405,17 +387,89 @@ def data_request():
     # Save to remote fhir server
     result["fhir"] = build_fhir_resources(triple_store, data)
 
-    if data.get("destination_url", None):
-        headers = {"Content-Type": "application/json"}
-        # Make the POST request to Fitbit API
-        response_data = requests.post(
-                destination_url, 
-                headers=headers, 
-                data=result)
-        
-        if response_data.status_code != 200:
-            print(f"data shared to {destination_url} successfully")
-        else:
-            print(f"Failed to share data to {destination_url} successfully")
-    return jsonify(result)
+    request_info.endedAtTime = datetime.now()
+    db.session.commit()
+
+    # Change data request status
+    auth_session.data = {"request_data": data, "complete": True}
+    db.session.commit()
+    print(auth_session.data)
+    #except Exception as e:
+    #request_info.endedAtTime = datetime.now()
+    #db.session.commit()
+    #return jsonify({"message": str(e)}), 500
+
+    return redirect(url_for("ivr.data_request", code=access_code))
     
+
+@ivr.route('/data_request', methods=['POST'])
+def data_request():
+    if request.method == 'GET':
+        access_code = request.args.get('code', None)
+        if not access_code:
+            return jsonify({"message": "Invalid request, access code not provided.", "status": 400}), 400
+        
+        auth_session = AuthSession.query.filter_by(state=access_code).first()
+        if auth_session is None:
+            return jsonify({"message": "Error, Invalid access code", "status": 403}), 403
+        
+        request_data = auth_session.data.get("request_data", None)
+        print(request_data)
+        if not auth_session.data.get("complete", None):
+            # fetch data if fitbit token for patient available
+            if request_data.get("request_type", None) == "IVR":
+                return redirect(url_for("ivr.data", state=access_code))
+            #return jsonify({"message": "Data request in progress. Data not available yet.", "status": 202}), 202
+
+        # Generate the SPARQL query
+        sparql_query = generate_sparql_query(request_data)
+
+        # Execute the SPARQL query (assuming you have a function to do this)
+        triple_store = Graph(store=store)
+        query_result = triple_store.query(sparql_query)
+        # For demonstration, let's assume the query result is as follows:
+
+        # Transform the query result into the desired format
+        records = transform_query_result(query_result)
+        
+        print(records)
+        print(f"Data shared successfully")
+        return jsonify({"data": records, "status": 200}), 200
+
+    elif request.method == 'POST':
+        data = request.get_json()
+        if not data:
+            abort(400, "Invalid request payload")
+        
+        if "IVR" not in data["request_type"]:
+            abort(400, "Error, request type not provided.")
+        verify_resources(data)
+        instances = get_or_create_instances(data)
+        
+        patient = instances["patient"]
+        practitioner = instances["practitioner"]
+        ehr_system = instances["ehr_system"]
+        identity = instances["identity"]
+        organization = instances["organization"]
+
+        access_code = str(generate_unique_5_digit())
+        authsession_data = {
+            "state": access_code,
+            "patient_id": patient.patient_id, 
+            "identity_id": identity.identity_id,
+            "data": {'request_data': data, "status": "authorization"}
+        }
+
+        auth_session = AuthSession(**authsession_data)
+        db.session.add(auth_session)
+        db.session.commit()
+        if not send_access_code(identity.practitioner.email, access_code, practitioner.name, "IVR Platform"):
+            return jsonify({
+                'message': "An error occurred. Email request to patient failed.",
+                'status': 500
+            }), 500
+        return jsonify({
+            'message': f"Access code sent successfully to {patient.email}.",
+            'status': 200
+        }), 200
+            

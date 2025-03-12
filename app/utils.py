@@ -155,6 +155,59 @@ def transform_data(data, output_data=None, last_path=None, ignore_list=False, se
                         ignore_list=ignore_list, include=include)
     if data_set:
         output_data.append(data_set)
+def send_access_code(receiver_email, access_code, name="", data_source="Fitbit"):
+    sender_email = SENDER_EMAIL
+    smtp_server = SMTP_SERVER
+    password = SMTP_PASSWORD
+    smtp_port = SMTP_PORT
+
+    # Email template
+    email_template = """
+    <html>
+    <body style="font-family: Arial, sans-serif; line-height: 1.6; margin: 0; padding: 10px; background-color: #f9fafc;">
+        <div style="max-width: 600px; margin: 0 auto; background: #ffffff; border: 1px solid #e0e0e0; padding: 15px; border-radius: 5px;">
+        <h2 style="color: #2c3e50; text-align: center;">Healthcare Data Authorization</h2>
+        <p><strong>Dear Patient,</strong></p>
+        <p>A healthcare provider {name} has requested for access to your {data_source} data.</p>
+        <p>The code below, if shared, enables access to your data from {data_source}. Ignore or do not share unless informed or in alignment with this. Otherwise, consult your healthcare professional.</p>
+        <p style="text-align: center; margin: 20px 0;">
+            <div
+            style="background-color: #0078d7; color: #ffffff; text-decoration: none; padding: 10px 20px; border-radius: 5px; display: inline-block;">
+            {access_code}
+            </div>
+        </p>
+        <p style="text-align: center; font-size: 10px; color: #888888; margin-top: 20px; border-top: 1px solid #eeeeee; padding-top: 10px;">
+            This is an automated message. Please do not reply.
+        </p>
+        </div>
+    </body>
+    </html>
+    """
+
+    # Format the email body with dynamic content
+    body = email_template.format(
+        data_source=data_source,
+        name=name,
+        access_code=access_code
+    )
+
+    # Create the email
+    message = MIMEMultipart()
+    message["From"] = f"Healthcare Provider <{sender_email}>"
+    message["To"] = receiver_email
+    message["Subject"] = f"Healthcare Data Authorization Code"
+    message.attach(MIMEText(body, "html"))
+
+    try:
+        # Connect to the server using SSL
+        with smtplib.SMTP_SSL(smtp_server, smtp_port) as server:
+            server.login(sender_email, password)  # Login
+            server.sendmail(sender_email, receiver_email, message.as_string())  # Send email
+        print("Email sent successfully!")
+        return True
+    except Exception as e:
+        print(f"Failed to send email: {e}")
+        return False
 
 def send_authorisation_email(receiver_email, auth_link, name="", data_source="Fitbit"):
     sender_email = SENDER_EMAIL
@@ -816,3 +869,86 @@ def insert_data_to_triplestore(graph, update_endpoint=update_endpoint):
             return f"Error: {response.response.read().decode('utf-8')}"
     except Exception as e:
         return f"An error occurred during the SPARQL update: {str(e)}"
+
+def generate_sparql_query(request_data):
+    # Extract necessary information from the request data
+    request_type = request_data.get("request_type", "")
+    request_data_type = request_data.get("request_data_type", "")
+    start_date = request_data.get("start_date", "")
+    end_date = request_data.get("end_date", "")
+    patient_id = request_data.get("meta-data", {}).get("patient", {}).get("user_id", "")
+
+    # Construct the SPARQL query dynamically
+    query = f"""
+    PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+    PREFIX owl: <http://www.w3.org/2002/07/owl#>
+    PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+    PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+    PREFIX foaf: <http://xmlns.com/foaf/0.1/>
+    PREFIX prov: <http://www.w3.org/ns/prov#>
+    PREFIX s4wear: <https://saref.etsi.org/saref4wear/>
+    PREFIX pghdprovo: <https://w3id.org/pghdprovo/>
+    PREFIX : <https://w3id.org/wearpghdprovo/>
+    PREFIX wearpghdprovo: <https://w3id.org/wearpghdprovo/>
+    SELECT ?subject ?name ?value ?source ?timestamp ?description ?label ?posture ?deviceName ?deviceModel   
+    WHERE {{
+        ?subject a pghdprovo:PGHD .
+        ?subject pghdprovo:name ?name .
+        ?subject pghdprovo:value ?value .
+        ?subject pghdprovo:dataSource ?source .
+        ?subject pghdprovo:hasTimestamp ?timestamp .
+        FILTER (?timestamp >= "{start_date}"^^xsd:dateTime && ?timestamp <= "{end_date}"^^xsd:dateTime) .
+        FILTER (STRSTARTS(?source, "{request_type}")) .
+        FILTER (?name = "{request_data_type}") .
+        ?subject prov:wasAttributedTo ?patient .
+        ?patient pghdprovo:userid ?userid .
+        FILTER (?userid = "{patient_id}") .
+        OPTIONAL {{?subject rdfs:comment ?description .}}
+        OPTIONAL {{?subject rdfs:label ?label .}}
+        OPTIONAL {{
+            ?subject pghdprovo:hasContextualInfo ?state .
+            ?state a pghdprovo:State .
+            ?state pghdprovo:posture ?posture .
+        }}
+        OPTIONAL {{
+            ?subject prov:wasDerivedFrom ?Wearable .
+            ?Wearable pghdprovo:deviceName ?deviceName .
+        }}
+        OPTIONAL {{
+            ?subject prov:wasDerivedFrom ?Wearable .
+            ?Wearable pghdprovo:deviceModel ?deviceModel .
+        }}
+    }}
+    """
+    return query
+
+def transform_query_result(query_result):
+    # Transform the query result into the desired array format
+    records = []
+    for result in query_result:
+        record = {
+            "name": result.name.value,
+            "date": result.timestamp.value.strftime("%Y-%m-%d"),
+            "value": result.value.value,
+            "dataSource": result.source.value
+        }
+        records.append(record)
+    return records
+
+def generate_unique_5_digit(storage_file="used_numbers.txt"):
+    # Load used numbers from file
+    try:
+        with open(storage_file, "r") as file:
+            used_numbers = set(file.read().splitlines())
+    except FileNotFoundError:
+        used_numbers = set()
+
+    # Generate a unique number
+    while True:
+        number = random.randint(10000, 99999)
+        if str(number) not in used_numbers:
+            used_numbers.add(str(number))
+            # Save the updated list of used numbers
+            with open(storage_file, "w") as file:
+                file.write("\n".join(used_numbers))
+            return number
