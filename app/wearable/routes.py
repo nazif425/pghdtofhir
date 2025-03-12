@@ -281,6 +281,16 @@ def get_access_token():
 
 @wearable.route('/data', methods=['GET', 'POST'])
 def data():
+    def all_zeros(data_list, key):
+        """
+        Returns True if every value for the given key in the list of dictionaries is 0.
+        
+        :param data_list: List of dictionaries
+        :param key: The key to check in each dictionary
+        :return: True if all values are 0, otherwise False
+        """
+        return all(d.get(key, 0) == 0 for d in data_list)
+    
     data = {}
     if request.method == 'GET':
         access_code = request.args.get('code', None)
@@ -326,7 +336,8 @@ def data():
     print("data from source: ", data)
     print("prepared data: ", prepared_data)
 
-    if not prepared_data:
+    # verify if data  exists for the given date range
+    if all_zeros(prepared_data, "value"):
         return jsonify({
             "message": f"No record found for the specified date range",
             "status": 404
