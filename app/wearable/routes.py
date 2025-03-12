@@ -289,7 +289,7 @@ def data():
         :param key: The key to check in each dictionary
         :return: True if all values are 0, otherwise False
         """
-        return all(d.get(key, 0) == 0 for d in data_list)
+        return all(int(d.get(key, 0)) == 0 for d in data_list)
     
     data = {}
     if request.method == 'GET':
