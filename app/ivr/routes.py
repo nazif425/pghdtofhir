@@ -233,10 +233,11 @@ def test_fhir():
 def data():
     data = {}
     if request.method == 'GET':
-        access_code = request.args.get('code', None)
-        if not access_code:
-            return jsonify({"message": "Invalid request, access code not provided.", "status": 400}), 400
-    auth_session = AuthSession.query.filter_by(state=access_code).first()
+        private_key = data.get("private_key", None)
+        public_key = data.get("public_key", None)
+        if not private_key or not public_key:
+            return jsonify({"message": "Invalid payload, access key(s) not provided.", "status": 400}), 400
+    auth_session = AuthSession.query.filter_by(private_key=private_key, public_key=public_key).first()
     if auth_session is None:
         return jsonify({"message": "Error, could not identify request id", "status": 400}), 400
     
@@ -402,26 +403,27 @@ def data():
     #db.session.commit()
     #return jsonify({"message": str(e)}), 500
 
-    return redirect(url_for("ivr.data_request", code=access_code))
+    return redirect(url_for("ivr.data_request", private_key=private_key, public_key=public_key))
     
 
 @ivr.route('/data_request', methods=['POST', 'GET'])
 def data_request():
     if request.method == 'GET':
-        access_code = request.args.get('code', None)
-        if not access_code:
-            return jsonify({"message": "Invalid request, access code not provided.", "status": 400}), 400
+        private_key = data.get("private_key", None)
+        public_key = data.get("public_key", None)
+        if not private_key or not public_key:
+            return jsonify({"message": "Invalid payload, access key(s) not provided.", "status": 400}), 400
+        auth_session = AuthSession.query.filter_by(private_key=private_key, public_key=public_key).first()
         
-        auth_session = AuthSession.query.filter_by(state=access_code).first()
         if auth_session is None:
-            return jsonify({"message": "Error, Invalid access code", "status": 403}), 403
+            return jsonify({"message": "Error, Invalid access key(s)", "status": 403}), 403
         
         request_data = auth_session.data.get("request_data", None)
         print(request_data)
         if not auth_session.data.get("complete", None):
             # fetch data if fitbit token for patient available
             if request_data.get("request_type", None) == "IVR":
-                return redirect(url_for("ivr.data", code=access_code))
+                return redirect(url_for("ivr.data", private_key=private_key, public_key=public_key))
             #return jsonify({"message": "Data request in progress. Data not available yet.", "status": 202}), 202
 
         # Generate the SPARQL query
@@ -455,9 +457,11 @@ def data_request():
         identity = instances["identity"]
         organization = instances["organization"]
 
-        access_code = str(generate_unique_5_digit())
+        private_key = str(generate_unique_5_digit())
+        public_key = str(generate_unique_5_digit())
         authsession_data = {
-            "state": access_code,
+            "private_key": private_key,
+            "public_key": public_key,
             "patient_id": patient.patient_id, 
             "identity_id": identity.identity_id,
             "data": {'request_data': data, "complete": False}
@@ -466,13 +470,14 @@ def data_request():
         auth_session = AuthSession(**authsession_data)
         db.session.add(auth_session)
         db.session.commit()
-        if not send_access_code(patient.email, access_code, practitioner.name, "IVR Platform"):
+        if not send_access_code(patient.email, private_key, practitioner.name, "IVR Platform"):
             return jsonify({
                 'message': "An error occurred. Email request to patient failed.",
                 'status': 500
             }), 500
         return jsonify({
             'message': f"Access code sent successfully to {patient.email}.",
+            'public_key': public_key,
             'status': 200
         }), 200
             

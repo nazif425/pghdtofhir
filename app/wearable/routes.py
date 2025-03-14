@@ -43,10 +43,11 @@ def auth_status():
         print(data)
         if not data:
             return jsonify({"message": "Invalid payload", "status": 400}), 400
-        code = data.get("code", None)
-        if not code:
-            return jsonify({"message": "Invalid payload, access code not provided.", "status": 400}), 400
-        auth_session = AuthSession.query.filter_by(state=key).first()
+        private_key = data.get("private_key", None)
+        public_key = data.get("public_key", None)
+        if not private_key or not public_key:
+            return jsonify({"message": "Invalid payload, access key(s) not provided.", "status": 400}), 400
+        auth_session = AuthSession.query.filter_by(private_key=private_key, public_key=public_key).first()
         if auth_session is None:
             return jsonify({
                 "message": "Invalid access code.", 
@@ -63,13 +64,13 @@ def auth_status():
 @wearable.route('/data_request', methods=['POST', 'GET'])
 def data_request():
     if request.method == 'GET':
-        access_code = request.args.get('code', None)
-        if not access_code:
-            return jsonify({"message": "Invalid request, access code not provided.", "status": 400}), 400
-        
-        auth_session = AuthSession.query.filter_by(state=access_code).first()
+        private_key = data.get("private_key", None)
+        public_key = data.get("public_key", None)
+        if not private_key or not public_key:
+            return jsonify({"message": "Invalid payload, access key(s) not provided.", "status": 400}), 400
+        auth_session = AuthSession.query.filter_by(private_key=private_key, public_key=public_key).first()
         if auth_session is None:
-            return jsonify({"message": "Error, Invalid access code", "status": 403}), 403
+            return jsonify({"message": "Error, Invalid access key", "status": 403}), 403
         
         patient_id = auth_session.patient_id
         patient = Patient.query.filter_by(patient_id=patient_id).first()
@@ -81,7 +82,7 @@ def data_request():
         if not auth_session.data.get("complete", None):
             # fetch data if fitbit token for patient available
             if request_data.get("request_type", None) == "fitbit" and load_tokens_from_db(patient.patient_id):
-                return redirect(url_for("wearable.data", code=access_code))
+                return redirect(url_for("wearable.data", private_key=private_key, public_key=public_key))
             return jsonify({"message": "Data request in progress. Data not available yet.", "status": 202}), 202
 
         # Generate the SPARQL query
@@ -149,9 +150,11 @@ def data_request():
             elif data["request_data_type"] == "heart_rate":
                 data["request_data_type"] = "HEART_RATE"
         
-        access_code = str(generate_unique_5_digit())
+        private_key = str(generate_unique_5_digit())
+        public_key = str(generate_unique_5_digit())
         authsession_data = {
-            "state": access_code,
+            "private_key": private_key,
+            "public_key": public_key,
             "patient_id": patient.patient_id, 
             "identity_id": identity.identity_id,
             "data": {'request_data': data, "complete": False}
@@ -161,7 +164,7 @@ def data_request():
         db.session.add(auth_session)
         db.session.commit()
         if data["request_type"] == "fitbit":
-            if not send_access_code(patient.email, access_code, practitioner.name, "Fitbit"):
+            if not send_access_code(patient.email, private_key, practitioner.name, "Fitbit"):
                 return jsonify({
                     'message': "An error occurred. Email request to patient failed.",
                     'status': 500
@@ -174,13 +177,14 @@ def data_request():
                         'status': 500
                     }), 500
             return jsonify({
-                'message': f"Authorization request/access code sent successfully to {patient.email}.",
+                'message': f"Authorization request/access key sent successfully to {patient.email}.",
+                'public_key': public_key,
                 'status': 200
             }), 200
             
         
         elif data["request_type"] == "healthconnect":
-            if not send_access_code(patient.email, access_code, practitioner.name, "HealthConnect"):
+            if not send_access_code(patient.email, private_key, practitioner.name, "HealthConnect"):
                 return jsonify({
                     'message': "An error occurred. Email request to patient failed.",
                     'status': 500
@@ -192,7 +196,8 @@ def data_request():
                     'status': 500
                 }), 500
             return jsonify({
-                'message': f"Authorization request/access code sent successfully to {patient.email}.",
+                'message': f"Authorization request/access key sent successfully to {patient.email}.",
+                'public_key': public_key,
                 'status': 200
             }), 200
 
@@ -218,7 +223,7 @@ def get_access_token():
     state = request.args.get('state', None)
     if not state:
         abort(404)
-    auth_session = AuthSession.query.filter_by(state=state).first()
+    auth_session = AuthSession.query.filter_by(private_key=state).first()
     if auth_session is None:
         flash('Sorry, could not authenticate user.', 'danger')
         return redirect(url_for('portal.patient_dashboard'))
@@ -274,7 +279,7 @@ def get_access_token():
         
         return redirect(url_for(
             'wearable.data', 
-            code=auth_session.state,
+            private_key=auth_session.private_key,
             from_auth=True
         ))
     return redirect(url_for('portal.patient_dashboard'))
@@ -293,9 +298,10 @@ def data():
     
     data = {}
     if request.method == 'GET':
-        access_code = request.args.get('code', None)
-        if not access_code:
-            return jsonify({"message": "Invalid request, access code not provided.", "status": 400}), 400
+        private_key = data.get("private_key", None)
+        public_key = data.get("public_key", None)
+        if not private_key or not public_key:
+            return jsonify({"message": "Invalid payload, access key(s) not provided.", "status": 400}), 400
     elif request.method == 'POST':
         data = request.get_json()
         print(data)
@@ -306,8 +312,8 @@ def data():
             return jsonify({"message": "Invalid payload, metadata missing.", "status": 400}), 400
         if not metadata.get("user_id", None):
             return jsonify({"message": "Invalid payload, user_id not provided.", "status": 400}), 400
-        access_code = metadata.get("user_id", None)
-    auth_session = AuthSession.query.filter_by(state=access_code).first()
+        private_key = metadata.get("user_id", None)
+    auth_session = AuthSession.query.filter_by(private_key=private_key).first()
     if auth_session is None:
         return jsonify({"message": "Error, could not identify request id", "status": 400}), 400
     
@@ -359,7 +365,7 @@ def data():
     if request_data["request_type"] == "fitbit":
         if request.args.get('from_auth', None):
             return render_template('authorization_granted.html')
-        return redirect(url_for("wearable.data_request", code=access_code))
+        return redirect(url_for("wearable.data_request", private_key=private_key, public_key=public_key))
     return jsonify({
         'message': "Data successfully fetched and stored",
         'status': 200

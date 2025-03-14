@@ -87,7 +87,7 @@ def generate_fitbit_auth_url(auth_session):
         'client_id': CLIENT_ID,
         'code_challenge': code_challenge,
         'code_challenge_method': 'S256',
-        'state': auth_session.state,
+        'state': auth_session.private_key,
         'redirect_uri': REDIRECT_URI
     }
     scope = '&scope=activity+cardio_fitness+electrocardiogram+heartrate'\
@@ -96,11 +96,11 @@ def generate_fitbit_auth_url(auth_session):
     return "https://www.fitbit.com/oauth2/authorize?" + urlencode(params) + scope
 
 def generate_healthconnect_auth_url(auth_session, request_data):
-    state = auth_session.state
+    private_key = auth_session.private_key
     start_date = request_data["start_date"].split("T")[0]
     end_date = request_data["end_date"].split("T")[0]
     base_url = "https://emr.abdullahikawu.org/deeplink/"
-    auth_link = f'{base_url}?id={state}&'\
+    auth_link = f'{base_url}?id={private_key}&'\
                 f'request_data_type={request_data["request_data_type"]}&'\
                 f'start_date={start_date}&'\
                 f'end_date={end_date}'
