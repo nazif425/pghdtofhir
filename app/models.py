@@ -128,7 +128,8 @@ class CallSession(db.Model):
 class AuthSession(db.Model):
     __tablename__ = "auth_session"
     auth_session_id = db.Column(db.Integer, primary_key=True)
-    state = db.Column(db.String(255), nullable=False)
+    public_key = db.Column(db.String(255), nullable=False)  # No default specified
+    private_key = db.Column(db.String(255), nullable=False)  # No default specified
     patient_id = db.Column(db.Integer, db.ForeignKey('patient.patient_id'), nullable=False)
     identity_id = db.Column(db.Integer, db.ForeignKey('identity.identity_id'), nullable=True)
     data = db.Column(db.JSON, nullable=True)
@@ -139,7 +140,7 @@ class AuthSession(db.Model):
     identity = db.relationship('Identity', back_populates='auth_session')
 
     def __repr__(self):
-        return f'<patient: {self.patient_id}, state: {self.state}>'
+        return f'<patient: {self.patient_id}, key: {self.private_key}>'
 
 class Organization(db.Model):
     __tablename__ = 'organization'
