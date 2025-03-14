@@ -43,8 +43,8 @@ def auth_status():
         print(data)
         if not data:
             return jsonify({"message": "Invalid payload", "status": 400}), 400
-        private_key = data.get("private_key", None)
-        public_key = data.get("public_key", None)
+        private_key = request.args.get("private_key", None)
+        public_key = request.args.get("public_key", None)
         if not private_key or not public_key:
             return jsonify({"message": "Invalid payload, access key(s) not provided.", "status": 400}), 400
         auth_session = AuthSession.query.filter_by(private_key=private_key, public_key=public_key).first()
@@ -64,8 +64,8 @@ def auth_status():
 @wearable.route('/data_request', methods=['POST', 'GET'])
 def data_request():
     if request.method == 'GET':
-        private_key = data.get("private_key", None)
-        public_key = data.get("public_key", None)
+        private_key = request.args.get("private_key", None)
+        public_key = request.args.get("public_key", None)
         if not private_key or not public_key:
             return jsonify({"message": "Invalid payload, access key(s) not provided.", "status": 400}), 400
         auth_session = AuthSession.query.filter_by(private_key=private_key, public_key=public_key).first()
@@ -298,8 +298,8 @@ def data():
     
     data = {}
     if request.method == 'GET':
-        private_key = data.get("private_key", None)
-        public_key = data.get("public_key", None)
+        private_key = request.args.get("private_key", None)
+        public_key = request.args.get("public_key", None)
         if not private_key or not public_key:
             return jsonify({"message": "Invalid payload, access key(s) not provided.", "status": 400}), 400
     elif request.method == 'POST':
