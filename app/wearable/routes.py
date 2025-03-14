@@ -164,33 +164,25 @@ def data_request():
         db.session.add(auth_session)
         db.session.commit()
         if data["request_type"] == "fitbit":
-            
-            if not load_tokens_from_db(patient.patient_id):
-                auth_link = generate_fitbit_auth_url(auth_session)
-                if not send_authorisation_email(patient.email, auth_link, practitioner.name, "Fitbit"):
-                    return jsonify({
-                        'message': "An error occurred. Email request to patient failed.",
-                        'status': 500
-                    }), 500
-            return jsonify({
-                'message': f"Authorization request/access key sent successfully to {patient.email}.",
-                'public_key': public_key,
-                'status': 200
-            }), 200
-            
-        
+            if load_tokens_from_db(patient.patient_id):
+                return redirect(url_for("wearable.data", private_key=private_key, public_key=public_key))
+            data_source = "Fitbit"
+            auth_link = generate_fitbit_auth_url(auth_session)
         elif data["request_type"] == "healthconnect":
+            data_source = "HealthConnect"
             auth_link = generate_healthconnect_auth_url(auth_session, data)
-            if not send_authorisation_email(patient.email, auth_link, practitioner.name, "HealthConnect"):
-                return jsonify({
-                    'message': "An error occurred. Email request to patient failed.",
-                    'status': 500
-                }), 500
+        
+        # reaponse with public key
+        if not send_authorisation_email(patient.email, auth_link, practitioner.name, data_source=data_source):
             return jsonify({
-                'message': f"Authorization request/access key sent successfully to {patient.email}.",
-                'public_key': public_key,
-                'status': 200
-            }), 200
+                'message': "An error occurred. Email request to patient failed.",
+                'status': 500
+            }), 500
+        return jsonify({
+            'message': f"Authorization request/access key sent successfully to {patient.email}.",
+            'public_key': public_key,
+            'status': 200
+        }), 200
 
 @wearable.route('/request_fitbit_auth', methods=['GET'])
 def request_authorization():
