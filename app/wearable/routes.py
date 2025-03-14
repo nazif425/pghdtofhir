@@ -164,11 +164,7 @@ def data_request():
         db.session.add(auth_session)
         db.session.commit()
         if data["request_type"] == "fitbit":
-            if not send_access_code(patient.email, private_key, practitioner.name, "Fitbit"):
-                return jsonify({
-                    'message': "An error occurred. Email request to patient failed.",
-                    'status': 500
-                }), 500
+            
             if not load_tokens_from_db(patient.patient_id):
                 auth_link = generate_fitbit_auth_url(auth_session)
                 if not send_authorisation_email(patient.email, auth_link, practitioner.name, "Fitbit"):
@@ -184,11 +180,6 @@ def data_request():
             
         
         elif data["request_type"] == "healthconnect":
-            if not send_access_code(patient.email, private_key, practitioner.name, "HealthConnect"):
-                return jsonify({
-                    'message': "An error occurred. Email request to patient failed.",
-                    'status': 500
-                }), 500
             auth_link = generate_healthconnect_auth_url(auth_session, data)
             if not send_authorisation_email(patient.email, auth_link, practitioner.name, "HealthConnect"):
                 return jsonify({
@@ -274,12 +265,12 @@ def get_access_token():
         print(token_response)
         abort(404)
     if not session.get('patient_id', None):
-        query_params = auth_session.data.get('query_params', {})
         session["request_data"] = auth_session.data.get('request_data', None)
         
         return redirect(url_for(
             'wearable.data', 
             private_key=auth_session.private_key,
+            public_key=auth_session.public_key,
             from_auth=True
         ))
     return redirect(url_for('portal.patient_dashboard'))
@@ -320,6 +311,7 @@ def data():
     identity_id = auth_session.identity_id
     identity = Identity.query.get_or_404(identity_id)
     patient = identity.patient
+    practitioner = identity.practitioner
     request_data = auth_session.data.get("request_data", None)
     request_info = Request(
         identity_id=identity.identity_id,
@@ -361,12 +353,21 @@ def data():
     #request_info.endedAtTime = datetime.now()
     #db.session.commit()
     #return jsonify({"message": str(e)}), 500
-
+    data_source = "HealthConnect"
+    
     if request_data["request_type"] == "fitbit":
+        data_source = "Fitbit"
         if request.args.get('from_auth', None):
             return render_template('authorization_granted.html')
-        return redirect(url_for("wearable.data_request", private_key=private_key, public_key=public_key))
+    
+    # Send access key to patient
+    if not send_access_code(patient.email, private_key, practitioner.name, data_source=data_source):
+        return jsonify({
+            'message': "An error occurred. Email request to patient failed.",
+            'status': 500
+        }), 500
     return jsonify({
-        'message': "Data successfully fetched and stored",
+        'message': f"Authorization request/access key sent successfully to {patient.email}.",
+        'public_key': auth_session.public_key,
         'status': 200
     }), 200

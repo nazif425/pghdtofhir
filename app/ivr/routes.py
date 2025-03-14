@@ -244,6 +244,7 @@ def data():
     identity_id = auth_session.identity_id
     identity = Identity.query.get_or_404(identity_id)
     patient = identity.patient
+    practitioner = identity.practitioner
     data = auth_session.data.get("request_data", None)
     request_info = Request(
         identity_id=identity.identity_id,
@@ -402,8 +403,25 @@ def data():
     #request_info.endedAtTime = datetime.now()
     #db.session.commit()
     #return jsonify({"message": str(e)}), 500
-
-    return redirect(url_for("ivr.data_request", private_key=private_key, public_key=public_key))
+    data_source = "HealthConnect"
+    
+    if request_data["request_type"] == "fitbit":
+        data_source = "Fitbit"
+        if request.args.get('from_auth', None):
+            return render_template('authorization_granted.html')
+    
+    # Send access key to patient
+    if not send_access_code(patient.email, private_key, practitioner.name, data_source="IVR"):
+        return jsonify({
+            'message': "An error occurred. Email request to patient failed.",
+            'status': 500
+        }), 500
+    return jsonify({
+        'message': f"Authorization request/access key sent successfully to {patient.email}.",
+        'public_key': auth_session.public_key,
+        'status': 200
+    }), 200
+    #return redirect(url_for("ivr.data_request", private_key=private_key, public_key=public_key))
     
 
 @ivr.route('/data_request', methods=['POST', 'GET'])
@@ -424,7 +442,6 @@ def data_request():
             # fetch data if fitbit token for patient available
             if request_data.get("request_type", None) == "IVR":
                 return redirect(url_for("ivr.data", private_key=private_key, public_key=public_key))
-            #return jsonify({"message": "Data request in progress. Data not available yet.", "status": 202}), 202
 
         # Generate the SPARQL query
         sparql_query = generate_sparql_query(request_data)
@@ -470,14 +487,5 @@ def data_request():
         auth_session = AuthSession(**authsession_data)
         db.session.add(auth_session)
         db.session.commit()
-        if not send_access_code(patient.email, private_key, practitioner.name, "IVR Platform"):
-            return jsonify({
-                'message': "An error occurred. Email request to patient failed.",
-                'status': 500
-            }), 500
-        return jsonify({
-            'message': f"Access code sent successfully to {patient.email}.",
-            'public_key': public_key,
-            'status': 200
-        }), 200
+        return redirect(url_for("ivr.data", private_key=private_key, public_key=public_key))
             
