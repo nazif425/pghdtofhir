@@ -290,7 +290,7 @@ def process_and_send_data(identity, prepared_data, request_data, other_data=None
 
         # Add property annotations to instance
         for s, p, o in g.triples((wearpghdprovo[data_set["name"]], RDF.type, OWL.DatatypeProperty)):
-            for annoteProp in [RDFS.label, RDFS.comment, wearpghdprovo.propertySource]:
+            for annoteProp in [RDFS.label, RDFS.comment]:
                 value = g.value(
                     subject=wearpghdprovo[data_set["name"]], 
                     predicate=annoteProp)
