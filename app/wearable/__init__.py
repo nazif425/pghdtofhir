@@ -138,24 +138,32 @@ def fetch_fitbit_data(patient, request_data):
     
     if not fitbit_time_data:
         raise Exception("Failed to retrieve Fitbit data.")
+    metadata = None
+    if len(fitbit_device_info):
+        metadata = {
+            "device_id": fitbit_device_info[0].get("id", ""),
+            "wearable_name": "Fitbit",
+            "wearable_model": fitbit_device_info[0].get("deviceVersion", "")
+        }
+
     fitbit_data = {
         "data": fitbit_time_data,
-        "metadata": {
-            "wearable_name": "FITBIT",
-            "wearable_model": fitbit_device_info[0].get("deviceVersion", "") if len(fitbit_device_info) else ""
-        }
+        "metadata": metadata
     }
 
     return fitbit_data
 
-def prepare_data(raw_data, request_data):
+def prepare_data(raw_data, request_data, metadata=None):
     prepared_data = []
     
     def get_data_source(source_names):
         """Helper function to create a unique dataSource string."""
         unique_sources = sorted(set(source_names))  # Ensure uniqueness
         return "healthconnect - " + ", ".join(unique_sources)
-    
+    device_id = ""
+    if metadata:
+        device_id = metadata.get("device_id", "")
+
     if request_data["request_type"] == "fitbit":
         if request_data["request_data_type"] == "calories":
             for entry in raw_data["activities-calories"]:
@@ -163,6 +171,7 @@ def prepare_data(raw_data, request_data):
                     "name": "calories",
                     "date": entry["dateTime"],
                     "value": entry["value"],
+                    "device_id": device_id,
                     "dataSource": "fitbit"  # Only "fitbit" for fitbit data
                 })
         elif request_data["request_data_type"] == "restingHeartRate":
@@ -171,6 +180,7 @@ def prepare_data(raw_data, request_data):
                     "name": "restingHeartRate",
                     "date": entry["dateTime"],
                     "value": entry["value"].get("restingHeartRate", 0),
+                    "device_id": device_id,
                     "dataSource": "fitbit"  # Only "fitbit" for fitbit data
                 })
         elif request_data["request_data_type"] == "sleepDuration":
@@ -179,6 +189,7 @@ def prepare_data(raw_data, request_data):
                     "name": "sleepDuration",
                     "date": entry["dateOfSleep"],
                     "value": entry["timeInBed"],
+                    "device_id": device_id,
                     "dataSource": "fitbit"  # Only "fitbit" for fitbit data
                 })
         elif request_data["request_data_type"] == "steps":
@@ -187,6 +198,7 @@ def prepare_data(raw_data, request_data):
                     "name": "steps",
                     "date": entry["dateTime"],
                     "value": entry["value"],
+                    "device_id": device_id,
                     "dataSource": "fitbit"  # Only "fitbit" for fitbit data
                 })
     
@@ -285,6 +297,7 @@ def process_and_send_data(identity, prepared_data, request_data, other_data=None
                 if value:
                     new_g.add((instance, annoteProp, value))
             break
+        new_g.add((my_instance, pghdprovo.deviceId, Literal(data_set["device_id"])))
     # Save to triplestore
     result = {}
     result["triplestore"] = insert_data_to_triplestore(new_g, store.update_endpoint)

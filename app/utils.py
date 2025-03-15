@@ -654,8 +654,8 @@ def build_fhir_resources(g, request_data):
 
         value_set = value_quantities[record.name.value]
         value_set["value"] = record.value.value
-        if record.get("posture", None):
-            bodysite_coding_key = "left_arm" if record.posture.value == "Left arm" else "right_arm"
+        if record.get("bodysite", None):
+            bodysite_coding_key = "left_arm" if record.bodysite.value == "Left arm" else "right_arm"
             bodysite_coding = codings.get(bodysite_coding_key, None)
         if record.get("deviceName", None):
             deviceName = record.deviceName.value
@@ -868,7 +868,7 @@ def generate_sparql_query(request_data):
     PREFIX pghdprovo: <https://w3id.org/pghdprovo/>
     PREFIX : <https://w3id.org/wearpghdprovo/>
     PREFIX wearpghdprovo: <https://w3id.org/wearpghdprovo/>
-    SELECT ?subject ?name ?value ?source ?timestamp ?description ?label ?posture ?deviceName ?deviceModel   
+    SELECT ?subject ?name ?value ?source ?timestamp ?description ?label ?posture ?bodysite ?location ?deviceid
     WHERE {{
         ?subject a pghdprovo:PGHD .
         ?subject pghdprovo:name ?name .
@@ -883,18 +883,21 @@ def generate_sparql_query(request_data):
         FILTER (?userid = "{patient_id}") .
         OPTIONAL {{?subject rdfs:comment ?description .}}
         OPTIONAL {{?subject rdfs:label ?label .}}
+        OPTIONAL {{?subject pghdprovo:deviceId ?deviceid .}}
         OPTIONAL {{
             ?subject pghdprovo:hasContextualInfo ?state .
             ?state a pghdprovo:State .
             ?state pghdprovo:posture ?posture .
         }}
         OPTIONAL {{
-            ?subject prov:wasDerivedFrom ?Wearable .
-            ?Wearable pghdprovo:deviceName ?deviceName .
+            ?subject pghdprovo:hasContextualInfo ?protocol .
+            ?protocol a pghdprovo:Protocol .
+            ?protocol pghdprovo:bodySite ?bodysite .
         }}
         OPTIONAL {{
-            ?subject prov:wasDerivedFrom ?Wearable .
-            ?Wearable pghdprovo:deviceModel ?deviceModel .
+            ?subject pghdprovo:hasContextualInfo ?contextualinfo .
+            ?contextualinfo a pghdprovo:ContextualInfo .
+            ?contextualinfo pghdprovo:locationOfPatient ?location .
         }}
     }}
     """
@@ -908,8 +911,15 @@ def transform_query_result(query_result):
             "name": result.name.value,
             "date": result.timestamp.value.strftime("%Y-%m-%d"),
             "value": result.value.value,
+            "device_id": result.get("deviceid").value if result.get("deviceid") else "",
             "dataSource": result.source.value
         }
+        if record.get("dataSource", None) == "IVR":
+            record.update("metadata", {
+                "posture": result.get("posture").value if result.get("posture") else "",
+                "bodysite": result.get("bodysite").value if result.get("bodysite") else "",
+                "location": result.get("location").value if result.get("location") else ""
+            })
         records.append(record)
     return records
 

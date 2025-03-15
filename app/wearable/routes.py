@@ -321,10 +321,11 @@ def data():
         metadata.update(fitbit_data["metadata"])
     
     request_info.endedAtTime = datetime.now()
-    prepared_data = prepare_data(data, request_data)
+    prepared_data = prepare_data(data, request_data, metadata=metadata)
     
     print("data from source: ", data)
     print("prepared data: ", prepared_data)
+    print("meta data: ", metadata)
 
     # verify if data  exists for the given date range
     if all_zeros(prepared_data, "value"):
