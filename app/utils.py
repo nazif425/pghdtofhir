@@ -915,10 +915,12 @@ def transform_query_result(query_result):
             "dataSource": result.source.value
         }
         if record.get("dataSource", None) == "IVR":
-            record.update("metadata", {
-                "posture": result.get("posture").value if result.get("posture") else "",
-                "bodysite": result.get("bodysite").value if result.get("bodysite") else "",
-                "location": result.get("location").value if result.get("location") else ""
+            record.update({
+                "metadata": {
+                    "posture": result.get("posture").value if result.get("posture") else "",
+                    "bodysite": result.get("bodysite").value if result.get("bodysite") else "",
+                    "location": result.get("location").value if result.get("location") else ""
+                }
             })
         records.append(record)
     return records
