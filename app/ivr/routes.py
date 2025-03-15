@@ -403,12 +403,6 @@ def data():
     #request_info.endedAtTime = datetime.now()
     #db.session.commit()
     #return jsonify({"message": str(e)}), 500
-    data_source = "HealthConnect"
-    
-    if request_data["request_type"] == "fitbit":
-        data_source = "Fitbit"
-        if request.args.get('from_auth', None):
-            return render_template('authorization_granted.html')
     
     # Send access key to patient
     if not send_access_code(patient.email, private_key, practitioner.name, data_source="IVR"):
