@@ -297,7 +297,8 @@ def process_and_send_data(identity, prepared_data, request_data, other_data=None
                 if value:
                     new_g.add((instance, annoteProp, value))
             break
-        new_g.add((instance, pghdprovo.deviceId, Literal(data_set["device_id"])))
+        if data_set.get("device_id", None):
+            new_g.add((instance, pghdprovo.deviceId, Literal(data_set.get("device_id", None))))
     # Save to triplestore
     result = {}
     result["triplestore"] = insert_data_to_triplestore(new_g, store.update_endpoint)
