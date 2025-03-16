@@ -396,50 +396,256 @@ def check_resource_existence(resource_type, identifier, system=None):
     resources = response.json().get("entry", [])
     return len(resources) > 0
 
+def create_practitioner(request_data):
+    server_url = FHIR_SERVER_URL
+    """
+    Create a Practitioner resource from request_data and send it to the FHIR server.
+    
+    Args:
+        request_data (dict): The request data containing meta-data with practitioner info.
+        server_url (str, optional): The base URL of the HAPI FHIR server. Defaults to public server.
+    
+    Returns:
+        str or None: The identifier value (e.g., "9d121eab-f9a6-44f6-92af-4352c932d2da") if successful,
+                     None if creation fails.
+    """
+    try:
+        # Extract practitioner data from meta-data
+        practitioner_info = request_data.get("meta-data", {}).get("practitioner", {})
+        if not practitioner_info:
+            print("Error: No practitioner data found in request")
+            return None
+
+        # Parse name into given and family (assuming "given family" format)
+        full_name = practitioner_info.get("name", "").split()
+        given_name = full_name[0] if full_name else "Unknown"
+        family_name = " ".join(full_name[1:]) if len(full_name) > 1 else "Unknown"
+
+        # Create Practitioner resource with explicit keyword arguments using practitioner_info only
+        practitioner_resource = FhirPractitioner(
+            id=practitioner_info.get("user_id"),
+            identifier=[
+                {
+                    "system": "urn:uuid",
+                    "value": practitioner_info.get("user_id")
+                }
+            ],
+            active=True,
+            name=[
+                {
+                    "use": "official",
+                    "family": family_name,
+                    "given": [given_name]
+                }
+            ],
+            telecom=[
+                {
+                    "system": "phone",
+                    "value": practitioner_info.get("phone_number")
+                }
+            ] if practitioner_info.get("phone_number") else [],
+            gender=practitioner_info.get("gender", None),
+            birthDate=practitioner_info.get("birthdate", None)  # Assumes YYYY-MM-DD format
+        )
+
+        # Send to FHIR server
+        headers = {"Content-Type": "application/fhir+json"}
+        response = requests.post(
+            f"{server_url}/Practitioner",
+            data=practitioner_resource.json(),
+            headers=headers
+        )
+
+        # Check response
+        if response.status_code == 201:
+            identifier_value = practitioner_info.get("user_id")
+            print(f"Practitioner created successfully with ID: {identifier_value}")
+            return identifier_value
+        else:
+            print(f"Error: Failed to create Practitioner. Status: {response.status_code}, {response.text}")
+            return None
+
+    except Exception as e:
+        print(f"Exception occurred: {str(e)}")
+        return None
+
+def create_patient(request_data):
+    server_url = FHIR_SERVER_URL  # Assumes FHIR_SERVER_URL is defined elsewhere
+    """
+    Create a Patient resource from request_data and send it to the FHIR server.
+    
+    Args:
+        request_data (dict): The request data containing meta-data with patient info.
+    
+    Returns:
+        str or None: The identifier value (e.g., "1231") if successful, None if creation fails.
+    """
+    try:
+        # Extract patient data from meta-data
+        patient_info = request_data.get("meta-data", {}).get("patient", {})
+        if not patient_info:
+            print("Error: No patient data found in request")
+            return None
+
+        # Parse name into given and family (assuming "given family" format)
+        full_name = patient_info.get("name", "").split()
+        given_name = full_name[0] if full_name else "Unknown"
+        family_name = " ".join(full_name[1:]) if len(full_name) > 1 else "Unknown"
+
+        # Create Patient resource with explicit keyword arguments using patient_info only
+        patient_resource = FhirPatient(
+            id=patient_info.get("user_id"),
+            identifier=[
+                {
+                    "system": "urn:uuid",
+                    "value": patient_info.get("user_id")
+                }
+            ],
+            active=True,
+            name=[
+                {
+                    "use": "official",
+                    "family": family_name,
+                    "given": [given_name]
+                }
+            ],
+            telecom=[
+                {
+                    "system": "phone",
+                    "value": patient_info.get("phone_number")
+                }
+            ] if patient_info.get("phone_number") else [] +
+            [
+                {
+                    "system": "email",
+                    "value": patient_info.get("email")
+                }
+            ] if patient_info.get("email") else [],
+            gender=patient_info.get("gender", None),
+            birthDate=patient_info.get("birthdate", None)  # Assumes YYYY-MM-DD or will need conversion
+        )
+
+        # Send to FHIR server
+        headers = {"Content-Type": "application/fhir+json"}
+        response = requests.post(
+            f"{server_url}/Patient",
+            data=patient_resource.json(),
+            headers=headers
+        )
+
+        # Check response
+        if response.status_code == 201:
+            identifier_value = patient_info.get("user_id")
+            print(f"Patient created successfully with ID: {identifier_value}")
+            return identifier_value
+        else:
+            print(f"Error: Failed to create Patient. Status: {response.status_code}, {response.text}")
+            return None
+
+    except Exception as e:
+        print(f"Exception occurred: {str(e)}")
+        return None
+
+def create_organization(request_data):
+    server_url = FHIR_SERVER_URL  # Assumes FHIR_SERVER_URL is defined elsewhere
+    """
+    Create an Organization resource from request_data and send it to the FHIR server.
+    
+    Args:
+        request_data (dict): The request data containing meta-data with organization info.
+    
+    Returns:
+        str or None: The identifier value (e.g., "7477d1df-59af-4a47-b6fb-0ea842dcc0fd") if successful,
+                     None if creation fails.
+    """
+    try:
+        # Extract organization data from meta-data
+        org_info = request_data.get("meta-data", {}).get("organization", {})
+        if not org_info:
+            print("Error: No organization data found in request")
+            return None
+
+        # Create Organization resource with explicit keyword arguments
+        organization_resource = Organization(
+            id=org_info.get("org_id"),
+            identifier=[
+                {
+                    "system": "urn:uuid",
+                    "value": org_info.get("org_id")
+                }
+            ],
+            name=org_info.get("name"),
+            telecom=[
+                {
+                    "system": "email",
+                    "value": org_info.get("email")
+                }
+            ] if org_info.get("email") else [],
+            address=[
+                {
+                    "line": [org_info.get("address")] if org_info.get("address") else []
+                }
+            ] if org_info.get("address") else []
+        )
+
+        # Send to FHIR server
+        headers = {"Content-Type": "application/fhir+json"}
+        response = requests.post(
+            f"{server_url}/Organization",
+            data=organization_resource.json(),
+            headers=headers
+        )
+
+        # Check response
+        if response.status_code == 201:
+            identifier_value = org_info.get("org_id")
+            print(f"Organization created successfully with ID: {identifier_value}")
+            return identifier_value
+        else:
+            print(f"Error: Failed to create Organization. Status: {response.status_code}, {response.text}")
+            return None
+
+    except Exception as e:
+        print(f"Exception occurred: {str(e)}")
+        return None
+
 def verify_resources(data):
     """
     Verifies the existence of Patient, Practitioner, Encounter, and Organization resources.
     """
 
-    patient_user_id = data["meta-data"]["patient"].get("user_id", None)
-    #if data["authentication"].get("patient", None)
-    if not patient_user_id:
-        abort(400, "Error, patient user_id not provided.")
-    if not check_resource_existence("Patient", patient_user_id):
-        abort(404, f"Patient with ID '{patient_user_id}' does not exist on FHIR server.")
-
-    practitioner_user_id = data["meta-data"]["practitioner"].get("user_id", None)
-    # if data["authentication"].get("practitioner", None) 
-    if not practitioner_user_id:
-        abort(400, "Error, practitioner user_id not provided.")
-    if not check_resource_existence("Practitioner", practitioner_user_id):
-        abort(404, f"Practitioner with ID '{practitioner_user_id}' does not exist on FHIR server.")
-
-
-    if data["authentication"].get("organization", None):
-        organization_user_id = data["meta-data"]["organization"].get("org_id", None)
-        if not organization_user_id:
-            abort(400, "Error, organization user_id not provided.")
-        if not check_resource_existence("Organization", organization_user_id):
-            abort(404, f"Organization with ID '{organization_user_id}' does not exist on FHIR server.")
-    
-    # check encounter
-    encounter_id = data["meta-data"].get("encounter_id")
-    if encounter_id and not check_resource_existence("Encounter", encounter_id):
-        abort(404, f"Encounter with ID '{encounter_id}' does not exist on FHIR server.")
-
     # Check patient email
-    if data["request_type"] == "fitbit":
-        patient_email = data["meta-data"]["patient"].get("email", None)
-        # if data["authorisation"]["patient"].get("type", None) == "email":
-        if not patient_email:
-            abort(400, "Error, patient email not provided.")
+    patient_email = data["meta-data"]["patient"].get("email", None)
+    if not patient_email:
+        abort(400, "Error, patient email not provided.")
 
     # find patient number
     if data["request_type"] == "IVR":
         patient_phone_number = data["meta-data"]["patient"].get("phone_number", None)
         if not patient_phone_number:
             abort(400, "Error, patient number not provided.")
+    
+    # FHIR Resources verification
+    patient_user_id = data["meta-data"]["patient"].get("user_id", None)
+    if not patient_user_id:
+        abort(400, "Error, patient user_id not provided.")
+    if not check_resource_existence("Patient", patient_user_id):
+        if not create_patient(data):
+            abort(500, f"Failed to create Patient with ID '{patient_user_id}'.")
+
+    practitioner_user_id = data["meta-data"]["practitioner"].get("user_id", None)
+    if not practitioner_user_id:
+        abort(400, "Error, practitioner user_id not provided.")
+    if not check_resource_existence("Practitioner", practitioner_user_id):
+        if not create_practitioner(data):
+            abort(500, f"Failed to create Practitioner with ID '{practitioner_user_id}'.")
+
+    organization_user_id = data["meta-data"]["organization"].get("org_id", None)
+    if not organization_user_id:
+        abort(400, "Error, organization user_id not provided.")
+    if not check_resource_existence("Organization", organization_user_id):
+        if not create_organization(data):
+            abort(500, f"Failed to create Organization with ID '{organization_user_id}'.")
     
     return True
 
@@ -529,66 +735,44 @@ def build_fhir_resources(g, request_data):
     patient_id = request_data["meta-data"]["patient"]["user_id"]
     practitioner_id = request_data["meta-data"]["practitioner"]["user_id"]
     organization_id = request_data["meta-data"]["organization"].get("org_id", None)
+    organization_id = f"Organization?identifier={organization_id}"
     encounter_id = request_data.get("encounter", None)
     organization = None
     encounter = None
     device = None
     
-    # creeate organization resource
-    if not request_data["authentication"].get("organization", None):
-        organization_id = "urn:uuid:organization-1"
-        org = request_data["meta-data"]["organization"]
-        org_name = org.get("name", None)
-        try:
-            organization = FhirOrganization(
-                id="organization-1",
-                name=org_name,
-                identifier=[
-                    {
-                        "system": "urn:uuid",
-                        "value": str(uuid.uuid4())
-                    }
-                ],
-            )
-        except ValueError as e:
-            print("Organizartion error: ", e.errors())
-    else:
-        organization_id = f"Organization?identifier={organization_id}"
     
     # create encounter resource
-    if not request_data.get("encounter", None):
-        encounter_id = "urn:uuid:encounter-1"
-        try:
-            encounter = Encounter(
-                id="encounter-1",
-                status="finished",
-                class_fhir=[{
-                    "coding": [{
-                        "code":"AMB",
-                        "display":"Ambulatory",
-                        "system":"http://terminology.hl7.org/CodeSystem/v3-ActCode"
-                    }]
-                }],
-                identifier=[
-                    {
-                        "system": "urn:uuid",
-                        "value": str(uuid.uuid4())
-                    }
-                ],
-                subject={"reference": f"Patient?identifier={patient_id}"},
-                participant=[{
-                    "actor": {"reference": f"Practitioner?identifier={practitioner_id}"},
-                    "period": {
-                        "start": datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ"),
-                        "end": (datetime.now() + timedelta(hours=1)).strftime("%Y-%m-%dT%H:%M:%SZ")
-                    }
-                }],
-                serviceProvider={"reference": organization_id},
-            )
-        except ValueError as e:
-            print("Encounter error: ", e.errors())
-    else:
-        encounter_id = f"Encounter?identifier={encounter_id}"
+    encounter_id = "urn:uuid:encounter-1"
+    try:
+        encounter = Encounter(
+            id="encounter-1",
+            status="finished",
+            class_fhir=[{
+                "coding": [{
+                    "code":"AMB",
+                    "display":"Ambulatory",
+                    "system":"http://terminology.hl7.org/CodeSystem/v3-ActCode"
+                }]
+            }],
+            identifier=[
+                {
+                    "system": "urn:uuid",
+                    "value": str(uuid.uuid4())
+                }
+            ],
+            subject={"reference": f"Patient?identifier={patient_id}"},
+            participant=[{
+                "actor": {"reference": f"Practitioner?identifier={practitioner_id}"},
+                "period": {
+                    "start": datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ"),
+                    "end": (datetime.now() + timedelta(hours=1)).strftime("%Y-%m-%dT%H:%M:%SZ")
+                }
+            }],
+            serviceProvider={"reference": organization_id},
+        )
+    except ValueError as e:
+        print("Encounter error: ", e.errors())
     
     # create device resource
     if request_type == "Wearable":
@@ -757,17 +941,6 @@ def build_fhir_resources(g, request_data):
                 "url": "Device"
             },
             fullUrl=f"urn:uuid:device-1"
-        ))
-
-    # Add Organization resource (if defined)
-    if organization:
-        bundle.entry.append(BundleEntry(
-            resource=organization,
-            request={
-                "method": "POST",
-                "url": "Organization"
-            },
-            fullUrl=organization_id
         ))
 
     # Add Encounter resource (if defined)
