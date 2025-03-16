@@ -853,7 +853,7 @@ def build_fhir_resources(g, request_data):
             }
         })
         if record.get("posture", None):
-            posture_key = record["posture"].lower()
+            posture_key = record["posture"].value.lower()
             posture_coding = codings.get(posture_key, None)
             extensions.append({
                 "url": "http://example.org/fhir/StructureDefinition/body-posture",
@@ -862,7 +862,7 @@ def build_fhir_resources(g, request_data):
                 }
             })
         if record.get("location", None):
-            location_key = record["location"].lower()
+            location_key = record["location"].value.lower()
             location_coding = codings.get(location_key, None)
             extensions.append({
                 "url": "http://example.org/fhir/StructureDefinition/data-collection-location",
@@ -870,7 +870,7 @@ def build_fhir_resources(g, request_data):
                     "coding": [location_coding]
                 }
             })
-        
+        print(extensions)
         # create observation resources
         try:
             observations.append(Observation(
