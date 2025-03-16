@@ -853,7 +853,9 @@ def build_fhir_resources(g, request_data):
             }
         })
         if record.get("posture", None):
+            print(record.get("posture", None))
             posture_key = record["posture"].value.lower()
+            print(posture_key)
             posture_coding = codings.get(posture_key, None)
             extensions.append({
                 "url": "http://example.org/fhir/StructureDefinition/body-posture",
