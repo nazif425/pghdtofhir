@@ -620,7 +620,7 @@ def verify_resources(data):
         abort(400, "Error, patient email not provided.")
 
     # find patient number
-    if data["request_type"] == "IVR":
+    if "IVR" in data["request_type"]:
         patient_phone_number = data["meta-data"]["patient"].get("phone_number", None)
         if not patient_phone_number:
             abort(400, "Error, patient number not provided.")
@@ -1129,7 +1129,7 @@ def transform_query_result(query_result):
             "device_id": result.get("deviceid").value if result.get("deviceid") else "",
             "dataSource": result.source.value
         }
-        if record.get("dataSource", None) == "IVR":
+        if "IVR" in record.get("dataSource", None):
             record.update({
                 "metadata": {
                     "posture": result.get("posture").value if result.get("posture") else "",

@@ -364,7 +364,7 @@ def data():
             # Adding data to instance
             new_g.add((instance, pghdprovo.name, Literal(record['name'])))
             new_g.add((instance, pghdprovo.value, Literal(record['value'])))
-            new_g.add((instance, pghdprovo.dataSource, Literal('IVR')))
+            new_g.add((instance, pghdprovo.dataSource, Literal('IVR - BPM')))
             time_str = row["timestamp"].isoformat(timespec='seconds')
             new_g.add((instance, pghdprovo.hasTimestamp, Literal(time_str, datatype=XSD.dateTime)))
             
@@ -435,7 +435,7 @@ def data_request():
         print(request_data)
         if not auth_session.data.get("complete", None):
             # fetch data if fitbit token for patient available
-            if request_data.get("request_type", None) == "IVR":
+            if "IVR" in request_data.get("request_type", None):
                 return redirect(url_for("ivr.data", private_key=private_key, public_key=public_key))
 
         # Generate the SPARQL query
