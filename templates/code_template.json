@@ -43,5 +43,30 @@
         "system": "http://snomed.info/sct",
         "code": "368209003",
         "display": "Right upper arm"
+    },
+    "sitting": {
+        "system": "http://snomed.info/sct",
+        "code": "33586001",
+        "display": "Sitting position"
+    },
+    "standing": {
+        "system": "http://snomed.info/sct",
+        "code": "10904000",
+        "display": "Standing position"
+    },
+    "lying": {
+        "system": "http://snomed.info/sct",
+        "code": "102538003",
+        "display": "Lying position"
+    },
+    "home": {
+        "system": "http://snomed.info/sct",
+        "code": "264362003",
+        "display": "Home"
+    },
+    "outside": {
+        "system": "http://snomed.info/sct",
+        "code": "702703009",
+        "display": "Outside"
     }
 }

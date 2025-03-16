@@ -444,7 +444,7 @@ def create_practitioner(request_data):
                     "value": practitioner_info.get("phone_number")
                 }
             ] if practitioner_info.get("phone_number") else [],
-            gender=practitioner_info.get("gender", None),
+            gender=practitioner_info.get("gender").lower() if practitioner_info.get("gender", None) else None,
             birthDate=practitioner_info.get("birthdate", None)  # Assumes YYYY-MM-DD format
         )
 
@@ -521,7 +521,7 @@ def create_patient(request_data):
                     "value": patient_info.get("email")
                 }
             ] if patient_info.get("email") else [],
-            gender=patient_info.get("gender", None),
+            gender=patient_info.get("gender").lower() if patient_info.get("gender", None) else None,
             birthDate=patient_info.get("birthdate", None)  # Assumes YYYY-MM-DD or will need conversion
         )
 
@@ -775,8 +775,7 @@ def build_fhir_resources(g, request_data):
         print("Encounter error: ", e.errors())
     
     # create device resource
-    if request_type == "Wearable":
-
+    if request_type == "fitbit":
         try:
             device = Device(
                 id="device-1",
@@ -845,6 +844,32 @@ def build_fhir_resources(g, request_data):
             deviceName = record.deviceName.value
         if record.get("deviceModel", None):
             deviceModel = record.deviceModel.value
+        extensions = []
+        extensions.append({
+            "url": "http://hl7.org/fhir/StructureDefinition/observation-provenance",
+            "valueReference": {
+                "reference": "urn:uuid:provenance-1",
+                "display": "Provenance for PGHD"
+            }
+        })
+        if record.get("posture", None):
+            posture_key = record["posture"].lower()
+            posture_coding = codings.get(posture_key, None)
+            extensions.append({
+                "url": "http://example.org/fhir/StructureDefinition/body-posture",
+                "valueCodeableConcept": {
+                    "coding": [posture_coding]
+                }
+            })
+        if record.get("location", None):
+            location_key = record["location"].lower()
+            location_coding = codings.get(location_key, None)
+            extensions.append({
+                "url": "http://example.org/fhir/StructureDefinition/data-collection-location",
+                "valueCodeableConcept": {
+                    "coding": [location_coding]
+                }
+            })
         
         # create observation resources
         try:
@@ -868,7 +893,8 @@ def build_fhir_resources(g, request_data):
                 encounter={"reference": encounter_id},
                 device={"reference": "urn:uuid:device-1"} if device else None,
                 valueQuantity=value_set,
-                effectiveDateTime=(record.timestamp.value).strftime("%Y-%m-%dT%H:%M:%SZ")
+                effectiveDateTime=(record.timestamp.value).strftime("%Y-%m-%dT%H:%M:%SZ"),
+                extension=extensions
             ))
         except ValueError as e:
             print("observation error: ", e.errors())
@@ -899,7 +925,11 @@ def build_fhir_resources(g, request_data):
                 "what": {
                     "reference": "urn:uuid:device-1" 
                 } 
-            }] if device else None
+            }] if device else None,
+            encounter={
+                "reference": "urn:uuid:encounter-1",
+                "display": "Patient encounter for PGHD record"
+            }
         )
     except ValueError as e:
         print("Provenance error: ", e.errors())
@@ -1028,7 +1058,9 @@ def generate_sparql_query(request_data):
             request_data["request_data_type"] = "steps"
         elif request_data["request_data_type"] == "HEART_RATE":
             request_data["request_data_type"] = "heart_rate"
-    
+    fitbit_vars = ""
+    if request_data["request_type"] == "fitbit":
+        fitbit_vars = "?deviceName ?deviceModel"
     # Construct the SPARQL query dynamically
     query = f"""
     PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
@@ -1041,7 +1073,7 @@ def generate_sparql_query(request_data):
     PREFIX pghdprovo: <https://w3id.org/pghdprovo/>
     PREFIX : <https://w3id.org/wearpghdprovo/>
     PREFIX wearpghdprovo: <https://w3id.org/wearpghdprovo/>
-    SELECT ?subject ?name ?value ?source ?timestamp ?description ?label ?posture ?bodysite ?location ?deviceid
+    SELECT ?subject ?name ?value ?source ?timestamp ?description ?label ?posture ?bodysite ?location ?deviceid ?deviceName ?deviceModel {fitbit_vars}
     WHERE {{
         ?subject a pghdprovo:PGHD .
         ?subject pghdprovo:name ?name .
@@ -1071,6 +1103,14 @@ def generate_sparql_query(request_data):
             ?subject pghdprovo:hasContextualInfo ?contextualinfo .
             ?contextualinfo a pghdprovo:ContextualInfo .
             ?contextualinfo pghdprovo:locationOfPatient ?location .
+        }}
+        OPTIONAL {{
+            ?subject prov:wasDerivedFrom ?Wearable .
+            ?Wearable pghdprovo:deviceName ?deviceName .
+        }}
+        OPTIONAL {{
+            ?subject prov:wasDerivedFrom ?Wearable .
+            ?Wearable pghdprovo:deviceModel ?deviceModel .
         }}
     }}
     """

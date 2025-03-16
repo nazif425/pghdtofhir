@@ -161,7 +161,7 @@ def collection_position():
     digits = request.values.get("dtmfDigits", None)
     if digits is not None:
         if digits == '1':
-            g.ses_data["data"]['collection_position'] = 'Laying'
+            g.ses_data["data"]['collection_position'] = 'Lying'
         elif digits == '2':
             g.ses_data["data"]['collection_position'] = 'Sitting'
         elif digits == '3':
