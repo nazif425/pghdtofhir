@@ -405,13 +405,14 @@ def data():
     #return jsonify({"message": str(e)}), 500
     
     # Send access key to patient
-    if not send_access_code(patient.email, private_key, practitioner.name, data_source="IVR"):
+    email = data["meta-data"]["patient"].get("email", None)
+    if not send_access_code(email, private_key, practitioner.name, data_source="IVR"):
         return jsonify({
             'message': "An error occurred. Email request to patient failed.",
             'status': 500
         }), 500
     return jsonify({
-        'message': f"Authorization request/access key sent successfully to {patient.email}.",
+        'message': f"Authorization request/access key sent successfully to {email}.",
         'public_key': auth_session.public_key,
         'status': 200
     }), 200
