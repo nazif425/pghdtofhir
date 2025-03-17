@@ -567,7 +567,6 @@ def create_organization(request_data):
 
         # Create Organization resource with explicit keyword arguments
         organization_resource = Organization(
-            id=org_info.get("org_id"),
             identifier=[
                 {
                     "system": "urn:uuid",
