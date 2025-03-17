@@ -399,6 +399,13 @@ pghdprovo:deviceName rdf:type owl:DatatypeProperty ;
                      rdfs:label "device name" .
 
 
+###  https://w3id.org/pghdprovo/diastolic_blood_pressure
+pghdprovo:diastolic_blood_pressure rdf:type owl:DatatypeProperty ;
+                                   rdfs:subPropertyOf wearpghdprovo:vitalsProperty ;
+                                   rdfs:comment "Diastolic Blood pressure measured in millimeters of mercury (mmHg)." ;
+                                   rdfs:label "diastolic blood pressure" .
+
+
 ###  https://w3id.org/pghdprovo/exerciseState
 pghdprovo:exerciseState rdf:type owl:DatatypeProperty ;
                         rdfs:domain pghdprovo:State ;
@@ -411,6 +418,13 @@ pghdprovo:exerciseState rdf:type owl:DatatypeProperty ;
 pghdprovo:hasTimestamp rdf:type owl:DatatypeProperty ;
                        rdfs:domain pghdprovo:PGHD ;
                        rdfs:range xsd:dateTime .
+
+
+###  https://w3id.org/pghdprovo/heart_rate
+pghdprovo:heart_rate rdf:type owl:DatatypeProperty ;
+                     rdfs:subPropertyOf wearpghdprovo:vitalsProperty ;
+                     rdfs:comment "Pulse or heart rate beats per minute" ;
+                     rdfs:label "Heart Rate" .
 
 
 ###  https://w3id.org/pghdprovo/locationOfPatient
@@ -518,6 +532,13 @@ pghdprovo:role rdf:type owl:DatatypeProperty ;
                rdfs:domain pghdprovo:Practitioner ;
                rdfs:comment "position or function within an organization" ;
                rdfs:label "role" .
+
+
+###  https://w3id.org/pghdprovo/systolic_blood_pressure
+pghdprovo:systolic_blood_pressure rdf:type owl:DatatypeProperty ;
+                                  rdfs:subPropertyOf wearpghdprovo:vitalsProperty ;
+                                  rdfs:comment "Systolic Blood pressure measured in millimeters of mercury (mmHg)." ;
+                                  rdfs:label "systolic blood pressure" .
 
 
 ###  https://w3id.org/pghdprovo/unit
@@ -1231,36 +1252,7 @@ pghdprovo:State rdf:type owl:Class ;
 
 ###  https://w3id.org/wearpghdprovo/DailyActivity
 wearpghdprovo:DailyActivity rdf:type owl:Class ;
-                            rdfs:subClassOf pghdprovo:PGHD ,
-                                            [ rdf:type owl:Restriction ;
-                                              owl:onProperty wearpghdprovo:hasLevel ;
-                                              owl:someValuesFrom wearpghdprovo:DailyActivity
-                                            ] ,
-                                            [ rdf:type owl:Restriction ;
-                                              owl:onProperty wearpghdprovo:activityCalories ;
-                                              owl:maxQualifiedCardinality "1"^^xsd:nonNegativeInteger ;
-                                              owl:onDataRange xsd:integer
-                                            ] ,
-                                            [ rdf:type owl:Restriction ;
-                                              owl:onProperty wearpghdprovo:elevation ;
-                                              owl:maxQualifiedCardinality "1"^^xsd:nonNegativeInteger ;
-                                              owl:onDataRange xsd:integer
-                                            ] ,
-                                            [ rdf:type owl:Restriction ;
-                                              owl:onProperty wearpghdprovo:floors ;
-                                              owl:maxQualifiedCardinality "1"^^xsd:nonNegativeInteger ;
-                                              owl:onDataRange xsd:integer
-                                            ] ,
-                                            [ rdf:type owl:Restriction ;
-                                              owl:onProperty wearpghdprovo:steps ;
-                                              owl:maxQualifiedCardinality "1"^^xsd:nonNegativeInteger ;
-                                              owl:onDataRange xsd:integer
-                                            ] ,
-                                            [ rdf:type owl:Restriction ;
-                                              owl:onProperty wearpghdprovo:totalCalories ;
-                                              owl:maxQualifiedCardinality "1"^^xsd:nonNegativeInteger ;
-                                              owl:onDataRange xsd:integer
-                                            ] ;
+                            rdfs:subClassOf pghdprovo:PGHD ;
                             rdfs:comment "Physical activities carried out during the day." ;
                             rdfs:label "Daily Activity" .
 
@@ -1269,46 +1261,12 @@ wearpghdprovo:DailyActivity rdf:type owl:Class ;
 wearpghdprovo:Sleep rdf:type owl:Class ;
                     rdfs:subClassOf pghdprovo:PGHD ,
                                     [ rdf:type owl:Restriction ;
-                                      owl:onProperty wearpghdprovo:hasSleepStage ;
-                                      owl:someValuesFrom wearpghdprovo:Sleep
-                                    ] ,
-                                    [ rdf:type owl:Restriction ;
-                                      owl:onProperty wearpghdprovo:asleepDuration ;
-                                      owl:maxQualifiedCardinality "1"^^xsd:nonNegativeInteger ;
-                                      owl:onDataRange xsd:integer
-                                    ] ,
-                                    [ rdf:type owl:Restriction ;
-                                      owl:onProperty wearpghdprovo:endTime ;
-                                      owl:maxQualifiedCardinality "1"^^xsd:nonNegativeInteger ;
-                                      owl:onDataRange xsd:dateTime
-                                    ] ,
-                                    [ rdf:type owl:Restriction ;
                                       owl:onProperty wearpghdprovo:sleepDate ;
                                       owl:maxQualifiedCardinality "1"^^xsd:nonNegativeInteger ;
                                       owl:onDataRange xsd:dateTime
                                     ] ,
                                     [ rdf:type owl:Restriction ;
                                       owl:onProperty wearpghdprovo:sleepDuration ;
-                                      owl:maxQualifiedCardinality "1"^^xsd:nonNegativeInteger ;
-                                      owl:onDataRange xsd:integer
-                                    ] ,
-                                    [ rdf:type owl:Restriction ;
-                                      owl:onProperty wearpghdprovo:sleepEfficiency ;
-                                      owl:maxQualifiedCardinality "1"^^xsd:nonNegativeInteger ;
-                                      owl:onDataRange xsd:integer
-                                    ] ,
-                                    [ rdf:type owl:Restriction ;
-                                      owl:onProperty wearpghdprovo:sleepLatency ;
-                                      owl:maxQualifiedCardinality "1"^^xsd:nonNegativeInteger ;
-                                      owl:onDataRange xsd:integer
-                                    ] ,
-                                    [ rdf:type owl:Restriction ;
-                                      owl:onProperty wearpghdprovo:startTime ;
-                                      owl:maxQualifiedCardinality "1"^^xsd:nonNegativeInteger ;
-                                      owl:onDataRange xsd:dateTime
-                                    ] ,
-                                    [ rdf:type owl:Restriction ;
-                                      owl:onProperty wearpghdprovo:wakeupLatency ;
                                       owl:maxQualifiedCardinality "1"^^xsd:nonNegativeInteger ;
                                       owl:onDataRange xsd:integer
                                     ] ;
@@ -1471,15 +1429,6 @@ wearpghdprovo:Sleep1 rdf:type owl:NamedIndividual ,
                      wearpghdprovo:sleepLatency "" ;
                      wearpghdprovo:startTime "" ;
                      wearpghdprovo:wakeupLatency "" .
-
-
-###  https://w3id.org/wearpghdprovo/SleepStage1
-wearpghdprovo:SleepStage1 rdf:type owl:NamedIndividual ,
-                                   wearpghdprovo:Sleep ;
-                          wearpghdprovo:deepsleepduration "" ;
-                          wearpghdprovo:lightsleepduration "" ;
-                          wearpghdprovo:remsleepduration "" ;
-                          wearpghdprovo:wakeupduration "" .
 
 
 #################################################################

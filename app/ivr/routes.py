@@ -385,6 +385,16 @@ def data():
                 new_g.add((instance, pghdprovo.wasCollectedBy, patient_relative))
             else:
                 new_g.add((instance, pghdprovo.wasCollectedBy, patient_instance))
+
+            # Add property annotations to instance
+            for s, p, o in g.triples((pghdprovo[record['name']], RDF.type, OWL.DatatypeProperty)):
+                for annoteProp in [RDFS.label, RDFS.comment]:
+                    value = g.value(
+                        subject=pghdprovo[record['name']], 
+                        predicate=annoteProp)
+                    if value:
+                        new_g.add((instance, annoteProp, value))
+                break
     
     result = {}
     # Save to remote tripple store
