@@ -322,7 +322,8 @@ def data():
             ]
         })
 
-    
+    g = Graph()
+    g.parse("static/rdf_files/wearpghdprovo-onto-template.ttl", format="turtle")
     new_g = Graph()
     triple_store = Graph(store=store)
     
