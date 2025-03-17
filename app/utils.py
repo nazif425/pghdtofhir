@@ -566,7 +566,8 @@ def create_organization(request_data):
             return None
 
         # Create Organization resource with explicit keyword arguments
-        organization_resource = Organization(
+        organization_resource = FhirOrganization(
+            id=org_info.get("org_id"),
             identifier=[
                 {
                     "system": "urn:uuid",
