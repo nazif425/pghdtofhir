@@ -111,15 +111,15 @@ def data_request():
 
 
     elif request.method == 'POST':
-        data = request.get_json()
-        if not data:
+        request_data = request.get_json()
+        if not request_data:
             abort(400, "Invalid request payload")
         
-        if data.get("request_type", "") not in ["fitbit", "healthconnect"]:
+        if request_data.get("request_type", "") not in ["fitbit", "healthconnect"]:
             abort(400, "Error, request type not provided.")
         
-        verify_resources(data)
-        instances = get_or_create_instances(data)
+        verify_resources(request_data)
+        instances = get_or_create_instances(request_data)
         
         patient = instances["patient"]
         practitioner = instances["practitioner"]
@@ -128,8 +128,8 @@ def data_request():
         organization = instances["organization"]
         
         # Validate date
-        start_date = data["start_date"]
-        end_date = data["end_date"]
+        start_date = request_data["start_date"]
+        end_date = request_data["end_date"]
         if not is_timestamp(start_date, format="%Y-%m-%d"):
             start_date = date.today().strftime("%Y-%m-%dT00:00:00")
         else:
@@ -142,22 +142,22 @@ def data_request():
             # Convert date to datetime
             end_date = end_date + "T23:59:59"
         
-        data["start_date"] = start_date
-        data["end_date"] = end_date
+        request_data["start_date"] = start_date
+        request_data["end_date"] = end_date
             
         # map request request data type from unified keys to different sources keys
-        if data["request_type"] == "fitbit":
-            if data["request_data_type"] == "sleep":
-                data["request_data_type"] = "sleepDuration"
-            elif data["request_data_type"] == "heart_rate":
-                data["request_data_type"] = "restingHeartRate"
-        if data["request_type"] == "healthconnect":
-            if data["request_data_type"] == "sleep":
-                data["request_data_type"] = "SLEEP_SESSION"
-            elif data["request_data_type"] == "steps":
-                data["request_data_type"] = "STEPS"
-            elif data["request_data_type"] == "heart_rate":
-                data["request_data_type"] = "HEART_RATE"
+        if request_data["request_type"] == "fitbit":
+            if request_data["request_data_type"] == "sleep":
+                request_data["request_data_type"] = "sleepDuration"
+            elif request_data["request_data_type"] == "heart_rate":
+                request_data["request_data_type"] = "restingHeartRate"
+        if request_data["request_type"] == "healthconnect":
+            if request_data["request_data_type"] == "sleep":
+                request_data["request_data_type"] = "SLEEP_SESSION"
+            elif request_data["request_data_type"] == "steps":
+                request_data["request_data_type"] = "STEPS"
+            elif request_data["request_data_type"] == "heart_rate":
+                request_data["request_data_type"] = "HEART_RATE"
         
         private_key = str(generate_unique_5_digit())
         public_key = str(generate_unique_5_digit())
@@ -166,13 +166,13 @@ def data_request():
             "public_key": public_key,
             "patient_id": patient.patient_id, 
             "identity_id": identity.identity_id,
-            "data": {'request_data': data, "complete": False}
+            "data": {'request_data': request_data, "complete": False}
         }
 
         auth_session = AuthSession(**authsession_data)
         db.session.add(auth_session)
         db.session.commit()
-        if data["request_type"] == "fitbit":
+        if request_data["request_type"] == "fitbit":
             if load_tokens_from_db(patient.patient_id):
                 query_params = {
                     'private_key': private_key,
@@ -184,12 +184,11 @@ def data_request():
                     query_string=query_params
                 ):
                     return data()
-                return redirect(url_for("wearable.data", private_key=private_key, public_key=public_key))
             data_source = "Fitbit"
             auth_link = generate_fitbit_auth_url(auth_session)
-        elif data["request_type"] == "healthconnect":
+        elif request_data["request_type"] == "healthconnect":
             data_source = "HealthConnect"
-            auth_link = generate_healthconnect_auth_url(auth_session, data)
+            auth_link = generate_healthconnect_auth_url(auth_session, request_data)
         
         # reaponse with public key
         if not send_authorisation_email(patient.email, auth_link, practitioner.name, data_source=data_source):

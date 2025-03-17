@@ -463,14 +463,14 @@ def data_request():
         return jsonify({"data": records, "status": 200}), 200
 
     elif request.method == 'POST':
-        data = request.get_json()
-        if not data:
+        request_data = request.get_json()
+        if not request_data:
             return jsonify({"message": f"Invalid request payload", "status": 400}), 400
         
-        if "IVR" not in data["request_type"]:
+        if "IVR" not in request_data["request_type"]:
             return jsonify({"message": f"Error, request type not provided.", "status": 400}), 400
-        verify_resources(data)
-        instances = get_or_create_instances(data)
+        verify_resources(request_data)
+        instances = get_or_create_instances(request_data)
         
         patient = instances["patient"]
         practitioner = instances["practitioner"]
@@ -485,7 +485,7 @@ def data_request():
             "public_key": public_key,
             "patient_id": patient.patient_id, 
             "identity_id": identity.identity_id,
-            "data": {'request_data': data, "complete": False}
+            "data": {'request_data': request_data, "complete": False}
         }
 
         auth_session = AuthSession(**authsession_data)
