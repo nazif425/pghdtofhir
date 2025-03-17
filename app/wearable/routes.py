@@ -2,7 +2,7 @@ import sys, os, random, base64, hashlib, secrets, random, string, requests, uuid
 import fitbit
 from urllib.parse import urlencode
 from os import environ
-from flask import Flask, request, jsonify, abort, render_template, Response, flash, redirect, url_for, session
+from flask import Flask, current_app, request, jsonify, abort, render_template, Response, flash, redirect, url_for, session
 from sqlalchemy.sql import func
 from ..models import db, CallSession, ApplicationData, EHRSystem, Identity, Organization
 from ..models import Patient, Practitioner, Fitbit, Request, AuthSession
@@ -86,7 +86,7 @@ def data_request():
                     'private_key': private_key,
                     'public_key': public_key
                 }
-                with wearable.app.test_request_context(
+                with current_app.test_request_context(
                     '/data',
                     method='GET',
                     query_string=query_params
@@ -178,7 +178,7 @@ def data_request():
                     'private_key': private_key,
                     'public_key': public_key
                 }
-                with wearable.app.test_request_context(
+                with current_app.test_request_context(
                     '/data',
                     method='GET',
                     query_string=query_params
@@ -284,7 +284,7 @@ def get_access_token():
             'private_key': private_key,
             'public_key': public_key
         }
-        with wearable.app.test_request_context(
+        with current_app.test_request_context(
             '/data',
             method='GET',
             query_string=query_params

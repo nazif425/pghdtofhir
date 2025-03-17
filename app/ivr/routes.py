@@ -1,7 +1,7 @@
 
 import requests
 from . import ivr, cardio_data_collector, clear_session_data
-from flask import g, Flask, request, jsonify, abort, render_template, Response, flash, redirect, url_for, session
+from flask import g, Flask, current_app, request, jsonify, abort, render_template, Response, flash, redirect, url_for, session
 from sqlalchemy.sql import func
 from ..models import db, CallSession, ApplicationData, EHRSystem, Identity, Organization
 from ..models import Patient, Practitioner, Fitbit, Request, AuthSession
@@ -440,7 +440,7 @@ def data_request():
                     'private_key': private_key,
                     'public_key': public_key
                 }
-                with ivr.app.test_request_context(
+                with current_app.test_request_context(
                     '/data',
                     method='GET',
                     query_string=query_params
@@ -495,7 +495,7 @@ def data_request():
             'private_key': private_key,
             'public_key': public_key
         }
-        with ivr.app.test_request_context(
+        with current_app.test_request_context(
             '/data',
             method='GET',
             query_string=query_params
