@@ -436,6 +436,10 @@ def data_request():
         if not auth_session.data.get("complete", None):
             # fetch data if fitbit token for patient available
             if "IVR" in request_data.get("request_type", None):
+                query_params = {
+                    'private_key': private_key,
+                    'public_key': public_key
+                }
                 with ivr.app.test_request_context(
                     '/data',
                     method='GET',
@@ -487,7 +491,10 @@ def data_request():
         auth_session = AuthSession(**authsession_data)
         db.session.add(auth_session)
         db.session.commit()
-        params = MultiDict([('private_key', private_key), ('public_key', public_key)])
+        query_params = {
+            'private_key': private_key,
+            'public_key': public_key
+        }
         with ivr.app.test_request_context(
             '/data',
             method='GET',
