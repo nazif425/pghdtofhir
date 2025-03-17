@@ -174,6 +174,16 @@ def data_request():
         db.session.commit()
         if data["request_type"] == "fitbit":
             if load_tokens_from_db(patient.patient_id):
+                query_params = {
+                    'private_key': private_key,
+                    'public_key': public_key
+                }
+                with wearable.app.test_request_context(
+                    '/data',
+                    method='GET',
+                    query_string=query_params
+                ):
+                    return data()
                 return redirect(url_for("wearable.data", private_key=private_key, public_key=public_key))
             data_source = "Fitbit"
             auth_link = generate_fitbit_auth_url(auth_session)
