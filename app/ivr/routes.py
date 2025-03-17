@@ -436,7 +436,12 @@ def data_request():
         if not auth_session.data.get("complete", None):
             # fetch data if fitbit token for patient available
             if "IVR" in request_data.get("request_type", None):
-                return redirect(url_for("ivr.data", private_key=private_key, public_key=public_key))
+                with ivr.app.test_request_context(
+                    '/data',
+                    method='GET',
+                    query_string=query_params
+                ):
+                    return data()
 
         # Generate the SPARQL query
         sparql_query = generate_sparql_query(request_data)
@@ -482,5 +487,12 @@ def data_request():
         auth_session = AuthSession(**authsession_data)
         db.session.add(auth_session)
         db.session.commit()
-        return redirect(url_for("ivr.data", private_key=private_key, public_key=public_key))
+        params = MultiDict([('private_key', private_key), ('public_key', public_key)])
+        with ivr.app.test_request_context(
+            '/data',
+            method='GET',
+            query_string=query_params
+        ):
+            return data()
+        #return redirect(url_for("ivr.data", private_key=private_key, public_key=public_key))
             

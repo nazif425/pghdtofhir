@@ -82,7 +82,13 @@ def data_request():
         if not auth_session.data.get("complete", None):
             # fetch data if fitbit token for patient available
             if request_data.get("request_type", None) == "fitbit" and load_tokens_from_db(patient.patient_id):
-                return redirect(url_for("wearable.data", private_key=private_key, public_key=public_key))
+                query_params = MultiDict([('private_key', private_key), ('public_key', public_key)])
+                with wearable.app.test_request_context(
+                    '/data',
+                    method='GET',
+                    query_string=query_params
+                ):
+                    return data()
             return jsonify({"message": "Data request in progress. Data not available yet.", "status": 202}), 202
 
         # Generate the SPARQL query
@@ -258,13 +264,16 @@ def get_access_token():
         abort(404)
     if not session.get('patient_id', None):
         session["request_data"] = auth_session.data.get('request_data', None)
-        
-        return redirect(url_for(
-            'wearable.data', 
-            private_key=auth_session.private_key,
-            public_key=auth_session.public_key,
-            from_auth=True
-        ))
+         
+        private_key = auth_session.private_key
+        public_key = auth_session.public_key
+        params = MultiDict([('private_key', private_key), ('public_key', public_key), ('from_auth', True)])
+        with wearable.app.test_request_context(
+            '/data',
+            method='GET',
+            query_string=query_params
+        ):
+            return data()
     return redirect(url_for('portal.patient_dashboard'))
 
 @wearable.route('/data', methods=['GET', 'POST'])
