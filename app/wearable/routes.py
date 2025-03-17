@@ -149,14 +149,14 @@ def data_request():
         if request_data["request_type"] == "fitbit":
             if request_data["request_data_type"] == "sleep":
                 request_data["request_data_type"] = "sleepDuration"
-            elif request_data["request_data_type"] == "heart_rate":
+            elif request_data["request_data_type"] == "heartrate":
                 request_data["request_data_type"] = "restingHeartRate"
         if request_data["request_type"] == "healthconnect":
             if request_data["request_data_type"] == "sleep":
                 request_data["request_data_type"] = "SLEEP_SESSION"
             elif request_data["request_data_type"] == "steps":
                 request_data["request_data_type"] = "STEPS"
-            elif request_data["request_data_type"] == "heart_rate":
+            elif request_data["request_data_type"] == "heartrate":
                 request_data["request_data_type"] = "HEART_RATE"
         
         private_key = str(generate_unique_5_digit())

@@ -249,7 +249,7 @@ def prepare_data(raw_data, request_data, metadata=None):
                 # Create a unique dataSource string
                 data_source = get_data_source(source_names[date])
                 prepared_data.append({
-                    "name": "heartRate",
+                    "name": "heart_rate",
                     "date": date,
                     "value": round(avg_heart_rate, 2),  # Round to 2 decimal places
                     "dataSource": data_source  # e.g., "healthconnect - shealth, fitness"

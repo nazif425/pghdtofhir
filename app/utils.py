@@ -1044,7 +1044,7 @@ def generate_sparql_query(request_data):
     # convert request data type to the standard keywords recorded
     if request_data["request_type"] == "healthconnect":
         if request_data["request_data_type"] == "SLEEP_SESSION":
-            request_data["request_data_type"] = "sleep"
+            request_data["request_data_type"] = "sleepDuration"
         elif request_data["request_data_type"] == "STEPS":
             request_data["request_data_type"] = "steps"
         elif request_data["request_data_type"] == "HEART_RATE":
@@ -1111,8 +1111,12 @@ def transform_query_result(query_result):
     # Transform the query result into the desired array format
     records = []
     for result in query_result:
+        if result.name.value == "sleepDuration":
+            name = "sleep"
+        elif result.name.value in ["heart_rate", "restingHeartRate"]:
+            name = "heartrate"
         record = {
-            "name": result.name.value,
+            "name": name,
             "date": result.timestamp.value.strftime("%Y-%m-%d"),
             "value": result.value.value,
             "device_id": result.get("deviceid").value if result.get("deviceid") else "",
