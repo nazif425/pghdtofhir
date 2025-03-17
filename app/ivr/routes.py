@@ -464,8 +464,8 @@ def data_request():
 
     elif request.method == 'POST':
         request_data = request.get_json()
-        request_data.get("request_data_type", None) == "heartrate":
-        request_data["request_data_type"] = "heart_rate"
+        if request_data.get("request_data_type", None) == "heartrate":
+            request_data["request_data_type"] = "heart_rate"
         if not request_data:
             return jsonify({"message": f"Invalid request payload", "status": 400}), 400
         
