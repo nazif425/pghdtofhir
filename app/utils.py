@@ -575,17 +575,6 @@ def create_organization(request_data):
                 }
             ],
             name=org_info.get("name"),
-            telecom=[
-                {
-                    "system": "email",
-                    "value": org_info.get("email")
-                }
-            ] if org_info.get("email") else [],
-            address=[
-                {
-                    "line": [org_info.get("address")] if org_info.get("address") else []
-                }
-            ] if org_info.get("address") else []
         )
 
         # Send to FHIR server
