@@ -847,7 +847,7 @@ def build_fhir_resources(g, request_data):
             print(posture_key)
             posture_coding = codings.get(posture_key, None)
             extensions.append({
-                "url": "http://example.org/fhir/StructureDefinition/body-posture",
+                "url": "https://w3id.org/pghdprovo/posture",
                 "valueCodeableConcept": {
                     "coding": [posture_coding]
                 }
@@ -856,7 +856,7 @@ def build_fhir_resources(g, request_data):
             location_key = record["location"].value.lower()
             location_coding = codings.get(location_key, None)
             extensions.append({
-                "url": "http://example.org/fhir/StructureDefinition/data-collection-location",
+                "url": "https://w3id.org/pghdprovo/locationOfPatient",
                 "valueCodeableConcept": {
                     "coding": [location_coding]
                 }
