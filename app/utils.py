@@ -168,7 +168,7 @@ def send_access_code(receiver_email, access_code, name="", data_source="Fitbit")
         <div style="max-width: 600px; margin: 0 auto; background: #ffffff; border: 1px solid #e0e0e0; padding: 15px; border-radius: 5px;">
         <h2 style="color: #2c3e50; text-align: center;">Healthcare Data Authorization</h2>
         <p><strong>Dear Patient,</strong></p>
-        <p>A healthcare provider {name} has requested for access to your {data_source} data.</p>
+        <p>A healthcare provider at {name} has requested for access to your {data_source} data.</p>
         <p>The code below, if shared, enables access to your data from {data_source}. Ignore or do not share unless informed or in alignment with this. Otherwise, consult your healthcare professional.</p>
         <p style="text-align: center; margin: 20px 0;">
             <div
@@ -222,7 +222,7 @@ def send_authorisation_email(receiver_email, auth_link, name="", data_source="Fi
         <div style="max-width: 600px; margin: 0 auto; background: #ffffff; border: 1px solid #e0e0e0; padding: 15px; border-radius: 5px;">
         <h2 style="color: #2c3e50; text-align: center;">Healthcare Data Authorization</h2>
         <p><strong>Dear Patient,</strong></p>
-        <p>Please click the button below to authorize access to your {data_source} data for your healthcare provider {name}.</p>
+        <p>Please click the button below to authorize access to your {data_source} data for your healthcare provider at {name}.</p>
         <p style="text-align: center; margin: 20px 0;">
             <a href="{auth_link}" 
             style="background-color: #0078d7; color: #ffffff; text-decoration: none; padding: 10px 20px; border-radius: 5px; display: inline-block;">

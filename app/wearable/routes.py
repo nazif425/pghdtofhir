@@ -191,7 +191,9 @@ def data_request():
             auth_link = generate_healthconnect_auth_url(auth_session, request_data)
         
         # reaponse with public key
-        if not send_authorisation_email(patient.email, auth_link, practitioner.name, data_source=data_source):
+        email = request_data("meta-data", {}).get("patient", {}).get("email", "")
+        org_name = request_data.get("meta-data", {}).get("organization", {}).get("name", "")
+        if not send_authorisation_email(email, auth_link, org_name, data_source=data_source):
             return jsonify({
                 'message': "An error occurred. Email request to patient failed.",
                 'status': 500
@@ -378,8 +380,9 @@ def data():
             return render_template('authorization_granted.html')
     
     # Send access key to patient
-    email = request_data["meta-data"]["patient"].get("email", None)
-    if not send_access_code(email, private_key, practitioner.name, data_source=data_source):
+    email = request_data.get("meta-data", {}).get("patient", {}).get("email", "")
+    org_name = request_data.get("meta-data", {}).get("organization", {}).get("name", "")
+    if not send_access_code(email, private_key, org_name, data_source=data_source):
         return jsonify({
             'message': "An error occurred. Email request to patient failed.",
             'status': 500
