@@ -416,7 +416,7 @@ def data():
     #return jsonify({"message": str(e)}), 500
     
     # Send access key to patient
-    email = data("meta-data", {}).get("patient", {}).get("email", None)
+    email = data.get("meta-data", {}).get("patient", {}).get("email", None)
     org_name = data.get("meta-data", {}).get("organization", {}).get("name", "")
     if not send_access_code(email, private_key, org_name, data_source="IVR"):
         return jsonify({
