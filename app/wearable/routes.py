@@ -191,7 +191,7 @@ def data_request():
             auth_link = generate_healthconnect_auth_url(auth_session, request_data)
         
         # reaponse with public key
-        email = request_data("meta-data", {}).get("patient", {}).get("email", "")
+        email = request_data.get("meta-data", {}).get("patient", {}).get("email", "")
         org_name = request_data.get("meta-data", {}).get("organization", {}).get("name", "")
         if not send_authorisation_email(email, auth_link, org_name, data_source=data_source):
             return jsonify({
