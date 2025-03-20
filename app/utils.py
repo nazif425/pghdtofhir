@@ -1111,9 +1111,10 @@ def transform_query_result(query_result):
     # Transform the query result into the desired array format
     records = []
     for result in query_result:
-        if result.name.value == "sleepDuration":
+        name = result.name.value
+        if name == "sleepDuration":
             name = "sleep"
-        elif result.name.value in ["heart_rate", "restingHeartRate"]:
+        elif name in ["heart_rate", "restingHeartRate"]:
             name = "heartrate"
         record = {
             "name": name,
