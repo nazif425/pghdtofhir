@@ -193,13 +193,14 @@ def data_request():
         # reaponse with public key
         email = request_data.get("meta-data", {}).get("patient", {}).get("email", "")
         org_name = request_data.get("meta-data", {}).get("organization", {}).get("name", "")
+        print(email)
         if not send_authorisation_email(email, auth_link, org_name, data_source=data_source):
             return jsonify({
                 'message': "An error occurred. Email request to patient failed.",
                 'status': 500
             }), 500
         return jsonify({
-            'message': f"Authorization request/access key sent successfully to {patient.email}.",
+            'message': f"Authorization request/access key sent successfully to {email}.",
             'public_key': public_key,
             'status': 200
         }), 200
@@ -382,6 +383,7 @@ def data():
     # Send access key to patient
     email = request_data.get("meta-data", {}).get("patient", {}).get("email", "")
     org_name = request_data.get("meta-data", {}).get("organization", {}).get("name", "")
+    print(email)
     if not send_access_code(email, private_key, org_name, data_source=data_source):
         return jsonify({
             'message': "An error occurred. Email request to patient failed.",
