@@ -1217,11 +1217,12 @@ def filter_prepared_data(prepared_data, timestamps, date_key="timestamp"):
         # Handle datetime objects and date strings
         if isinstance(date_value, datetime):
             # If it's already a datetime object, use it directly
-            entry_datetime = date_value
+            entry_datetime = date_value.
         elif isinstance(date_value, str):
             try:
                 # Try parsing the date string into a datetime object
                 entry_datetime = datetime.fromisoformat(date_value)
+                entry_datetime = entry_datetime.replace(microsecond=0)
             except ValueError:
                 # Skip if the date string is not in a valid format
                 continue
