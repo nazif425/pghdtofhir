@@ -417,7 +417,6 @@ def data():
 
         request_info.endedAtTime = datetime.now()
         db.session.commit()
-    print(result)
     # Change data request status
     auth_session.data = {"request_data": data, "complete": True}
     db.session.commit()
