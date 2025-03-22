@@ -1166,8 +1166,9 @@ def get_timestamps_from_graph(graph, source, patient_id, request_data_type=""):
     Returns:
         A list of timestamps as strings.
     """
+    optional_type_filter = ""
     if request_data_type:
-        optional_name_filter = f"FILTER (?name = '{request_data_type}')"
+        optional_type_filter = f"FILTER (?name = '{request_data_type}')"
     # Prepare the SPARQL query
     query = f"""
     PREFIX pghdprovo: <https://w3id.org/pghdprovo/>
@@ -1182,7 +1183,7 @@ def get_timestamps_from_graph(graph, source, patient_id, request_data_type=""):
         
         FILTER (STRSTARTS(?source, "{source}"))
         FILTER (?userid = "{patient_id}")
-        {optional_name_filter}
+        {optional_type_filter}
     }}
     """
     
