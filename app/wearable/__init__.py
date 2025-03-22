@@ -276,7 +276,7 @@ def process_and_send_data(identity, prepared_data, request_data, other_data=None
     timestamps = get_timestamps_from_graph(triple_store, source, user_id, request_data_type=request_data_type)
     
     # Remove existing data already in triple store
-    prepared_data = filter_prepared_data(prepared_data, timestamps, date_key="timestamp")
+    prepared_data = filter_prepared_data(prepared_data, timestamps, date_key="date")
     if len(prepared_data):
         request_info = Request(
             identity_id=identity.identity_id,

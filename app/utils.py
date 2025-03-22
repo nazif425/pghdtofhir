@@ -1207,13 +1207,13 @@ def filter_prepared_data(prepared_data, timestamps, date_key="timestamp"):
     """
     # Parse timestamps into datetime objects for comparison
     existing_timestamps = {ts for ts in timestamps}
+    print("timstamps:", timestamps)
     print(existing_timestamps)
     # Filter prepared_data
     filtered_data = []
     for entry in prepared_data:
         # Get the date value from the entry
         date_value = entry.get(date_key)
-
         # Handle datetime objects and date strings
         if isinstance(date_value, datetime):
             # convert date to string
