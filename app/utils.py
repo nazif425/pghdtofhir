@@ -1043,13 +1043,7 @@ def generate_sparql_query(request_data):
     end_date = request_data.get("end_date", "")
     patient_id = request_data.get("meta-data", {}).get("patient", {}).get("user_id", "")
     # convert request data type to the standard keywords recorded
-    if request_data["request_type"] == "healthconnect":
-        if request_data["request_data_type"] == "SLEEP_SESSION":
-            request_data["request_data_type"] = "sleepDuration"
-        elif request_data["request_data_type"] == "STEPS":
-            request_data["request_data_type"] = "steps"
-        elif request_data["request_data_type"] == "HEART_RATE":
-            request_data["request_data_type"] = "heart_rate"
+    reset_query_keys(request_data)
     fitbit_vars = ""
     if request_data["request_type"] == "fitbit":
         fitbit_vars = "?deviceName ?deviceModel"
@@ -1106,6 +1100,7 @@ def generate_sparql_query(request_data):
         }}
     }}
     """
+    print(query)
     return query
 
 def transform_query_result(query_result):
@@ -1235,3 +1230,12 @@ def filter_prepared_data(prepared_data, timestamps, date_key="timestamp"):
             filtered_data.append(entry)
 
     return filtered_data
+
+def reset_query_keys(request_data):
+    if request_data["request_type"] == "healthconnect":
+        if request_data["request_data_type"] == "SLEEP_SESSION":
+            request_data["request_data_type"] = "sleepDuration"
+        elif request_data["request_data_type"] == "STEPS":
+            request_data["request_data_type"] = "steps"
+        elif request_data["request_data_type"] == "HEART_RATE":
+            request_data["request_data_type"] = "heart_rate"

@@ -269,6 +269,7 @@ def process_and_send_data(identity, prepared_data, request_data, other_data=None
     new_g = Graph()
     triple_store = Graph(store=store)
     
+    reset_query_keys(request_data)
     # Get all timestamps for the given data request
     user_id = request_data["meta-data"]["patient"].get("user_id", None)
     source = request_data['request_type']
