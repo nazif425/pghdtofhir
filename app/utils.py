@@ -1180,6 +1180,7 @@ def get_timestamps_from_graph(graph, source, patient_id, request_data_type=""):
         ?subject pghdprovo:dataSource ?source .
         ?subject prov:wasAttributedTo ?patient .
         ?patient pghdprovo:userid ?userid .
+        ?subject pghdprovo:name ?name .
         
         FILTER (STRSTARTS(?source, "{source}")) .
         FILTER (?userid = "{patient_id}") .
