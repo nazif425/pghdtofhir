@@ -1047,6 +1047,9 @@ def generate_sparql_query(request_data):
     fitbit_vars = ""
     if request_data["request_type"] == "fitbit":
         fitbit_vars = "?deviceName ?deviceModel"
+    data_type_filter = ""
+    if "IVR" not in request_data["request_type"]:
+        data_type_filter = f'FILTER (?name = "{request_data_type}") .'
     # Construct the SPARQL query dynamically
     query = f"""
     PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
@@ -1059,7 +1062,7 @@ def generate_sparql_query(request_data):
     PREFIX pghdprovo: <https://w3id.org/pghdprovo/>
     PREFIX : <https://w3id.org/wearpghdprovo/>
     PREFIX wearpghdprovo: <https://w3id.org/wearpghdprovo/>
-    SELECT ?subject ?name ?value ?source ?timestamp ?description ?label ?posture ?bodysite ?location ?deviceid ?deviceName ?deviceModel {fitbit_vars}
+    SELECT ?subject ?name ?value ?source ?timestamp ?description ?label ?posture ?bodysite ?location ?deviceid {fitbit_vars}
     WHERE {{
         ?subject a pghdprovo:PGHD .
         ?subject pghdprovo:name ?name .
@@ -1068,7 +1071,7 @@ def generate_sparql_query(request_data):
         ?subject pghdprovo:hasTimestamp ?timestamp .
         FILTER (?timestamp >= "{start_date}"^^xsd:dateTime && ?timestamp <= "{end_date}"^^xsd:dateTime) .
         FILTER (STRSTARTS(?source, "{request_type}")) .
-        FILTER (?name = "{request_data_type}") .
+        {data_type_filter}
         ?subject prov:wasAttributedTo ?patient .
         ?patient pghdprovo:userid ?userid .
         FILTER (?userid = "{patient_id}") .
@@ -1100,34 +1103,45 @@ def generate_sparql_query(request_data):
         }}
     }}
     """
-    print(query)
     return query
 
 def transform_query_result(query_result):
     # Transform the query result into the desired array format
     records = []
+    records_by_date = {}
     for result in query_result:
         name = result.name.value
         if name == "sleepDuration":
             name = "sleep"
         elif name in ["heart_rate", "restingHeartRate"]:
             name = "heartrate"
+        date = result.timestamp.value.strftime("%Y-%m-%d")
         record = {
             "name": name,
-            "date": result.timestamp.value.strftime("%Y-%m-%d"),
+            "date": date,
             "value": result.value.value,
             "device_id": result.get("deviceid").value if result.get("deviceid") else "",
             "dataSource": result.source.value
         }
-        if "IVR" in record.get("dataSource", None):
-            record.update({
-                "metadata": {
-                    "posture": result.get("posture").value if result.get("posture") else "",
-                    "bodysite": result.get("bodysite").value if result.get("bodysite") else "",
-                    "location": result.get("location").value if result.get("location") else ""
-                }
-            })
-        records.append(record)
+        if "IVR" in result.source.value:
+            if date not in records_by_date:
+                records_by_date[date] = record
+                records_by_date[date]["value"] = {}
+                records_by_date[date]["name"] = "BP"
+            if name == "systolic_blood_pressure":
+                records_by_date[date]["value"]["systolic"] = result.value.value
+            elif name == "diastolic_blood_pressure":
+                records_by_date[date]["value"]["diastolic"] = result.value.value
+            elif name == "heartrate":
+                records_by_date[date]["value"]["heart_rate"] = result.value.value
+            records_by_date[date]["metadata"] = {
+                "posture": result.get("posture").value if result.get("posture") else "",
+                "bodysite": result.get("bodysite").value if result.get("bodysite") else "",
+                "location": result.get("location").value if result.get("location") else ""
+            }
+        else:
+            records.append(record)
+    records.extend([records_by_date[date] for date in records_by_date])
     return records
 
 def generate_unique_5_digit(storage_file="used_numbers.txt"):
