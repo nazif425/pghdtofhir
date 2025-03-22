@@ -1168,7 +1168,7 @@ def get_timestamps_from_graph(graph, source, patient_id, request_data_type=""):
     """
     optional_type_filter = ""
     if request_data_type:
-        optional_type_filter = f"FILTER (?name = '{request_data_type}')"
+        optional_type_filter = f"FILTER (?name = '{request_data_type}') ."
     # Prepare the SPARQL query
     query = f"""
     PREFIX pghdprovo: <https://w3id.org/pghdprovo/>
@@ -1181,12 +1181,12 @@ def get_timestamps_from_graph(graph, source, patient_id, request_data_type=""):
         ?subject prov:wasAttributedTo ?patient .
         ?patient pghdprovo:userid ?userid .
         
-        FILTER (STRSTARTS(?source, "{source}"))
-        FILTER (?userid = "{patient_id}")
+        FILTER (STRSTARTS(?source, "{source}")) .
+        FILTER (?userid = "{patient_id}") .
         {optional_type_filter}
     }}
     """
-    
+    print(query)
     result = graph.query(query)
 
     # Extract timestamps from the result

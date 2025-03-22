@@ -281,7 +281,7 @@ def process_and_send_data(identity, prepared_data, request_data, other_data=None
         request_info = Request(
             identity_id=identity.identity_id,
             startedAtTime=datetime.now(),
-            description=f'Fetch patient data from {data["request_type"]}',
+            description=f'Fetch patient data from {request_data["request_type"]}',
         )
         new_instances = add_metadata_to_graph(new_g, identity, other_data=other_data)
 
