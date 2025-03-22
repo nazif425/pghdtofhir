@@ -300,7 +300,7 @@ def process_and_send_data(identity, prepared_data, request_data, other_data=None
             if new_instances.get("Patient", None):
                 new_g.add((instance, prov.wasAttributedTo, new_instances["Patient"]))
                 new_g.add((instance, pghdprovo.wasCollectedBy, new_instances["Patient"]))
-            if new_instances.get("PGHDRequest", None):f
+            if new_instances.get("PGHDRequest", None):
                 new_g.add((instance, prov.wasGeneratedBy, new_instances["PGHDRequest"]))
             if new_instances.get("Wearable", None):
                 new_g.add((instance, prov.wasDerivedFrom, new_instances["Wearable"]))
