@@ -1222,7 +1222,7 @@ def filter_prepared_data(prepared_data, timestamps, date_key="timestamp"):
     """
     # Parse timestamps into datetime objects for comparison
     existing_timestamps = {datetime.fromisoformat(ts) for ts in timestamps}
-
+    print(existing_timestamps)
     # Filter prepared_data
     filtered_data = []
     for entry in prepared_data:
@@ -1243,7 +1243,7 @@ def filter_prepared_data(prepared_data, timestamps, date_key="timestamp"):
         else:
             # Skip if the date value is not a datetime object or string
             continue
-
+        print(entry_datetime)
         # Check if the entry's datetime exists in the timestamps list
         if entry_datetime not in existing_timestamps:
             filtered_data.append(entry)
