@@ -1206,7 +1206,7 @@ def filter_prepared_data(prepared_data, timestamps, date_key="timestamp"):
         The filtered prepared_data array.
     """
     # Parse timestamps into datetime objects for comparison
-    existing_timestamps = {datetime.fromisoformat(ts) for ts in timestamps}
+    existing_timestamps = {ts for ts in timestamps}
     print(existing_timestamps)
     # Filter prepared_data
     filtered_data = []
@@ -1216,13 +1216,12 @@ def filter_prepared_data(prepared_data, timestamps, date_key="timestamp"):
 
         # Handle datetime objects and date strings
         if isinstance(date_value, datetime):
-            # If it's already a datetime object, use it directly
-            entry_datetime = date_value
+            # convert date to string
+            entry_datetime = date_value.isoformat(timespec='seconds')
         elif isinstance(date_value, str):
             try:
-                # Try parsing the date string into a datetime object
-                entry_datetime = datetime.fromisoformat(date_value)
-                entry_datetime = entry_datetime.replace(microsecond=0)
+                # Try parsing the date string into a datetime string
+                entry_datetime = datetime.strptime(date_value, "%Y-%m-%d").strftime("%Y-%m-%dT%H:%M:%S")
             except ValueError:
                 # Skip if the date string is not in a valid format
                 continue
