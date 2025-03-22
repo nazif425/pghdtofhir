@@ -1153,7 +1153,7 @@ def generate_unique_5_digit(storage_file="used_numbers.txt"):
                 file.write("\n".join(used_numbers))
             return number
 
-def get_timestamps_from_graph(graph, source, patient_id, request_data_type=None):
+def get_timestamps_from_graph(graph, source, patient_id, request_data_type=""):
     """
     Retrieve timestamps from the RDF graph based on source, patient_id, and optionally request_data_type.
 
@@ -1166,43 +1166,27 @@ def get_timestamps_from_graph(graph, source, patient_id, request_data_type=None)
     Returns:
         A list of timestamps as strings.
     """
+    if request_data_type:
+        optional_name_filter = f"FILTER (?name = '{request_data_type}')"
     # Prepare the SPARQL query
-    query_template = """
+    query = f"""
     PREFIX pghdprovo: <https://w3id.org/pghdprovo/>
     PREFIX prov: <http://www.w3.org/ns/prov#>
     PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
     
-    SELECT ?timestamp WHERE {
+    SELECT ?timestamp WHERE {{
         ?subject pghdprovo:hasTimestamp ?timestamp .
         ?subject pghdprovo:dataSource ?source .
         ?subject prov:wasAttributedTo ?patient .
         ?patient pghdprovo:userid ?userid .
         
-        FILTER (STRSTARTS(?source, ?src))
-        FILTER (?userid = ?pid)
+        FILTER (STRSTARTS(?source, "{source}"))
+        FILTER (?userid = "{patient_id}")
         {optional_name_filter}
-    }
+    }}
     """
-
-    # Add optional name filter if request_data_type is provided
-    if request_data_type:
-        optional_name_filter = "FILTER (?name = ?data_type)"
-        query_template = query_template.replace("{optional_name_filter}", optional_name_filter)
-    else:
-        query_template = query_template.replace("{optional_name_filter}", "")
-
-    # Prepare the query
-    prepared_query = prepareQuery(query_template)
-
-    # Execute the query with bindings
-    bindings = {
-        "src": source,
-        "pid": patient_id,
-    }
-    if request_data_type:
-        bindings["data_type"] = request_data_type
-
-    result = graph.query(prepared_query, initBindings=bindings)
+    
+    result = graph.query(query)
 
     # Extract timestamps from the result
     timestamps = [str(row.timestamp) for row in result]
