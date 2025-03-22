@@ -11,10 +11,10 @@ from rdflib.namespace import RDF, RDFS
 from rdflib import Namespace
 from rdflib.plugins.stores.sparqlstore import SPARQLStore
 from datetime import datetime, date
-from ..utils import generate_sparql_query, transform_query_result, send_access_code
+from ..utils import generate_sparql_query, transform_query_result, send_access_code, filter_prepared_data
 from ..utils import unique_id, get_entity_name, is_timestamp, get_main_class, get_or_create_instances, build_fhir_resources
 from ..utils import copy_instance, transform_data, send_authorisation_email, add_metadata_to_graph, verify_resources
-from ..utils import store, insert_data_to_triplestore, generate_unique_5_digit
+from ..utils import store, insert_data_to_triplestore, generate_unique_5_digit, get_timestamps_from_graph
 
 # RDF namespace
 pghdprovo = Namespace("https://w3id.org/pghdprovo/")
@@ -246,13 +246,6 @@ def data():
     patient = identity.patient
     practitioner = identity.practitioner
     data = auth_session.data.get("request_data", None)
-    request_info = Request(
-        identity_id=identity.identity_id,
-        startedAtTime=datetime.now(),
-        description=f'Fetch patient data from {data["request_type"]}',
-    )
-    db.session.add(request_info)
-    db.session.flush()
     
     metadata = {}
 
@@ -326,86 +319,105 @@ def data():
     g.parse("static/rdf_files/wearpghdprovo-onto-template.ttl", format="turtle")
     new_g = Graph()
     triple_store = Graph(store=store)
-    
-    new_instances = add_metadata_to_graph(new_g, identity)
-
-    patient_instance = new_instances["Patient"]
-
-    for row in sessions_data:
-        patient_relative = None
-        if not patient_relative and collection_person == "Caregiver":
-            patient_relative = unique_id(pghdprovo.PatientRelative)
-            new_g.add((patient_relative, RDF.type, pghdprovo.PatientRelative))
-            new_g.add((patient_relative, pghdprovo.relationship, Literal(row["collection_person"])))
-            new_g.add((patient_instance, pghdprovo.actedOnBehalfOf, patient_relative))
-    
-        # Create state instance. 
-        state = unique_id(pghdprovo.State)
-        new_g.add((state, RDF.type, pghdprovo.State))
-        new_g.add((state, pghdprovo.posture, Literal(row["collection_position"])))
-
-        # Protocol instance. 
-        protocol = unique_id(pghdprovo.Protocol)
-        new_g.add((protocol, RDF.type, pghdprovo.Protocol))
-        new_g.add((protocol, pghdprovo.bodySite, Literal(row["collection_body_site"])))
-
-        # location instance 
-        location = unique_id(pghdprovo.ContextualInfo)
-        new_g.add((location, RDF.type, pghdprovo.ContextualInfo))
-        new_g.add((location, pghdprovo.locationOfPatient, Literal(row["collection_location"])))
-    
-        new_records = row["new_records"]
-        for record in new_records:
-            # Define unique PGHD instance name e.g PGHD.f47ac10b
-            instance = unique_id(pghdprovo.PGHD)
-            
-            # Create an instance
-            new_g.add((instance, RDF.type, pghdprovo.PGHD))
-            
-            # Adding data to instance
-            new_g.add((instance, pghdprovo.name, Literal(record['name'])))
-            new_g.add((instance, pghdprovo.value, Literal(record['value'])))
-            new_g.add((instance, pghdprovo.dataSource, Literal('IVR - BPM')))
-            time_str = row["timestamp"].isoformat(timespec='seconds')
-            new_g.add((instance, pghdprovo.hasTimestamp, Literal(time_str, datatype=XSD.dateTime)))
-            
-            # Record body position
-            new_g.add((instance, pghdprovo.hasContextualInfo, state))
-            
-            # Record body side
-            new_g.add((instance, pghdprovo.hasContextualInfo, protocol))
-
-            # Record Location
-            new_g.add((instance, pghdprovo.hasContextualInfo, location))
-
-            # Assign patient instance to data
-            new_g.add((instance, prov.wasAttributedTo, patient_instance))   
-
-            # Assign the person who collected the data
-            if collection_person == "Caregiver":
-                new_g.add((instance, pghdprovo.wasCollectedBy, patient_relative))
-            else:
-                new_g.add((instance, pghdprovo.wasCollectedBy, patient_instance))
-
-            # Add property annotations to instance
-            for s, p, o in g.triples((pghdprovo[record['name']], RDF.type, OWL.DatatypeProperty)):
-                for annoteProp in [RDFS.label, RDFS.comment]:
-                    value = g.value(
-                        subject=pghdprovo[record['name']], 
-                        predicate=annoteProp)
-                    if value:
-                        new_g.add((instance, annoteProp, value))
-                break
-    
     result = {}
-    # Save to remote tripple store
-    result["triplestore"] = insert_data_to_triplestore(new_g, store.update_endpoint)
-    # Save to remote fhir server
-    result["fhir"] = build_fhir_resources(triple_store, data)
+    
+    # Find exist data to prevent duplicate
+    
+    # Get all timestamps for the given data request
+    user_id = data["meta-data"]["patient"].get("user_id", None)
+    source = data['request_type']
+    timestamps = get_timestamps_from_graph(triple_store, source, user_id, request_data_type=None)
+    
+    # Remove existing data already in triple store
+    sessions_data = filter_prepared_data(sessions_data, timestamps, date_key="timestamp")
+    
+    if len(sessions_data):
+        request_info = Request(
+            identity_id=identity.identity_id,
+            startedAtTime=datetime.now(),
+            description=f'Fetch patient data from {data["request_type"]}',
+        )
+        db.session.add(request_info)
+        db.session.flush()
+        
+        new_instances = add_metadata_to_graph(new_g, identity)
 
-    request_info.endedAtTime = datetime.now()
-    db.session.commit()
+        patient_instance = new_instances["Patient"]
 
+        for row in sessions_data:
+            patient_relative = None
+            if not patient_relative and collection_person == "Caregiver":
+                patient_relative = unique_id(pghdprovo.PatientRelative)
+                new_g.add((patient_relative, RDF.type, pghdprovo.PatientRelative))
+                new_g.add((patient_relative, pghdprovo.relationship, Literal(row["collection_person"])))
+                new_g.add((patient_instance, pghdprovo.actedOnBehalfOf, patient_relative))
+        
+            # Create state instance. 
+            state = unique_id(pghdprovo.State)
+            new_g.add((state, RDF.type, pghdprovo.State))
+            new_g.add((state, pghdprovo.posture, Literal(row["collection_position"])))
+
+            # Protocol instance. 
+            protocol = unique_id(pghdprovo.Protocol)
+            new_g.add((protocol, RDF.type, pghdprovo.Protocol))
+            new_g.add((protocol, pghdprovo.bodySite, Literal(row["collection_body_site"])))
+
+            # location instance 
+            location = unique_id(pghdprovo.ContextualInfo)
+            new_g.add((location, RDF.type, pghdprovo.ContextualInfo))
+            new_g.add((location, pghdprovo.locationOfPatient, Literal(row["collection_location"])))
+        
+            new_records = row["new_records"]
+            for record in new_records:
+                # Define unique PGHD instance name e.g PGHD.f47ac10b
+                instance = unique_id(pghdprovo.PGHD)
+                
+                # Create an instance
+                new_g.add((instance, RDF.type, pghdprovo.PGHD))
+                
+                # Adding data to instance
+                new_g.add((instance, pghdprovo.name, Literal(record['name'])))
+                new_g.add((instance, pghdprovo.value, Literal(record['value'])))
+                new_g.add((instance, pghdprovo.dataSource, Literal('IVR - BPM')))
+                time_str = row["timestamp"].isoformat(timespec='seconds')
+                new_g.add((instance, pghdprovo.hasTimestamp, Literal(time_str, datatype=XSD.dateTime)))
+                
+                # Record body position
+                new_g.add((instance, pghdprovo.hasContextualInfo, state))
+                
+                # Record body side
+                new_g.add((instance, pghdprovo.hasContextualInfo, protocol))
+
+                # Record Location
+                new_g.add((instance, pghdprovo.hasContextualInfo, location))
+
+                # Assign patient instance to data
+                new_g.add((instance, prov.wasAttributedTo, patient_instance))   
+
+                # Assign the person who collected the data
+                if collection_person == "Caregiver":
+                    new_g.add((instance, pghdprovo.wasCollectedBy, patient_relative))
+                else:
+                    new_g.add((instance, pghdprovo.wasCollectedBy, patient_instance))
+
+                # Add property annotations to instance
+                for s, p, o in g.triples((pghdprovo[record['name']], RDF.type, OWL.DatatypeProperty)):
+                    for annoteProp in [RDFS.label, RDFS.comment]:
+                        value = g.value(
+                            subject=pghdprovo[record['name']], 
+                            predicate=annoteProp)
+                        if value:
+                            new_g.add((instance, annoteProp, value))
+                    break
+        
+        # Save to remote tripple store
+        result["triplestore"] = insert_data_to_triplestore(new_g, store.update_endpoint)
+        # Save to remote fhir server
+        result["fhir"] = build_fhir_resources(triple_store, data)
+
+        request_info.endedAtTime = datetime.now()
+        db.session.commit()
+    print(result)
     # Change data request status
     auth_session.data = {"request_data": data, "complete": True}
     db.session.commit()

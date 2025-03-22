@@ -14,6 +14,7 @@ from rdflib import Graph, URIRef, Literal, XSD, OWL
 from rdflib.namespace import RDF, RDFS
 from rdflib import Namespace
 from SPARQLWrapper import SPARQLWrapper
+from rdflib.plugins.sparql import prepareQuery
 from rdflib.plugins.stores.sparqlstore import SPARQLUpdateStore
 from fhir.resources.patient import Patient as FhirPatient
 from fhir.resources.organization import Organization as FhirOrganization
@@ -1151,3 +1152,100 @@ def generate_unique_5_digit(storage_file="used_numbers.txt"):
             with open(storage_file, "w") as file:
                 file.write("\n".join(used_numbers))
             return number
+
+def get_timestamps_from_graph(graph, source, patient_id, request_data_type=None):
+    """
+    Retrieve timestamps from the RDF graph based on source, patient_id, and optionally request_data_type.
+
+    Args:
+        graph: The RDFlib graph instance.
+        source: The data source to filter by.
+        patient_id: The patient ID to filter by.
+        request_data_type: The name filter for the data type. Defaults to None.
+
+    Returns:
+        A list of timestamps as strings.
+    """
+    # Prepare the SPARQL query
+    query_template = """
+    PREFIX pghdprovo: <https://w3id.org/pghdprovo/>
+    PREFIX prov: <http://www.w3.org/ns/prov#>
+    PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+    
+    SELECT ?timestamp WHERE {
+        ?subject pghdprovo:hasTimestamp ?timestamp .
+        ?subject pghdprovo:dataSource ?source .
+        ?subject prov:wasAttributedTo ?patient .
+        ?patient pghdprovo:userid ?userid .
+        
+        FILTER (STRSTARTS(?source, ?src))
+        FILTER (?userid = ?pid)
+        {optional_name_filter}
+    }
+    """
+
+    # Add optional name filter if request_data_type is provided
+    if request_data_type:
+        optional_name_filter = "FILTER (?name = ?data_type)"
+        query_template = query_template.replace("{optional_name_filter}", optional_name_filter)
+    else:
+        query_template = query_template.replace("{optional_name_filter}", "")
+
+    # Prepare the query
+    prepared_query = prepareQuery(query_template)
+
+    # Execute the query with bindings
+    bindings = {
+        "src": source,
+        "pid": patient_id,
+    }
+    if request_data_type:
+        bindings["data_type"] = request_data_type
+
+    result = graph.query(prepared_query, initBindings=bindings)
+
+    # Extract timestamps from the result
+    timestamps = [str(row.timestamp) for row in result]
+    return timestamps
+
+def filter_prepared_data(prepared_data, timestamps, date_key="timestamp"):
+    """
+    Filter prepared_data to exclude entries with timestamps that exist in the provided timestamps array.
+
+    Args:
+        prepared_data: The prepared data to filter.
+        timestamps: The list of timestamps in "YYYY-MM-DDTHH:MM:SS" format.
+        date_key: The key in the session dictionary where the date is stored. Defaults to "timestamp".
+
+    Returns:
+        The filtered prepared_data array.
+    """
+    # Parse timestamps into datetime objects for comparison
+    existing_timestamps = {datetime.fromisoformat(ts) for ts in timestamps}
+
+    # Filter prepared_data
+    filtered_data = []
+    for entry in prepared_data:
+        # Get the date value from the entry
+        date_value = entry.get(date_key)
+
+        # Handle datetime objects and date strings
+        if isinstance(date_value, datetime):
+            # If it's already a datetime object, use it directly
+            entry_datetime = date_value
+        elif isinstance(date_value, str):
+            try:
+                # Try parsing the date string into a datetime object
+                entry_datetime = datetime.fromisoformat(date_value)
+            except ValueError:
+                # Skip if the date string is not in a valid format
+                continue
+        else:
+            # Skip if the date value is not a datetime object or string
+            continue
+
+        # Check if the entry's datetime exists in the timestamps list
+        if entry_datetime not in existing_timestamps:
+            filtered_data.append(entry)
+
+    return filtered_data

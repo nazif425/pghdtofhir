@@ -17,7 +17,7 @@ from rdflib.namespace import RDF, RDFS
 from rdflib import Namespace
 
 from ..utils import unique_id, get_entity_name, is_timestamp, get_main_class, add_metadata_to_graph
-from ..utils import CLIENT_ID, CLIENT_SECRET, REDIRECT_URI
+from ..utils import CLIENT_ID, CLIENT_SECRET, REDIRECT_URI, get_timestamps_from_graph, filter_prepared_data
 from ..utils import verify_resources, build_fhir_resources, store, insert_data_to_triplestore
 wearable = Blueprint('wearable', __name__)
 
@@ -262,49 +262,63 @@ def process_and_send_data(identity, prepared_data, request_data, other_data=None
     pghdprovo = Namespace("https://w3id.org/pghdprovo/")
     wearpghdprovo = Namespace("https://w3id.org/wearpghdprovo/")
     prov = Namespace("http://www.w3.org/ns/prov#")
+    result = {}
     
     g = Graph()
     g.parse("static/rdf_files/wearpghdprovo-onto-template.ttl", format="turtle")
     new_g = Graph()
-    
-    new_instances = add_metadata_to_graph(new_g, identity, other_data=other_data)
-
-    # Add data to graph
-    for data_set in prepared_data:
-        instance = unique_id(pghdprovo.PGHD)
-        new_g.add((instance, RDF.type, pghdprovo.PGHD))
-        new_g.add((instance, pghdprovo.name, Literal(data_set["name"])))
-        new_g.add((instance, pghdprovo.value, Literal(data_set["value"])))
-        new_g.add((instance, pghdprovo.dataSource, Literal(data_set["dataSource"])))
-        timestamp = datetime.strptime(data_set["date"], "%Y-%m-%d")
-        time_str = timestamp.isoformat(timespec='seconds')
-        new_g.add((instance, pghdprovo.hasTimestamp, Literal(time_str, datatype=XSD.dateTime)))
-
-        if new_instances.get("Patient", None):
-            new_g.add((instance, prov.wasAttributedTo, new_instances["Patient"]))
-            new_g.add((instance, pghdprovo.wasCollectedBy, new_instances["Patient"]))
-        if new_instances.get("PGHDRequest", None):
-            new_g.add((instance, prov.wasGeneratedBy, new_instances["PGHDRequest"]))
-        if new_instances.get("Wearable", None):
-            new_g.add((instance, prov.wasDerivedFrom, new_instances["Wearable"]))
-
-        # Add property annotations to instance
-        for s, p, o in g.triples((wearpghdprovo[data_set["name"]], RDF.type, OWL.DatatypeProperty)):
-            for annoteProp in [RDFS.label, RDFS.comment]:
-                value = g.value(
-                    subject=wearpghdprovo[data_set["name"]], 
-                    predicate=annoteProp)
-                if value:
-                    new_g.add((instance, annoteProp, value))
-            break
-        if data_set.get("device_id", None):
-            new_g.add((instance, pghdprovo.deviceId, Literal(data_set.get("device_id", None))))
-    # Save to triplestore
-    result = {}
-    result["triplestore"] = insert_data_to_triplestore(new_g, store.update_endpoint)
-    # Build FHIR resources
     triple_store = Graph(store=store)
-    result["fhir"] = build_fhir_resources(new_g, request_data)
+    
+    # Get all timestamps for the given data request
+    user_id = request_data["meta-data"]["patient"].get("user_id", None)
+    source = request_data['request_type']
+    request_data_type = request_data['request_data_type']
+    timestamps = get_timestamps_from_graph(triple_store, source, user_id, request_data_type=request_data_type)
+    
+    # Remove existing data already in triple store
+    prepared_data = filter_prepared_data(prepared_data, timestamps, date_key="timestamp")
+    if len(prepared_data):
+        request_info = Request(
+            identity_id=identity.identity_id,
+            startedAtTime=datetime.now(),
+            description=f'Fetch patient data from {data["request_type"]}',
+        )
+        new_instances = add_metadata_to_graph(new_g, identity, other_data=other_data)
+
+        # Add data to graph
+        for data_set in prepared_data:
+            instance = unique_id(pghdprovo.PGHD)
+            new_g.add((instance, RDF.type, pghdprovo.PGHD))
+            new_g.add((instance, pghdprovo.name, Literal(data_set["name"])))
+            new_g.add((instance, pghdprovo.value, Literal(data_set["value"])))
+            new_g.add((instance, pghdprovo.dataSource, Literal(data_set["dataSource"])))
+            timestamp = datetime.strptime(data_set["date"], "%Y-%m-%d")
+            time_str = timestamp.isoformat(timespec='seconds')
+            new_g.add((instance, pghdprovo.hasTimestamp, Literal(time_str, datatype=XSD.dateTime)))
+
+            if new_instances.get("Patient", None):
+                new_g.add((instance, prov.wasAttributedTo, new_instances["Patient"]))
+                new_g.add((instance, pghdprovo.wasCollectedBy, new_instances["Patient"]))
+            if new_instances.get("PGHDRequest", None):
+                new_g.add((instance, prov.wasGeneratedBy, new_instances["PGHDRequest"]))
+            if new_instances.get("Wearable", None):
+                new_g.add((instance, prov.wasDerivedFrom, new_instances["Wearable"]))
+
+            # Add property annotations to instance
+            for s, p, o in g.triples((wearpghdprovo[data_set["name"]], RDF.type, OWL.DatatypeProperty)):
+                for annoteProp in [RDFS.label, RDFS.comment]:
+                    value = g.value(
+                        subject=wearpghdprovo[data_set["name"]], 
+                        predicate=annoteProp)
+                    if value:
+                        new_g.add((instance, annoteProp, value))
+                break
+            if data_set.get("device_id", None):
+                new_g.add((instance, pghdprovo.deviceId, Literal(data_set.get("device_id", None))))
+        # Save to triplestore
+        result["triplestore"] = insert_data_to_triplestore(new_g, store.update_endpoint)
+        # Build FHIR resources
+        result["fhir"] = build_fhir_resources(new_g, request_data)
 
     return result
 
