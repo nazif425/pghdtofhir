@@ -18,7 +18,7 @@ from rdflib import Namespace
 
 from ..utils import unique_id, get_entity_name, is_timestamp, get_main_class, add_metadata_to_graph
 from ..utils import CLIENT_ID, CLIENT_SECRET, REDIRECT_URI, get_timestamps_from_graph, filter_prepared_data
-from ..utils import verify_resources, build_fhir_resources, store, insert_data_to_triplestore
+from ..utils import verify_resources, build_fhir_resources, store, insert_data_to_triplestore, reset_query_keys
 wearable = Blueprint('wearable', __name__)
 
 def get_fitbit_data(auth2_client, base_date=None, end_date=None, time_series=None):
@@ -300,7 +300,7 @@ def process_and_send_data(identity, prepared_data, request_data, other_data=None
             if new_instances.get("Patient", None):
                 new_g.add((instance, prov.wasAttributedTo, new_instances["Patient"]))
                 new_g.add((instance, pghdprovo.wasCollectedBy, new_instances["Patient"]))
-            if new_instances.get("PGHDRequest", None):
+            if new_instances.get("PGHDRequest", None):f
                 new_g.add((instance, prov.wasGeneratedBy, new_instances["PGHDRequest"]))
             if new_instances.get("Wearable", None):
                 new_g.add((instance, prov.wasDerivedFrom, new_instances["Wearable"]))
