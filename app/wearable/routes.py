@@ -182,6 +182,7 @@ def data_request():
         db.session.add(auth_session)
         db.session.commit()
         if request_data["request_type"] == "fitbit":
+            """
             if load_tokens_from_db(patient.patient_id):
                 query_params = {
                     'private_key': private_key,
@@ -193,6 +194,7 @@ def data_request():
                     query_string=query_params
                 ):
                     return data()
+            """
             data_source = "Fitbit"
             auth_link = generate_fitbit_auth_url(auth_session)
         elif request_data["request_type"] == "healthconnect":
