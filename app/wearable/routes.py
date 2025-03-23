@@ -3,6 +3,7 @@ import fitbit
 from urllib.parse import urlencode
 from os import environ
 from flask import Flask, current_app, request, jsonify, abort, render_template, Response, flash, redirect, url_for, session
+from flask import make_response
 from sqlalchemy.sql import func
 from ..models import db, CallSession, ApplicationData, EHRSystem, Identity, Organization
 from ..models import Patient, Practitioner, Fitbit, Request, AuthSession
@@ -113,10 +114,18 @@ def data_request():
     elif request.method == 'POST':
         request_data = request.get_json()
         if not request_data:
-            abort(400, "Invalid request payload")
+            response = jsonify({
+                'message': "Invalid request payload",
+                'status': 400
+            })
+            abort(make_response(response, 400))
         
         if request_data.get("request_type", "") not in ["fitbit", "healthconnect"]:
-            abort(400, "Error, request type not provided.")
+            response = jsonify({
+                'message': "Error, request type not provided.",
+                'status': 400
+            })
+            abort(make_response(response, 400))
         
         verify_resources(request_data)
         instances = get_or_create_instances(request_data)
@@ -226,7 +235,11 @@ def get_access_token():
     authorization_code = request.args.get('code', None)
     state = request.args.get('state', None)
     if not state:
-        abort(404)
+        response = jsonify({
+            'message': "state not provided",
+            'status': 404
+        })
+        abort(make_response(response, 404))
     auth_session = AuthSession.query.filter_by(private_key=state).first()
     if auth_session is None:
         flash('Sorry, could not authenticate user.', 'danger')
@@ -276,7 +289,11 @@ def get_access_token():
         store_tokens_in_db(patient_id, token_dict)
     else:
         print(token_response)
-        abort(404)
+        response = jsonify({
+            'message': "Failed to fetch access token",
+            'status': token_response.status_code
+        })
+        abort(make_response(response, token_response.status_code))
     if not session.get('patient_id', None):
         session["request_data"] = auth_session.data.get('request_data', None)
          

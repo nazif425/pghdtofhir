@@ -55,7 +55,7 @@ def before_request_func():
     #remove data if the call is ended
     if request.values.get('isActive', None) == 0:
         #clear_session_data()
-        abort(200, "Session ended")
+        return jsonify({"message": "Session ended", "status": 200}), 200
     sessionId = request.values.get('sessionId', None)
     if sessionId:
         print("for with sess", request.values.get('sessionId', None))
@@ -219,16 +219,6 @@ def submit():
         clear_session_data()
         return '<Response><Reject/></Response>'
 
-@ivr.route('/test_fhir', methods=['GET'])
-def test_fhir():
-    #http://hapi.abdullahikawu.org/Patient?identifier=9e0003ae-4e5e-4442-aeab-838203fa2f5f
-    headers = {'Content-Type': 'application/json', 'Accept': 'application/json'}  
-    response = requests.get(f"http://hapi.abdullahikawu.org/fhir/Patient?identifier=9e0003ae-4e5e-4442-aeab-838203fa2f5f",
-            headers=headers)
-    if response.status_code != 200:
-        abort(500, f"Error querying resource: {response.text}")
-    return jsonify(response.json())
-
 @ivr.route('/data', methods=['GET'])
 def data():
     data = {}
@@ -254,7 +244,7 @@ def data():
         return jsonify({"message": "Error, phone_number not provided.", "status": 400}), 400
     
     if phone_number[0] != '+':
-        abort(400, "Error, invalid phone_number.")
+        return jsonify({"message": "Error, invalid phone_number.", "status": 400}), 400
     
     start_date = data.get("start_date", None)
     end_date = data.get("end_date", None)

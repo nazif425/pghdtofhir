@@ -5,6 +5,7 @@ from email.mime.multipart import MIMEMultipart
 from urllib.parse import urlencode
 from os import environ
 from flask import Flask, request, jsonify, abort, render_template, Response, flash, redirect, url_for, session
+from flask import make_response
 from flask_migrate import Migrate
 from sqlalchemy.sql import func
 from .models import db, CallSession, ApplicationData, EHRSystem, Identity, Organization
@@ -392,7 +393,11 @@ def check_resource_existence(resource_type, identifier, system=None):
     response = requests.get(f"{FHIR_SERVER_URL}/{resource_type}", params=search_params)
     
     if response.status_code != 200:
-        abort(500, f"Error querying {resource_type} resource: {response.text}")
+        response = jsonify({
+            'message': f"Error querying {resource_type} resource: {response.text}",
+            'status': 500
+        })
+        abort(make_response(response, 500))
     
     resources = response.json().get("entry", [])
     return len(resources) > 0
@@ -607,35 +612,67 @@ def verify_resources(data):
     # Check patient email
     patient_email = data["meta-data"]["patient"].get("email", None)
     if not patient_email:
-        abort(400, "Error, patient email not provided.")
+        response = jsonify({
+            'message': "Error, patient email not provided.",
+            'status': 400
+        })
+        abort(make_response(response, 400))
 
     # find patient number
     if "IVR" in data["request_type"]:
         patient_phone_number = data["meta-data"]["patient"].get("phone_number", None)
         if not patient_phone_number:
-            abort(400, "Error, patient number not provided.")
+            response = jsonify({
+                'message': "Error, patient number not provided.",
+                'status': 400
+            })
+            (make_response(response, 400))
     
     # FHIR Resources verification
     patient_user_id = data["meta-data"]["patient"].get("user_id", None)
     if not patient_user_id:
-        abort(400, "Error, patient user_id not provided.")
+        response = jsonify({
+            'message': "Error, patient user_id not provided.",
+            'status': 400
+        })
+        abort(make_response(response, 400))
     if not check_resource_existence("Patient", patient_user_id):
         if not create_patient(data):
-            abort(500, f"Failed to create Patient with ID '{patient_user_id}'.")
+            response = jsonify({
+                'message': f"Failed to create Patient with ID '{patient_user_id}'.",
+                'status': 500
+            })
+            abort(make_response(response, 500))
 
     practitioner_user_id = data["meta-data"]["practitioner"].get("user_id", None)
     if not practitioner_user_id:
-        abort(400, "Error, practitioner user_id not provided.")
+        response = jsonify({
+            'message': "Error, practitioner user_id not provided.",
+            'status': 400
+        })
+        abort(make_response(response, 400))
     if not check_resource_existence("Practitioner", practitioner_user_id):
         if not create_practitioner(data):
-            abort(500, f"Failed to create Practitioner with ID '{practitioner_user_id}'.")
+            response = jsonify({
+                'message': f"Failed to create Practitioner with ID '{practitioner_user_id}'.",
+                'status': 500
+            })
+            abort(make_response(response, 500))
 
     organization_user_id = data["meta-data"]["organization"].get("org_id", None)
     if not organization_user_id:
-        abort(400, "Error, organization user_id not provided.")
+        response = jsonify({
+            'message': "Error, organization user_id not provided.",
+            'status': 400
+        })
+        abort(make_response(response, 400))
     if not check_resource_existence("Organization", organization_user_id):
         if not create_organization(data):
-            abort(500, f"Failed to create Organization with ID '{organization_user_id}'.")
+            response = jsonify({
+                'message': f"Failed to create Organization with ID '{organization_user_id}'.",
+                'status': 500
+            })
+            abort(make_response(response, 500))
     
     return True
 
