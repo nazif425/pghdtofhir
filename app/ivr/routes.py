@@ -327,8 +327,9 @@ def data():
             startedAtTime=datetime.now(),
             description=f'Fetch patient data from {data["request_type"]}',
         )
+        request_info.endedAtTime = datetime.now()
         db.session.add(request_info)
-        db.session.flush()
+        db.session.commit()
         
         new_instances = add_metadata_to_graph(new_g, identity)
 
@@ -405,8 +406,6 @@ def data():
         # Save to remote fhir server
         result["fhir"] = build_fhir_resources(triple_store, data)
 
-        request_info.endedAtTime = datetime.now()
-        db.session.commit()
     # Change data request status
     auth_session.data = {"request_data": data, "complete": True}
     db.session.commit()
