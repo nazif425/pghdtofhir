@@ -25,9 +25,9 @@
     },
     "steps": {
         "value": 0,
-        "unit": "count",
+        "unit": "{count}",
         "system": "http://unitsofmeasure.org",
-        "code": "count"
+        "code": "{count}"
     },
     "sleepDuration": {
         "value": 0,

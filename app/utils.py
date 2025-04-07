@@ -822,8 +822,7 @@ def build_fhir_resources(g, request_data):
                     ]
                 }],
                 manufacturer=None,
-                modelNumber=None,
-                owner={"reference": f"Patient?identifier={patient_id}"}
+                modelNumber=None
             )
         except ValueError as e:
             print("Device error: ", e.errors())
