@@ -1029,8 +1029,8 @@ def build_fhir_resources(g, request_data):
     bundle_json = bundle.json(indent=2)
     # Write the JSON to a file
     output_file = "bundle_output.json"  # Specify your desired file name
-        with open(output_file, "w", encoding="utf-8") as f:
-            f.write(bundle_json)
+    with open(output_file, "w", encoding="utf-8") as f:
+        f.write(bundle_json)
     # print(f"Bundle written to {output_file}")
     
     # Headers
