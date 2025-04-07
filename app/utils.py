@@ -199,7 +199,8 @@ def send_access_code(receiver_email, access_code, name="", data_source="Fitbit")
     message["To"] = receiver_email
     message["Subject"] = f"Healthcare Data Authorization Code"
     message.attach(MIMEText(body, "html"))
-
+    
+    """
     try:
         # Connect to the server using SSL
         with smtplib.SMTP_SSL(smtp_server, smtp_port) as server:
@@ -209,6 +210,19 @@ def send_access_code(receiver_email, access_code, name="", data_source="Fitbit")
         return True
     except Exception as e:
         print(f"Failed to send email: {e}")
+        return False
+    """
+    try:
+        print(f"Connecting to SMTP server: {smtp_server}:{smtp_port}")
+        with smtplib.SMTP_SSL(smtp_server, smtp_port) as server:
+            print("Logging in to SMTP...")
+            server.login(sender_email, password)
+            print(f"Sending email to: {receiver_email}")
+            server.sendmail(sender_email, receiver_email, message.as_string())
+            print("Email sent successfully!")
+        return True
+    except Exception as e:
+        print(f"Failed to send email to {receiver_email}: {type(e).__name__} - {e}")
         return False
 
 def send_authorisation_email(receiver_email, auth_link, name="", data_source="Fitbit"):
