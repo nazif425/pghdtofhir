@@ -17,18 +17,14 @@ from rdflib import Namespace
 from SPARQLWrapper import SPARQLWrapper
 from rdflib.plugins.sparql import prepareQuery
 from rdflib.plugins.stores.sparqlstore import SPARQLUpdateStore
-from fhir.resources.patient import Patient as FhirPatient
-from fhir.resources.organization import Organization as FhirOrganization
-from fhir.resources.practitioner import Practitioner as FhirPractitioner
-from fhir.resources.device import Device
-from fhir.resources.encounter import Encounter
-from fhir.resources.observation import Observation
-from fhir.resources.provenance import Provenance
-from fhir.resources.bundle import Bundle, BundleEntry
-from fhir.resources.humanname import HumanName
-from pydantic import ValidationError
-from fhir.resources.coding import Coding
-from fhir.resources.period import Period
+from fhir.resources.R4B.patient import Patient as FhirPatient
+from fhir.resources.R4B.organization import Organization as FhirOrganization
+from fhir.resources.R4B.practitioner import Practitioner as FhirPractitioner
+from fhir.resources.R4B.device import Device
+from fhir.resources.R4B.encounter import Encounter
+from fhir.resources.R4B.observation import Observation
+from fhir.resources.R4B.provenance import Provenance
+from fhir.resources.R4B.bundle import Bundle, BundleEntry
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -789,13 +785,11 @@ def build_fhir_resources(g, request_data):
         encounter = Encounter(
             id="encounter-1",
             status="finished",
-            class_fhir=[{
-                "coding": [{
-                    "code":"AMB",
-                    "display":"Ambulatory",
-                    "system":"http://terminology.hl7.org/CodeSystem/v3-ActCode"
-                }]
-            }],
+            class_fhir={
+                "system": "http://terminology.hl7.org/CodeSystem/v3-ActCode",
+                "code": "AMB",
+                "display": "Ambulatory"
+            },
             identifier=[
                 {
                     "system": "urn:uuid",
@@ -967,11 +961,7 @@ def build_fhir_resources(g, request_data):
                 "what": {
                     "reference": "urn:uuid:device-1" 
                 } 
-            }] if device else None,
-            encounter={
-                "reference": "urn:uuid:encounter-1",
-                "display": "Patient encounter for PGHD record"
-            }
+            }] if device else None
         )
     except ValueError as e:
         print("Provenance error: ", e.errors())
