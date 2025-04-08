@@ -776,6 +776,7 @@ def build_fhir_resources(g, request_data):
     encounter = None
     organization = None
     device = None
+    prov_id = str(uuid.uuid4())
     
     
     # create encounter resource
@@ -879,7 +880,6 @@ def build_fhir_resources(g, request_data):
         if record.get("deviceModel", None):
             deviceModel = record.deviceModel.value
         extensions = []
-        prov_id = str(uuid.uuid4())
         extensions.append({
             "url": "http://hl7.org/fhir/StructureDefinition/observation-provenance",
             "valueReference": {
