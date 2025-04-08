@@ -195,6 +195,18 @@ def send_access_code(receiver_email, access_code, name="", data_source="Fitbit")
     message["To"] = receiver_email
     message["Subject"] = f"Healthcare Data Authorization Code"
     message.attach(MIMEText(body, "html"))
+
+    # --- Flask-based delivery ---
+    try:
+        response = requests.post("http://18.132.17.15:5000/send_email", json={
+            "to": receiver_email,
+            "subject": subject,
+            "content": body
+        })
+        return response.status_code == 200
+    except Exception as e:
+        print(f"Error sending email via Flask: {e}")
+        return False
     
     """
     try:
@@ -207,7 +219,7 @@ def send_access_code(receiver_email, access_code, name="", data_source="Fitbit")
     except Exception as e:
         print(f"Failed to send email: {e}")
         return False
-    """
+    
     try:
         print(f"Connecting to SMTP server: {smtp_server}:{smtp_port}")
         with smtplib.SMTP_SSL(smtp_server, smtp_port) as server:
@@ -220,6 +232,7 @@ def send_access_code(receiver_email, access_code, name="", data_source="Fitbit")
     except Exception as e:
         print(f"Failed to send email to {receiver_email}: {type(e).__name__} - {e}")
         return False
+    """
 
 def send_authorisation_email(receiver_email, auth_link, name="", data_source="Fitbit"):
     sender_email = SENDER_EMAIL
@@ -274,7 +287,20 @@ def send_authorisation_email(receiver_email, auth_link, name="", data_source="Fi
     message["To"] = receiver_email
     message["Subject"] = f"Authorize {data_source} Data Access"
     message.attach(MIMEText(body, "html"))
-
+    
+    # --- Flask-based delivery ---
+    try:
+        response = requests.post("http://18.132.17.15:5000/send_email", json={
+            "to": receiver_email,
+            "subject": subject,
+            "content": body
+        })
+        return response.status_code == 200
+    except Exception as e:
+        print(f"Error sending email via Flask: {e}")
+        return False
+    
+    """
     try:
         # Connect to the server using SSL
         with smtplib.SMTP_SSL(smtp_server, smtp_port) as server:
@@ -285,6 +311,7 @@ def send_authorisation_email(receiver_email, auth_link, name="", data_source="Fi
     except Exception as e:
         print(f"Failed to send email: {e}")
         return False
+    """
 
 def add_metadata_to_graph(new_g, identity, other_data=None):
     wearable_name = ""
