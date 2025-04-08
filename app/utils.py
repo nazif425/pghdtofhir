@@ -780,10 +780,10 @@ def build_fhir_resources(g, request_data):
     
     
     # create encounter resource
-    encounter_id = "urn:uuid:encounter-1"
     try:
+        res_id = str(uuid.uuid4())
         encounter = Encounter(
-            id="encounter-1",
+            id=res_id,
             status="finished",
             class_fhir={
                 "system": "http://terminology.hl7.org/CodeSystem/v3-ActCode",
@@ -812,8 +812,9 @@ def build_fhir_resources(g, request_data):
     # create device resource
     if request_type == "fitbit":
         try:
+            res_id = str(uuid.uuid4())
             device = Device(
-                id="device-1",
+                id=res_id,
                 identifier=[
                     {
                         "system": "urn:uuid",
@@ -879,10 +880,11 @@ def build_fhir_resources(g, request_data):
         if record.get("deviceModel", None):
             deviceModel = record.deviceModel.value
         extensions = []
+        prov_id = str(uuid.uuid4())
         extensions.append({
             "url": "http://hl7.org/fhir/StructureDefinition/observation-provenance",
             "valueReference": {
-                "reference": "urn:uuid:provenance-1",
+                "reference": f"urn:uuid:{prov_id}",
                 "display": "Provenance for PGHD"
             }
         })
@@ -906,11 +908,14 @@ def build_fhir_resources(g, request_data):
                     "coding": [location_coding]
                 }
             })
-        print(extensions)
+        device_ref = None
+        if device:
+            device_ref = {"reference": f"urn:uuid:{device.id}"}
         # create observation resources
         try:
+            res_id = str(uuid.uuid4())
             observations.append(Observation(
-                id=f"observation-{counter}",
+                id=res_id,
                 status="final",
                 identifier=[
                     {
@@ -926,8 +931,8 @@ def build_fhir_resources(g, request_data):
                 },
                 bodySite={"coding": [bodysite_coding]} if bodysite_coding else None,
                 subject={"reference": f"Patient?identifier={patient_id}"},
-                encounter={"reference": encounter_id},
-                device={"reference": "urn:uuid:device-1"} if device else None,
+                encounter={"reference": f"urn:uuid:{encounter.id}"},
+                device=device_ref,
                 valueQuantity=value_set,
                 effectiveDateTime=(record.timestamp.value).strftime("%Y-%m-%dT%H:%M:%SZ"),
                 extension=extensions
@@ -939,9 +944,12 @@ def build_fhir_resources(g, request_data):
     # Create Provenance resource
     provenance = None
     try:
+        entity = None
+        if device:
+            entity = [{"role": "source", "what": {"reference": f"urn:uuid:{device.id}"}}]
         provenance = Provenance(
-            id="prov1",
-            target=[{"reference": f"urn:uuid:observation-{i+1}"} for i in range(counter)],
+            id=prov_id,
+            target=[{"reference": "urn:uuid:"+ observation.id} for observation in observations],
             recorded=now,  # Commented out as per your example
             agent=[{
                 "type": {
@@ -956,12 +964,7 @@ def build_fhir_resources(g, request_data):
                 "who": {"reference": f"Practitioner?identifier={practitioner_id}"},
                 "onBehalfOf": {"reference": organization_id}
             }],
-            entity=[{
-                "role": "source",
-                "what": {
-                    "reference": "urn:uuid:device-1" 
-                } 
-            }] if device else None
+            entity=entity
         )
     except ValueError as e:
         print("Provenance error: ", e.errors())
@@ -979,7 +982,7 @@ def build_fhir_resources(g, request_data):
                 "method": "POST",
                 "url": "Observation"
             },
-            fullUrl=f"urn:uuid:observation-{i+1}"
+            fullUrl=f"urn:uuid:{observation.id}"
         ))
 
     # Add Provenance resource to the bundle
@@ -989,7 +992,7 @@ def build_fhir_resources(g, request_data):
             "method": "POST",
             "url": "Provenance"
         },
-        fullUrl=f"urn:uuid:provenance-1"
+        fullUrl=f"urn:uuid:{provenance.id}"
     ))
 
     # Add Device resource (if defined)
@@ -1002,7 +1005,7 @@ def build_fhir_resources(g, request_data):
                 "method": "POST",
                 "url": "Device"
             },
-            fullUrl=f"urn:uuid:device-1"
+            fullUrl=f"urn:uuid:{device.id}"
         ))
 
     # Add Encounter resource (if defined)
@@ -1013,7 +1016,7 @@ def build_fhir_resources(g, request_data):
                 "method": "POST",
                 "url": "Encounter"
             },
-            fullUrl=encounter_id
+            fullUrl=f"urn:uuid:{encounter.id}"
         ))
     # Serialize the bundle to JSON
     bundle_json = bundle.json(indent=2)

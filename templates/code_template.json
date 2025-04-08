@@ -10,12 +10,12 @@
         "display": "Heart rate"
     },
     "systolic_blood_pressure": {
-        "system": " http://snomed.info/sct",
+        "system": "http://snomed.info/sct",
         "code": "271649006", 
         "display": "Systolic blood pressure"
     },
     "diastolic_blood_pressure": {
-        "system": " http://snomed.info/sct",
+        "system": "http://snomed.info/sct",
         "code": "271650006", 
         "display": "Diastolic blood pressure"
     },
@@ -30,7 +30,7 @@
         "display": "Number of steps in 24 hour Measured"
     },
     "sleepDuration": {
-        "system": " http://snomed.info/sct",
+        "system": "http://snomed.info/sct",
         "code": "248263006", 
         "display": "Duration of sleep"
     },
