@@ -200,7 +200,7 @@ def send_access_code(receiver_email, access_code, name="", data_source="Fitbit")
     try:
         response = requests.post("http://18.132.17.15:5000/send_email", json={
             "to": receiver_email,
-            "subject": subject,
+            "subject": message["Subject"],
             "content": body
         })
         return response.status_code == 200
@@ -292,7 +292,7 @@ def send_authorisation_email(receiver_email, auth_link, name="", data_source="Fi
     try:
         response = requests.post("http://18.132.17.15:5000/send_email", json={
             "to": receiver_email,
-            "subject": subject,
+            "subject": message["Subject"],
             "content": body
         })
         return response.status_code == 200
