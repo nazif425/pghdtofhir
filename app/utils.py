@@ -773,9 +773,8 @@ def build_fhir_resources(g, request_data):
     practitioner_id = request_data["meta-data"]["practitioner"]["user_id"]
     organization_id = request_data["meta-data"]["organization"].get("org_id", None)
     organization_id = f"Organization?identifier={organization_id}"
-    encounter_id = request_data.get("encounter", None)
-    organization = None
     encounter = None
+    organization = None
     device = None
     
     
@@ -798,7 +797,7 @@ def build_fhir_resources(g, request_data):
             ],
             subject={"reference": f"Patient?identifier={patient_id}"},
             participant=[{
-                "actor": {"reference": f"Practitioner?identifier={practitioner_id}"},
+                "individual": {"reference": f"Practitioner?identifier={practitioner_id}"},
                 "period": {
                     "start": datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ"),
                     "end": (datetime.now() + timedelta(hours=1)).strftime("%Y-%m-%dT%H:%M:%SZ")
