@@ -205,7 +205,7 @@ def send_access_code(receiver_email, access_code, name="", data_source="Fitbit")
         })
         return response.status_code == 200
     except Exception as e:
-        print(f"Error sending email via Flask: {e}")
+        print(f"Failed to send email: {e}")
         return False
     
     """
@@ -297,7 +297,7 @@ def send_authorisation_email(receiver_email, auth_link, name="", data_source="Fi
         })
         return response.status_code == 200
     except Exception as e:
-        print(f"Error sending email via Flask: {e}")
+        print(f"Failed to send email: {e}")
         return False
     
     """
