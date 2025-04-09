@@ -198,7 +198,7 @@ def send_access_code(receiver_email, access_code, name="", data_source="Fitbit")
 
     # --- Flask-based delivery ---
     try:
-        response = requests.post("http://18.132.17.15:5000/send_email", json={
+        response = requests.post("http://18.132.17.15:5000/send-email", json={
             "to": receiver_email,
             "subject": message["Subject"],
             "content": body
@@ -290,7 +290,7 @@ def send_authorisation_email(receiver_email, auth_link, name="", data_source="Fi
     
     # --- Flask-based delivery ---
     try:
-        response = requests.post("http://18.132.17.15:5000/send_email", json={
+        response = requests.post("http://18.132.17.15:5000/send-email", json={
             "to": receiver_email,
             "subject": message["Subject"],
             "content": body
