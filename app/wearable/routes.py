@@ -303,7 +303,8 @@ def get_access_token():
         public_key = auth_session.public_key
         query_params = {
             'private_key': private_key,
-            'public_key': public_key
+            'public_key': public_key,
+            'from_auth': True
         }
         with current_app.test_request_context(
             '/data',
