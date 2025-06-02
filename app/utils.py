@@ -39,6 +39,7 @@ SENDER_EMAIL = os.getenv('SENDER_EMAIL')
 SMTP_SERVER = os.getenv('SMTP_SERVER')
 SMTP_PASSWORD = os.getenv('SMTP_PASSWORD')
 SMTP_PORT = os.getenv('SMTP_PORT')
+EMAIL_SERVER_URL = os.getenv('EMAIL_SERVER_URL')
 
 # Create triplestore instance
 query_endpoint = TRIPLESTORE_URL + "/sparql"
@@ -49,10 +50,10 @@ store = SPARQLUpdateStore(
 )
 
 # RDF Namespaces
-pghdprovo = Namespace("https://w3id.org/pghdprovo/")
-wearpghdprovo = Namespace("https://w3id.org/wearpghdprovo/")
+pghdprovo = Namespace("https://w3id.org/pghdprovo#")
+wearpghdprovo = Namespace("https://w3id.org/wearpghdprovo#")
 prov = Namespace("http://www.w3.org/ns/prov#")
-foaf = Namespace("http://xmlns.com/foaf/0.1/gender")
+foaf = Namespace("http://xmlns.com/foaf/0.1/")
 
 query_header = """
     PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
@@ -62,13 +63,14 @@ query_header = """
     PREFIX foaf: <http://xmlns.com/foaf/0.1/>
     PREFIX prov: <http://www.w3.org/ns/prov#>
     PREFIX s4wear: <https://saref.etsi.org/saref4wear/>
-    PREFIX pghdprovo: <https://w3id.org/pghdprovo/>
-    PREFIX : <https://w3id.org/wearpghdprovo/>
-    PREFIX wearpghdprovo: <https://w3id.org/wearpghdprovo/>
+    PREFIX pghdprovo: <https://w3id.org/pghdprovo#>
+    PREFIX : <https://w3id.org/wearpghdprovo#>
+    PREFIX wearpghdprovo: <https://w3id.org/wearpghdprovo#>
+    
 """
 
-def unique_id(uri_class):
-    return URIRef(str(uri_class) + "." + uuid.uuid4().hex[:8])
+def unique_id():
+    return URIRef("https://w3id.org/wearpghdprovo#" + uuid.uuid4().hex[:8])
 
 def get_entity_name(uri):
     entity = str(uri).split('#')[-1]
@@ -105,7 +107,7 @@ def copy_instance(new_g, instance, g, mapping_dict):
             instance_class = get_main_class(g, instance)
             if not instance_class:
                 return None
-            new_instance = unique_id(instance_class)
+            new_instance = unique_id()
             for rdf_type in g.objects(instance, RDF.type):
                 new_g.add((new_instance, RDF.type, rdf_type))
             mapping_dict[str(instance)] = str(new_instance)
@@ -198,7 +200,7 @@ def send_access_code(receiver_email, access_code, name="", data_source="Fitbit")
 
     # --- Flask-based delivery ---
     try:
-        response = requests.post("http://18.132.17.15:5000/send-email", json={
+        response = requests.post(EMAIL_SERVER_URL, json={
             "to": receiver_email,
             "subject": message["Subject"],
             "content": body
@@ -290,7 +292,7 @@ def send_authorisation_email(receiver_email, auth_link, name="", data_source="Fi
     
     # --- Flask-based delivery ---
     try:
-        response = requests.post("http://18.132.17.15:5000/send-email", json={
+        response = requests.post(EMAIL_SERVER_URL, json={
             "to": receiver_email,
             "subject": message["Subject"],
             "content": body
@@ -908,7 +910,7 @@ def build_fhir_resources(g, request_data):
             deviceModel = record.deviceModel.value
         extensions = []
         extensions.append({
-            "url": "http://hl7.org/fhir/StructureDefinition/observation-provenance",
+            "url": "https://w3id.org/pghdprovo/fhir/StructureDefinition/observation-provenance",
             "valueReference": {
                 "reference": f"urn:uuid:{prov_id}",
                 "display": "Provenance for PGHD"
@@ -920,7 +922,7 @@ def build_fhir_resources(g, request_data):
             print(posture_key)
             posture_coding = codings.get(posture_key, None)
             extensions.append({
-                "url": "https://w3id.org/pghdprovo/posture",
+                "url": "https://w3id.org/pghdprovo/fhir/StructureDefinition/pghd-posture",
                 "valueCodeableConcept": {
                     "coding": [posture_coding]
                 }
@@ -929,7 +931,7 @@ def build_fhir_resources(g, request_data):
             location_key = record["location"].value.lower()
             location_coding = codings.get(location_key, None)
             extensions.append({
-                "url": "https://w3id.org/pghdprovo/locationOfPatient",
+                "url": "https://w3id.org/pghdprovo/fhir/StructureDefinition/pghd-location",
                 "valueCodeableConcept": {
                     "coding": [location_coding]
                 }
@@ -1126,16 +1128,6 @@ def generate_sparql_query(request_data):
         data_type_filter = f'FILTER (?name = "{request_data_type}") .'
     # Construct the SPARQL query dynamically
     query = f"""
-    PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
-    PREFIX owl: <http://www.w3.org/2002/07/owl#>
-    PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-    PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
-    PREFIX foaf: <http://xmlns.com/foaf/0.1/>
-    PREFIX prov: <http://www.w3.org/ns/prov#>
-    PREFIX s4wear: <https://saref.etsi.org/saref4wear/>
-    PREFIX pghdprovo: <https://w3id.org/pghdprovo/>
-    PREFIX : <https://w3id.org/wearpghdprovo/>
-    PREFIX wearpghdprovo: <https://w3id.org/wearpghdprovo/>
     SELECT ?subject ?name ?value ?source ?timestamp ?description ?label ?posture ?bodysite ?location ?deviceid {fitbit_vars}
     WHERE {{
         ?subject a pghdprovo:PGHD .
@@ -1177,7 +1169,7 @@ def generate_sparql_query(request_data):
         }}
     }}
     """
-    return query
+    return query_header + query
 
 def transform_query_result(query_result):
     # Transform the query result into the desired array format
@@ -1254,10 +1246,6 @@ def get_timestamps_from_graph(graph, source, patient_id, request_data_type=""):
         optional_type_filter = f"FILTER (?name = '{request_data_type}') ."
     # Prepare the SPARQL query
     query = f"""
-    PREFIX pghdprovo: <https://w3id.org/pghdprovo/>
-    PREFIX prov: <http://www.w3.org/ns/prov#>
-    PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
-    
     SELECT ?timestamp WHERE {{
         ?subject pghdprovo:hasTimestamp ?timestamp .
         ?subject pghdprovo:dataSource ?source .
@@ -1270,6 +1258,7 @@ def get_timestamps_from_graph(graph, source, patient_id, request_data_type=""):
         {optional_type_filter}
     }}
     """
+    query = query_header + query
     print(query)
     result = graph.query(query)
 

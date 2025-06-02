@@ -17,9 +17,9 @@ from ..utils import copy_instance, transform_data, send_authorisation_email, add
 from ..utils import store, insert_data_to_triplestore, generate_unique_5_digit, get_timestamps_from_graph
 
 # RDF namespace
-pghdprovo = Namespace("https://w3id.org/pghdprovo/")
+pghdprovo = Namespace("https://w3id.org/pghdprovo#")
 prov = Namespace("http://www.w3.org/ns/prov#")
-foaf = Namespace("http://xmlns.com/foaf/0.1/gender")
+foaf = Namespace("http://xmlns.com/foaf/0.1/")
 
 
 query_header = """
@@ -30,9 +30,9 @@ query_header = """
     PREFIX foaf: <http://xmlns.com/foaf/0.1/>
     PREFIX prov: <http://www.w3.org/ns/prov#>
     PREFIX s4wear: <https://saref.etsi.org/saref4wear/>
-    PREFIX pghdprovo: <https://w3id.org/pghdprovo/>
-    PREFIX : <https://w3id.org/wearpghdprovo/>
-    PREFIX wearpghdprovo: <https://w3id.org/wearpghdprovo/>
+    PREFIX pghdprovo: <https://w3id.org/pghdprovo#>
+    PREFIX : <https://w3id.org/wearpghdprovo#>
+    PREFIX wearpghdprovo: <https://w3id.org/wearpghdprovo#>
 """
 
 @ivr.before_request
@@ -338,30 +338,30 @@ def data():
         for row in sessions_data:
             patient_relative = None
             if not patient_relative and collection_person == "Caregiver":
-                patient_relative = unique_id(pghdprovo.PatientRelative)
+                patient_relative = unique_id()
                 new_g.add((patient_relative, RDF.type, pghdprovo.PatientRelative))
                 new_g.add((patient_relative, pghdprovo.relationship, Literal(row["collection_person"])))
                 new_g.add((patient_instance, pghdprovo.actedOnBehalfOf, patient_relative))
         
             # Create state instance. 
-            state = unique_id(pghdprovo.State)
+            state = unique_id()
             new_g.add((state, RDF.type, pghdprovo.State))
             new_g.add((state, pghdprovo.posture, Literal(row["collection_position"])))
 
             # Protocol instance. 
-            protocol = unique_id(pghdprovo.Protocol)
+            protocol = unique_id()
             new_g.add((protocol, RDF.type, pghdprovo.Protocol))
             new_g.add((protocol, pghdprovo.bodySite, Literal(row["collection_body_site"])))
 
             # location instance 
-            location = unique_id(pghdprovo.ContextualInfo)
+            location = unique_id()
             new_g.add((location, RDF.type, pghdprovo.ContextualInfo))
             new_g.add((location, pghdprovo.locationOfPatient, Literal(row["collection_location"])))
         
             new_records = row["new_records"]
             for record in new_records:
                 # Define unique PGHD instance name e.g PGHD.f47ac10b
-                instance = unique_id(pghdprovo.PGHD)
+                instance = unique_id()
                 
                 # Create an instance
                 new_g.add((instance, RDF.type, pghdprovo.PGHD))

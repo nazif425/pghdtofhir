@@ -259,8 +259,8 @@ def prepare_data(raw_data, request_data, metadata=None):
 
 def process_and_send_data(identity, prepared_data, request_data, other_data=None):
     # Metadata and RDF instance creation
-    pghdprovo = Namespace("https://w3id.org/pghdprovo/")
-    wearpghdprovo = Namespace("https://w3id.org/wearpghdprovo/")
+    pghdprovo = Namespace("https://w3id.org/pghdprovo#")
+    wearpghdprovo = Namespace("https://w3id.org/wearpghdprovo#")
     prov = Namespace("http://www.w3.org/ns/prov#")
     result = {}
     
@@ -288,7 +288,7 @@ def process_and_send_data(identity, prepared_data, request_data, other_data=None
 
         # Add data to graph
         for data_set in prepared_data:
-            instance = unique_id(pghdprovo.PGHD)
+            instance = unique_id()
             new_g.add((instance, RDF.type, pghdprovo.PGHD))
             new_g.add((instance, pghdprovo.name, Literal(data_set["name"])))
             new_g.add((instance, pghdprovo.value, Literal(data_set["value"])))

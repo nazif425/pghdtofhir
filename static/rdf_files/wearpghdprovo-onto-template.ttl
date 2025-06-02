@@ -1,4 +1,4 @@
-@prefix : <https://w3id.org/wearpghdprovo/> .
+@prefix : <https://w3id.org/wearpghdprovo#> .
 @prefix dc: <http://purl.org/dc/elements/1.1/> .
 @prefix mod: <https://w3id.org/mod#> .
 @prefix owl: <http://www.w3.org/2002/07/owl#> .
@@ -10,11 +10,11 @@
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 @prefix saref: <https://saref.etsi.org/core/> .
 @prefix s4wear: <https://saref.etsi.org/saref4wear/> .
-@prefix pghdprovo: <https://w3id.org/pghdprovo/> .
-@prefix wearpghdprovo: <https://w3id.org/wearpghdprovo/> .
-@base <https://w3id.org/wearpghdprovo/> .
+@prefix pghdprovo: <https://w3id.org/pghdprovo#> .
+@prefix wearpghdprovo: <https://w3id.org/wearpghdprovo#> .
+@base <https://w3id.org/wearpghdprovo#> .
 
-<https://w3id.org/wearpghdprovo/> rdf:type owl:Ontology ;
+<https://w3id.org/wearpghdprovo#> rdf:type owl:Ontology ;
                                    dc:creator "Abdullahi Abubakar Kawu" ;
                                    dc:title "Wearable PGHD-PROVO Ontology" ;
                                    owl:versionInfo "1.0.0" ;
@@ -80,11 +80,11 @@ prov:qualifiedForm rdf:type owl:AnnotationProperty .
 mod:createdWith rdf:type owl:AnnotationProperty .
 
 
-###  https://w3id.org/wearpghdprovo/otherPropertyNames
+###  https://w3id.org/wearpghdprovo#otherPropertyNames
 wearpghdprovo:otherPropertyNames rdf:type owl:AnnotationProperty .
 
 
-###  https://w3id.org/wearpghdprovo/propertySource
+###  https://w3id.org/wearpghdprovo#propertySource
 wearpghdprovo:propertySource rdf:type owl:AnnotationProperty .
 
 
@@ -109,7 +109,8 @@ prov:actedOnBehalfOf rdf:type owl:ObjectProperty ;
 
 ###  http://www.w3.org/ns/prov#generated
 prov:generated rdf:type owl:ObjectProperty ;
-               owl:inverseOf prov:wasGeneratedBy .
+               rdfs:domain owl:Thing ;
+               rdfs:range owl:Thing .
 
 
 ###  http://www.w3.org/ns/prov#used
@@ -204,10 +205,12 @@ prov:wasGeneratedBy rdf:type owl:ObjectProperty ;
 
 
 ###  http://www.w3.org/ns/prov#wasInfluencedBy
-prov:wasInfluencedBy rdf:type owl:ObjectProperty .
+prov:wasInfluencedBy rdf:type owl:ObjectProperty ;
+                     rdfs:domain owl:Thing ;
+                     rdfs:range owl:Thing .
 
 
-###  https://w3id.org/pghdprovo/PGHDRequestedBy
+###  https://w3id.org/pghdprovo#PGHDRequestedBy
 pghdprovo:PGHDRequestedBy rdf:type owl:ObjectProperty ;
                           rdfs:domain pghdprovo:PGHDRequest ;
                           rdfs:range pghdprovo:Practitioner ;
@@ -215,7 +218,7 @@ pghdprovo:PGHDRequestedBy rdf:type owl:ObjectProperty ;
                           rdfs:label "PGHD requested by" .
 
 
-###  https://w3id.org/pghdprovo/hasContextualInfo
+###  https://w3id.org/pghdprovo#hasContextualInfo
 pghdprovo:hasContextualInfo rdf:type owl:ObjectProperty ;
                             rdfs:domain pghdprovo:PGHD ;
                             rdfs:range pghdprovo:ContextualInfo ;
@@ -223,7 +226,7 @@ pghdprovo:hasContextualInfo rdf:type owl:ObjectProperty ;
                             rdfs:label "Contain Contextual Info" .
 
 
-###  https://w3id.org/pghdprovo/isAStaffOf
+###  https://w3id.org/pghdprovo#isAStaffOf
 pghdprovo:isAStaffOf rdf:type owl:ObjectProperty ;
                      rdfs:domain pghdprovo:Practitioner ;
                      rdfs:range prov:Organization ;
@@ -231,7 +234,7 @@ pghdprovo:isAStaffOf rdf:type owl:ObjectProperty ;
                      rdfs:label "is a staff of" .
 
 
-###  https://w3id.org/pghdprovo/wasAuthorizedBy
+###  https://w3id.org/pghdprovo#wasAuthorizedBy
 pghdprovo:wasAuthorizedBy rdf:type owl:ObjectProperty ;
                           rdfs:domain pghdprovo:PGHDRequest ;
                           rdfs:range pghdprovo:Patient ;
@@ -239,7 +242,7 @@ pghdprovo:wasAuthorizedBy rdf:type owl:ObjectProperty ;
                           rdfs:label "was authorized by" .
 
 
-###  https://w3id.org/pghdprovo/wasCollectedBy
+###  https://w3id.org/pghdprovo#wasCollectedBy
 pghdprovo:wasCollectedBy rdf:type owl:ObjectProperty ;
                          rdfs:domain pghdprovo:PGHD ;
                          rdfs:range prov:Person ;
@@ -247,7 +250,7 @@ pghdprovo:wasCollectedBy rdf:type owl:ObjectProperty ;
                          rdfs:label "was collected by" .
 
 
-###  https://w3id.org/wearpghdprovo/hasLevel
+###  https://w3id.org/wearpghdprovo#hasLevel
 wearpghdprovo:hasLevel rdf:type owl:ObjectProperty ;
                        rdfs:domain wearpghdprovo:DailyActivity ;
                        rdfs:range wearpghdprovo:DailyActivity ;
@@ -255,7 +258,7 @@ wearpghdprovo:hasLevel rdf:type owl:ObjectProperty ;
                        rdfs:label "has level" .
 
 
-###  https://w3id.org/wearpghdprovo/hasSleepStage
+###  https://w3id.org/wearpghdprovo#hasSleepStage
 wearpghdprovo:hasSleepStage rdf:type owl:ObjectProperty ;
                             rdfs:domain wearpghdprovo:Sleep ;
                             rdfs:range wearpghdprovo:Sleep ;
@@ -266,6 +269,15 @@ wearpghdprovo:hasSleepStage rdf:type owl:ObjectProperty ;
 #################################################################
 #    Data properties
 #################################################################
+
+###  http://purl.org/dc/elements/1.1/identifier
+dc:identifier rdf:type owl:DatatypeProperty ;
+              rdfs:domain pghdprovo:PGHD ;
+              rdfs:range rdfs:Literal ;
+              rdfs:comment "Recommended practice is to identify the resource by means of a string conforming to an identification system." ;
+              rdfs:label "Identifier" ;
+              prov:definition "An unambiguous reference to the resource within a given context." .
+
 
 ###  http://www.w3.org/ns/prov#endedAtTime
 prov:endedAtTime rdf:type owl:DatatypeProperty ;
@@ -312,7 +324,9 @@ prov:startedAtTime rdf:type owl:DatatypeProperty ;
 
 
 ###  http://xmlns.com/foaf/0.1/age
-foaf:age rdf:type owl:DatatypeProperty .
+foaf:age rdf:type owl:DatatypeProperty ;
+         rdfs:domain prov:Person ;
+         rdfs:range rdfs:Literal .
 
 
 ###  http://xmlns.com/foaf/0.1/birthday
@@ -320,6 +334,7 @@ foaf:birthday rdf:type owl:DatatypeProperty ;
               rdfs:subPropertyOf foaf:age ;
               rdf:type owl:FunctionalProperty ;
               rdfs:domain prov:Person ;
+              rdfs:range rdfs:Literal ;
               rdfs:comment "The birthday of this Agent, represented in mm-dd string form, eg. '12-31'." ;
               rdfs:isDefinedBy foaf: ;
               rdfs:label "birthday" ;
@@ -330,6 +345,7 @@ foaf:birthday rdf:type owl:DatatypeProperty ;
 foaf:gender rdf:type owl:DatatypeProperty ,
                      owl:FunctionalProperty ;
             rdfs:domain prov:Person ;
+            rdfs:range rdfs:Literal ;
             rdfs:comment "The gender of this Agent (typically but not necessarily 'male' or 'female')." ;
             rdfs:isDefinedBy foaf: ;
             rdfs:label "gender" ;
@@ -339,658 +355,734 @@ foaf:gender rdf:type owl:DatatypeProperty ,
 ###  http://xmlns.com/foaf/0.1/givenName
 foaf:givenName rdf:type owl:DatatypeProperty ;
                rdfs:domain prov:Person ;
+               rdfs:range rdfs:Literal ;
                rdfs:comment "The given name of some person." ;
                rdfs:isDefinedBy foaf: ;
                rdfs:label "Given name" ;
                <http://www.w3.org/2003/06/sw-vocab-status/ns#term_status> "testing" .
 
 
-###  https://w3id.org/pghdprovo/address
+###  https://w3id.org/pghdprovo#address
 pghdprovo:address rdf:type owl:DatatypeProperty ;
                   rdfs:domain prov:Person ;
+                  rdfs:range rdfs:Literal ;
                   rdfs:comment "A standardized representation of the location of a person, business, building, or organization." ;
                   rdfs:isDefinedBy "http://purl.obolibrary.org/obo/NCIT_C25407" ;
                   rdfs:label "address" .
 
 
-###  https://w3id.org/pghdprovo/appName
+###  https://w3id.org/pghdprovo#appName
 pghdprovo:appName rdf:type owl:DatatypeProperty ;
                   rdfs:subPropertyOf owl:topDataProperty ;
                   rdfs:domain pghdprovo:Application ;
+                  rdfs:range rdfs:Literal ;
                   rdfs:comment "The name of the software application utilised by a patient and practitioner." ;
                   rdfs:label "app name" .
 
 
-###  https://w3id.org/pghdprovo/bodySite
+###  https://w3id.org/pghdprovo#bodySite
 pghdprovo:bodySite rdf:type owl:DatatypeProperty ;
                    rdfs:domain pghdprovo:Protocol ;
-                   rdfs:range xsd:string ;
+                   rdfs:range rdfs:Literal ;
                    rdfs:comment "The part of the body where data is collected or which a device was placed to collect health data." ;
                    rdfs:label "Body Site" .
 
 
-###  https://w3id.org/pghdprovo/dataSource
+###  https://w3id.org/pghdprovo#dataSource
 pghdprovo:dataSource rdf:type owl:DatatypeProperty ;
                      rdfs:domain pghdprovo:PGHD ;
+                     rdfs:range rdfs:Literal ;
                      rdfs:comment "An entity that produce a digital data." ;
                      rdfs:label "data source" .
 
 
-###  https://w3id.org/pghdprovo/description
+###  https://w3id.org/pghdprovo#description
 pghdprovo:description rdf:type owl:DatatypeProperty ;
                       rdfs:domain pghdprovo:PGHDRequest ;
+                      rdfs:range rdfs:Literal ;
                       rdfs:comment "Provide more information about an activity." ;
                       rdfs:label "description" .
 
 
-###  https://w3id.org/pghdprovo/deviceModel
+###  https://w3id.org/pghdprovo#deviceModel
 pghdprovo:deviceModel rdf:type owl:DatatypeProperty ;
                       rdfs:domain saref:Device ;
-                      rdfs:range xsd:string ;
+                      rdfs:range rdfs:Literal ;
                       rdfs:comment "A unique number or name given by a device manufacturer to devices that corresponds to a certain characteristics." ;
                       rdfs:label "device model" .
 
 
-###  https://w3id.org/pghdprovo/deviceName
+###  https://w3id.org/pghdprovo#deviceName
 pghdprovo:deviceName rdf:type owl:DatatypeProperty ;
                      rdfs:domain saref:Device ;
-                     rdfs:range xsd:string ;
+                     rdfs:range rdfs:Literal ;
                      rdfs:comment "A name for a device." ;
                      rdfs:label "device name" .
 
 
-###  https://w3id.org/pghdprovo/diastolic_blood_pressure
-pghdprovo:diastolic_blood_pressure rdf:type owl:DatatypeProperty ;
-                                   rdfs:subPropertyOf wearpghdprovo:vitalsProperty ;
-                                   rdfs:comment "Diastolic Blood pressure measured in millimeters of mercury (mmHg)." ;
-                                   rdfs:label "diastolic blood pressure" .
-
-
-###  https://w3id.org/pghdprovo/exerciseState
+###  https://w3id.org/pghdprovo#exerciseState
 pghdprovo:exerciseState rdf:type owl:DatatypeProperty ;
                         rdfs:domain pghdprovo:State ;
-                        rdfs:range xsd:string ;
+                        rdfs:range rdfs:Literal ;
                         rdfs:comment "exercise state." ;
                         rdfs:label "exercise state" .
 
 
-###  https://w3id.org/pghdprovo/hasTimestamp
+###  https://w3id.org/pghdprovo#hasTimestamp
 pghdprovo:hasTimestamp rdf:type owl:DatatypeProperty ;
                        rdfs:domain pghdprovo:PGHD ;
-                       rdfs:range xsd:dateTime .
+                       rdfs:range rdfs:Literal ;
+                       rdfs:comment "The 'hasTimestamp' property records the date and time when the measurement or observation was taken." ;
+                       rdfs:label "hasTimestamp" .
 
 
-###  https://w3id.org/pghdprovo/heart_rate
-pghdprovo:heart_rate rdf:type owl:DatatypeProperty ;
-                     rdfs:subPropertyOf wearpghdprovo:vitalsProperty ;
-                     rdfs:comment "Pulse or heart rate beats per minute" ;
-                     rdfs:label "Heart Rate" .
-
-
-###  https://w3id.org/pghdprovo/locationOfPatient
+###  https://w3id.org/pghdprovo#locationOfPatient
 pghdprovo:locationOfPatient rdf:type owl:DatatypeProperty ;
                             rdfs:domain pghdprovo:ContextualInfo ;
-                            rdfs:range xsd:string ;
+                            rdfs:range rdfs:Literal ;
                             rdfs:comment "Location of a patient during data collection." ;
                             rdfs:label "location of patient" .
 
 
-###  https://w3id.org/pghdprovo/name
+###  https://w3id.org/pghdprovo#name
 pghdprovo:name rdf:type owl:DatatypeProperty ;
                rdfs:domain pghdprovo:PGHD ;
-               rdfs:range xsd:string .
+               rdfs:range rdfs:Literal ;
+               rdfs:comment "The 'name' property indicates the type of measurement or observation being recorded, such as heart rate, blood pressure, step count, or sleep duration." ;
+               rdfs:label "name" .
 
 
-###  https://w3id.org/pghdprovo/orgAddress
+###  https://w3id.org/pghdprovo#orgAddress
 pghdprovo:orgAddress rdf:type owl:DatatypeProperty ;
                      rdfs:subPropertyOf owl:topDataProperty ;
                      rdfs:domain prov:Organization ;
+                     rdfs:range rdfs:Literal ;
                      rdfs:comment "Location of organisation." ;
                      rdfs:label "organization address" .
 
 
-###  https://w3id.org/pghdprovo/orgEmail
+###  https://w3id.org/pghdprovo#orgEmail
 pghdprovo:orgEmail rdf:type owl:DatatypeProperty ;
                    rdfs:subPropertyOf owl:topDataProperty ;
                    rdfs:domain prov:Organization ;
+                   rdfs:range rdfs:Literal ;
                    rdfs:comment "Organization email address." ;
                    rdfs:label "organization email" .
 
 
-###  https://w3id.org/pghdprovo/orgId
+###  https://w3id.org/pghdprovo#orgId
 pghdprovo:orgId rdf:type owl:DatatypeProperty ;
                 rdfs:subPropertyOf owl:topDataProperty ;
                 rdfs:domain prov:Organization ;
+                rdfs:range rdfs:Literal ;
                 rdfs:comment "An identifier for an organization." ;
                 rdfs:label "organization id" .
 
 
-###  https://w3id.org/pghdprovo/orgName
+###  https://w3id.org/pghdprovo#orgName
 pghdprovo:orgName rdf:type owl:DatatypeProperty ;
                   rdfs:subPropertyOf owl:topDataProperty ;
                   rdfs:domain prov:Organization ;
+                  rdfs:range rdfs:Literal ;
                   rdfs:comment "The name of the organization where a practitioner belongs." ;
                   rdfs:label "organization name" .
 
 
-###  https://w3id.org/pghdprovo/phoneNumber
+###  https://w3id.org/pghdprovo#phoneNumber
 pghdprovo:phoneNumber rdf:type owl:DatatypeProperty ;
                       rdfs:domain prov:Person ;
+                      rdfs:range rdfs:Literal ;
                       rdfs:comment "Phone contact number." ;
                       rdfs:label "phone number" .
 
 
-###  https://w3id.org/pghdprovo/posture
+###  https://w3id.org/pghdprovo#posture
 pghdprovo:posture rdf:type owl:DatatypeProperty ;
                   rdfs:domain pghdprovo:State ;
-                  rdfs:range xsd:string ;
+                  rdfs:range rdfs:Literal ;
                   rdfs:comment "The body position of the patient during data collection." ;
                   rdfs:label "posture" .
 
 
-###  https://w3id.org/pghdprovo/programmeName
+###  https://w3id.org/pghdprovo#programmeName
 pghdprovo:programmeName rdf:type owl:DatatypeProperty ;
                         rdfs:domain pghdprovo:Programme ;
-                        rdfs:range xsd:string ;
+                        rdfs:range rdfs:Literal ;
                         rdfs:comment "The treatment programme associated with the PGHD request." ;
                         rdfs:label "programme name" .
 
 
-###  https://w3id.org/pghdprovo/ratingOrgName
+###  https://w3id.org/pghdprovo#ratingOrgName
 pghdprovo:ratingOrgName rdf:type owl:DatatypeProperty ;
                         rdfs:subPropertyOf owl:topDataProperty ;
                         rdfs:domain pghdprovo:Rating ;
-                        rdfs:range xsd:string ;
+                        rdfs:range rdfs:Literal ;
                         rdfs:comment "Denotes the name of the organization that conducted the rating." ;
                         rdfs:label "rating organization name" .
 
 
-###  https://w3id.org/pghdprovo/ratingScore
+###  https://w3id.org/pghdprovo#ratingScore
 pghdprovo:ratingScore rdf:type owl:DatatypeProperty ;
                       rdfs:domain pghdprovo:Rating ;
-                      rdfs:range xsd:string ;
+                      rdfs:range rdfs:Literal ;
                       rdfs:comment "The efficiency rating of an equipement or device by recognized body." ;
                       rdfs:label "rating score" .
 
 
-###  https://w3id.org/pghdprovo/relationship
+###  https://w3id.org/pghdprovo#relationship
 pghdprovo:relationship rdf:type owl:DatatypeProperty ;
                        rdfs:domain pghdprovo:PatientRelative ;
+                       rdfs:range rdfs:Literal ;
                        rdfs:comment "shows the relationship of a caregiver, friend, or relative to a patient." ;
                        rdfs:label "relationship" .
 
 
-###  https://w3id.org/pghdprovo/requestId
+###  https://w3id.org/pghdprovo#requestId
 pghdprovo:requestId rdf:type owl:DatatypeProperty ;
                     rdfs:domain pghdprovo:PGHDRequest ;
+                    rdfs:range rdfs:Literal ;
                     rdfs:comment "Log id for an activity." ;
                     rdfs:label "activity id" .
 
 
-###  https://w3id.org/pghdprovo/role
+###  https://w3id.org/pghdprovo#role
 pghdprovo:role rdf:type owl:DatatypeProperty ;
                rdfs:domain pghdprovo:Practitioner ;
+               rdfs:range rdfs:Literal ;
                rdfs:comment "position or function within an organization" ;
                rdfs:label "role" .
 
 
-###  https://w3id.org/pghdprovo/systolic_blood_pressure
-pghdprovo:systolic_blood_pressure rdf:type owl:DatatypeProperty ;
-                                  rdfs:subPropertyOf wearpghdprovo:vitalsProperty ;
-                                  rdfs:comment "Systolic Blood pressure measured in millimeters of mercury (mmHg)." ;
-                                  rdfs:label "systolic blood pressure" .
-
-
-###  https://w3id.org/pghdprovo/unit
+###  https://w3id.org/pghdprovo#unit
 pghdprovo:unit rdf:type owl:DatatypeProperty ;
-               rdfs:domain pghdprovo:PGHD .
+               rdfs:domain pghdprovo:PGHD ;
+               rdfs:range rdfs:Literal ;
+               rdfs:comment "The 'unit' property specifies the metric or unit of measurement associated with the observed value." ;
+               rdfs:label "unit" .
 
 
-###  https://w3id.org/pghdprovo/userid
+###  https://w3id.org/pghdprovo#userid
 pghdprovo:userid rdf:type owl:DatatypeProperty ;
                  rdfs:domain prov:Person ;
+                 rdfs:range rdfs:Literal ;
                  rdfs:comment "User identifier." ;
                  rdfs:label "user id" .
 
 
-###  https://w3id.org/pghdprovo/value
+###  https://w3id.org/pghdprovo#value
 pghdprovo:value rdf:type owl:DatatypeProperty ;
-                rdfs:domain pghdprovo:PGHD .
+                rdfs:domain pghdprovo:PGHD ;
+                rdfs:range rdfs:Literal ;
+                rdfs:comment "The 'value' property represents the quantity measured or observed, typically recorded by a health or activity monitoring device." ;
+                rdfs:label "value" .
 
 
-###  https://w3id.org/wearpghdprovo/activityCalories
+###  https://w3id.org/wearpghdprovo#activityCalories
 wearpghdprovo:activityCalories rdf:type owl:DatatypeProperty ;
                                owl:equivalentProperty wearpghdprovo:calories ;
                                rdfs:subPropertyOf wearpghdprovo:dailyActivityProperty ;
                                rdfs:domain wearpghdprovo:DailyActivity ;
+                               rdfs:range rdfs:Literal ;
                                rdfs:comment "The number of calories burned associated with an activity." ;
                                rdfs:label "actvity calories" ;
                                wearpghdprovo:propertySource "fitbit" .
 
 
-###  https://w3id.org/wearpghdprovo/asleepDuration
+###  https://w3id.org/wearpghdprovo#asleepDuration
 wearpghdprovo:asleepDuration rdf:type owl:DatatypeProperty ;
                              owl:equivalentProperty wearpghdprovo:total_sleep_time ;
                              rdfs:subPropertyOf wearpghdprovo:sleepProperty ;
                              rdfs:domain wearpghdprovo:Sleep ;
+                             rdfs:range rdfs:Literal ;
                              rdfs:comment "Length of the sleep." ;
                              rdfs:label "asleep duration" .
 
 
-###  https://w3id.org/wearpghdprovo/breathingRate
+###  https://w3id.org/wearpghdprovo#breathingRate
 wearpghdprovo:breathingRate rdf:type owl:DatatypeProperty ;
                             rdfs:subPropertyOf wearpghdprovo:vitalsProperty ;
                             rdfs:domain wearpghdprovo:VitalSign ;
+                            rdfs:range rdfs:Literal ;
                             rdfs:comment "The average number of breaths taken per minute" ;
                             rdfs:label "breathing rate" ;
                             wearpghdprovo:propertySource "fitbit" .
 
 
-###  https://w3id.org/wearpghdprovo/calories
+###  https://w3id.org/wearpghdprovo#calories
 wearpghdprovo:calories rdf:type owl:DatatypeProperty ;
                        rdfs:subPropertyOf wearpghdprovo:dailyActivityProperty ;
                        rdfs:domain wearpghdprovo:DailyActivity ;
+                       rdfs:range rdfs:Literal ;
                        rdfs:comment "The number of calories burned associated with an activity." ;
                        rdfs:label "calories" ;
                        wearpghdprovo:propertySource "withings" .
 
 
-###  https://w3id.org/wearpghdprovo/caloriesOut
+###  https://w3id.org/wearpghdprovo#caloriesOut
 wearpghdprovo:caloriesOut rdf:type owl:DatatypeProperty ;
                           owl:equivalentProperty wearpghdprovo:totalCalories ;
                           rdfs:subPropertyOf wearpghdprovo:dailyActivityProperty ;
                           rdfs:domain wearpghdprovo:DailyActivity ;
+                          rdfs:range rdfs:Literal ;
                           rdfs:comment "Total calories burned. Obtained by adding active calories and passive calories" ;
                           rdfs:label "calories out" ;
                           wearpghdprovo:propertySource "fitbit" .
 
 
-###  https://w3id.org/wearpghdprovo/dailyActivityProperty
+###  https://w3id.org/wearpghdprovo#dailyActivityProperty
 wearpghdprovo:dailyActivityProperty rdf:type owl:DatatypeProperty .
 
 
-###  https://w3id.org/wearpghdprovo/date
+###  https://w3id.org/wearpghdprovo#date
 wearpghdprovo:date rdf:type owl:DatatypeProperty ;
                    owl:equivalentProperty wearpghdprovo:sleepDate ;
                    rdfs:subPropertyOf wearpghdprovo:sleepProperty ;
                    rdfs:domain wearpghdprovo:Sleep ;
+                   rdfs:range rdfs:Literal ;
                    rdfs:comment "The date the sleep was logged." ;
                    rdfs:label "date" ;
                    wearpghdprovo:propertySource "withings" .
 
 
-###  https://w3id.org/wearpghdprovo/dateOfSleep
+###  https://w3id.org/wearpghdprovo#dateOfSleep
 wearpghdprovo:dateOfSleep rdf:type owl:DatatypeProperty ;
                           owl:equivalentProperty wearpghdprovo:sleepDate ;
                           rdfs:subPropertyOf wearpghdprovo:sleepProperty ;
                           rdfs:domain wearpghdprovo:Sleep ;
+                          rdfs:range rdfs:Literal ;
                           rdfs:comment "The date the sleep was logged." ;
                           rdfs:label "date of sleep" ;
                           wearpghdprovo:propertySource "fitbit" .
 
 
-###  https://w3id.org/wearpghdprovo/deepsleepduration
+###  https://w3id.org/wearpghdprovo#deepsleepduration
 wearpghdprovo:deepsleepduration rdf:type owl:DatatypeProperty ;
                                 rdfs:subPropertyOf wearpghdprovo:sleepProperty ;
                                 rdfs:domain wearpghdprovo:Sleep ;
+                                rdfs:range rdfs:Literal ;
                                 rdfs:comment "Duration in deep sleep state." ;
                                 rdfs:label "deepsleepduration" ;
                                 wearpghdprovo:propertySource "withings" .
 
 
-###  https://w3id.org/wearpghdprovo/efficiency
+###  https://w3id.org/wearpghdprovo#diastolic_blood_pressure
+wearpghdprovo:diastolic_blood_pressure rdf:type owl:DatatypeProperty ;
+                                       rdfs:subPropertyOf wearpghdprovo:vitalsProperty ;
+                                       rdfs:domain wearpghdprovo:VitalSign ;
+                                       rdfs:range rdfs:Literal ;
+                                       rdfs:comment "Diastolic Blood pressure measured in millimeters of mercury (mmHg)." ;
+                                       rdfs:label "diastolic blood pressure" .
+
+
+###  https://w3id.org/wearpghdprovo#efficiency
 wearpghdprovo:efficiency rdf:type owl:DatatypeProperty ;
                          owl:equivalentProperty wearpghdprovo:sleepEfficiency ;
                          rdfs:subPropertyOf wearpghdprovo:sleepProperty ;
                          rdfs:domain wearpghdprovo:Sleep ;
+                         rdfs:range rdfs:Literal ;
                          rdfs:comment "A relative measurement of the time spent asleep to the total time spent in bed." ;
                          rdfs:label "efficiency" ;
                          wearpghdprovo:propertySource "fitbit" .
 
 
-###  https://w3id.org/wearpghdprovo/elevation
+###  https://w3id.org/wearpghdprovo#elevation
 wearpghdprovo:elevation rdf:type owl:DatatypeProperty ;
                         rdfs:subPropertyOf wearpghdprovo:dailyActivityProperty ;
                         rdfs:domain wearpghdprovo:DailyActivity ;
+                        rdfs:range rdfs:Literal ;
                         rdfs:comment "The elevation traveled for the day." ;
                         rdfs:label "elevation" ;
                         wearpghdprovo:propertySource "fitbit" ,
                                                      "withings" .
 
 
-###  https://w3id.org/wearpghdprovo/endTime
+###  https://w3id.org/wearpghdprovo#endTime
 wearpghdprovo:endTime rdf:type owl:DatatypeProperty ;
                       owl:equivalentProperty wearpghdprovo:enddate ;
                       rdfs:subPropertyOf wearpghdprovo:sleepProperty ;
                       rdfs:domain wearpghdprovo:Sleep ;
+                      rdfs:range rdfs:Literal ;
                       rdfs:comment "Time the sleep log ended." ;
                       rdfs:label "end time" ;
                       wearpghdprovo:propertySource "fitbit" .
 
 
-###  https://w3id.org/wearpghdprovo/enddate
+###  https://w3id.org/wearpghdprovo#enddate
 wearpghdprovo:enddate rdf:type owl:DatatypeProperty ;
                       rdfs:subPropertyOf wearpghdprovo:sleepProperty ;
                       rdfs:domain wearpghdprovo:Sleep ;
+                      rdfs:range rdfs:Literal ;
                       rdfs:comment "Time the sleep log ended." ;
                       rdfs:label "end date" ;
                       wearpghdprovo:propertySource "withings" .
 
 
-###  https://w3id.org/wearpghdprovo/fairlyActive
+###  https://w3id.org/wearpghdprovo#fairlyActive
 wearpghdprovo:fairlyActive rdf:type owl:DatatypeProperty ;
                            owl:equivalentProperty wearpghdprovo:fairlyActiveMinutes ,
                                                   wearpghdprovo:moderate ;
                            rdfs:subPropertyOf wearpghdprovo:dailyActivityProperty ;
                            rdfs:domain wearpghdprovo:DailyActivity ;
+                           rdfs:range rdfs:Literal ;
                            rdfs:comment "Duration of fairly activities. Activities with a Metabolic Equivalents (MET) value of 3.0 - 6.0" ;
                            rdfs:label "fairly active" .
 
 
-###  https://w3id.org/wearpghdprovo/fairlyActiveMinutes
+###  https://w3id.org/wearpghdprovo#fairlyActiveMinutes
 wearpghdprovo:fairlyActiveMinutes rdf:type owl:DatatypeProperty ;
                                   rdfs:subPropertyOf wearpghdprovo:dailyActivityProperty ;
                                   rdfs:domain wearpghdprovo:DailyActivity ;
+                                  rdfs:range rdfs:Literal ;
                                   rdfs:comment "Duration of fairly activities. Activities with a Metabolic Equivalents (MET) value of 3.0 - 6.0" ;
                                   rdfs:label "fairly active minutes" ;
                                   wearpghdprovo:propertySource "fitbit" .
 
 
-###  https://w3id.org/wearpghdprovo/floors
+###  https://w3id.org/wearpghdprovo#floors
 wearpghdprovo:floors rdf:type owl:DatatypeProperty ;
                      rdfs:subPropertyOf wearpghdprovo:dailyActivityProperty ;
                      rdfs:domain wearpghdprovo:DailyActivity ;
+                     rdfs:range rdfs:Literal ;
                      rdfs:comment "The equivalent floors climbed for the day" ;
                      rdfs:label "floors" .
 
 
-###  https://w3id.org/wearpghdprovo/intense
+###  https://w3id.org/wearpghdprovo#heart_rate
+wearpghdprovo:heart_rate rdf:type owl:DatatypeProperty ;
+                         rdfs:subPropertyOf wearpghdprovo:vitalsProperty ;
+                         rdfs:domain wearpghdprovo:VitalSign ;
+                         rdfs:range rdfs:Literal ;
+                         rdfs:comment "Pulse or heart rate beats per minute" ;
+                         rdfs:label "Heart Rate" .
+
+
+###  https://w3id.org/wearpghdprovo#intense
 wearpghdprovo:intense rdf:type owl:DatatypeProperty ;
                       rdfs:subPropertyOf wearpghdprovo:dailyActivityProperty ;
                       rdfs:domain wearpghdprovo:DailyActivity ;
+                      rdfs:range rdfs:Literal ;
                       rdfs:comment "Duration of very active activities. Activities with a Metabolic Equivalents (MET) value greater than 6.0." ;
                       rdfs:label "intense" ;
                       wearpghdprovo:propertySource "withings" .
 
 
-###  https://w3id.org/wearpghdprovo/light
+###  https://w3id.org/wearpghdprovo#light
 wearpghdprovo:light rdf:type owl:DatatypeProperty ;
                     owl:equivalentProperty wearpghdprovo:lightsleepduration ;
                     rdfs:subPropertyOf wearpghdprovo:sleepProperty ;
                     rdfs:domain wearpghdprovo:Sleep ;
+                    rdfs:range rdfs:Literal ;
                     rdfs:comment "Duration in light sleep state." ;
                     rdfs:label "light" ;
                     wearpghdprovo:propertySource "fitbit" .
 
 
-###  https://w3id.org/wearpghdprovo/lightlyActive
+###  https://w3id.org/wearpghdprovo#lightlyActive
 wearpghdprovo:lightlyActive rdf:type owl:DatatypeProperty ;
                             owl:equivalentProperty wearpghdprovo:lightlyActiveMinutes ,
                                                    wearpghdprovo:soft ;
                             rdfs:subPropertyOf wearpghdprovo:dailyActivityProperty ;
                             rdfs:domain wearpghdprovo:DailyActivity ;
+                            rdfs:range rdfs:Literal ;
                             rdfs:comment "Duration of light activities. Activities with a Metabolic Equivalents (MET) value of 1.5 - 3.0" ;
                             rdfs:label "lightly active" .
 
 
-###  https://w3id.org/wearpghdprovo/lightlyActiveMinutes
+###  https://w3id.org/wearpghdprovo#lightlyActiveMinutes
 wearpghdprovo:lightlyActiveMinutes rdf:type owl:DatatypeProperty ;
                                    rdfs:subPropertyOf wearpghdprovo:dailyActivityProperty ;
                                    rdfs:domain wearpghdprovo:DailyActivity ;
+                                   rdfs:range rdfs:Literal ;
                                    rdfs:comment "Duration of light activities. Activities with a Metabolic Equivalents (MET) value of 1.5 - 3.0" ;
                                    rdfs:label "lightly active minutes" ;
                                    wearpghdprovo:propertySource "fitbit" .
 
 
-###  https://w3id.org/wearpghdprovo/lightsleepduration
+###  https://w3id.org/wearpghdprovo#lightsleepduration
 wearpghdprovo:lightsleepduration rdf:type owl:DatatypeProperty ;
                                  rdfs:subPropertyOf wearpghdprovo:sleepProperty ;
                                  rdfs:domain wearpghdprovo:Sleep ;
+                                 rdfs:range rdfs:Literal ;
                                  rdfs:comment "Duration in light sleep state." ;
                                  rdfs:label "light sleep duration" ;
                                  wearpghdprovo:propertySource "withings" .
 
 
-###  https://w3id.org/wearpghdprovo/minuteToFallAsleep
+###  https://w3id.org/wearpghdprovo#minuteToFallAsleep
 wearpghdprovo:minuteToFallAsleep rdf:type owl:DatatypeProperty ;
                                  owl:equivalentProperty wearpghdprovo:sleep_latency ;
                                  rdfs:subPropertyOf wearpghdprovo:sleepProperty ;
                                  rdfs:domain wearpghdprovo:Sleep ;
+                                 rdfs:range rdfs:Literal ;
                                  rdfs:comment "The total number of minutes before the user falls asleep. Amount of time, usually recorded in minutes, between going to bed and falling asleep." ;
                                  rdfs:label "minute to fall asleep" ;
                                  wearpghdprovo:propertySource "fitbit" .
 
 
-###  https://w3id.org/wearpghdprovo/minutesAfterWakeup
+###  https://w3id.org/wearpghdprovo#minutesAfterWakeup
 wearpghdprovo:minutesAfterWakeup rdf:type owl:DatatypeProperty ;
                                  owl:equivalentProperty wearpghdprovo:wakeupLatency ;
                                  rdfs:subPropertyOf wearpghdprovo:sleepProperty ;
                                  rdfs:domain wearpghdprovo:Sleep ;
+                                 rdfs:range rdfs:Literal ;
                                  rdfs:comment "Time spent in bed after waking up." ;
                                  rdfs:label "minutes after wakeup" ;
                                  wearpghdprovo:propertySource "fitbit" .
 
 
-###  https://w3id.org/wearpghdprovo/moderate
+###  https://w3id.org/wearpghdprovo#moderate
 wearpghdprovo:moderate rdf:type owl:DatatypeProperty ;
                        rdfs:subPropertyOf wearpghdprovo:dailyActivityProperty ;
                        rdfs:domain wearpghdprovo:DailyActivity ;
+                       rdfs:range rdfs:Literal ;
                        rdfs:comment "Duration of fairly activities. Activities with a Metabolic Equivalents (MET) value of 3.0 - 6.0" ;
                        rdfs:label "moderate" ;
                        wearpghdprovo:propertySource "withings" .
 
 
-###  https://w3id.org/wearpghdprovo/rem
+###  https://w3id.org/wearpghdprovo#rem
 wearpghdprovo:rem rdf:type owl:DatatypeProperty ;
                   owl:equivalentProperty wearpghdprovo:remsleepduration ;
                   rdfs:subPropertyOf wearpghdprovo:sleepProperty ;
                   rdfs:domain wearpghdprovo:Sleep ;
+                  rdfs:range rdfs:Literal ;
                   rdfs:comment "A stage of sleep characterized by rapid movements of the eye and low voltage fast pattern EEG. It is usually associated with dreaming." ;
                   rdfs:label "rem" ;
                   wearpghdprovo:propertySource "fitbit" .
 
 
-###  https://w3id.org/wearpghdprovo/remsleepduration
+###  https://w3id.org/wearpghdprovo#remsleepduration
 wearpghdprovo:remsleepduration rdf:type owl:DatatypeProperty ;
                                rdfs:subPropertyOf wearpghdprovo:sleepProperty ;
                                rdfs:domain wearpghdprovo:Sleep ;
+                               rdfs:range rdfs:Literal ;
                                rdfs:comment "A stage of sleep characterized by rapid movements of the eye and low voltage fast pattern EEG. It is usually associated with dreaming." ;
                                rdfs:label "rem sleep duration" ;
                                wearpghdprovo:propertySource "withings" .
 
 
-###  https://w3id.org/wearpghdprovo/restingHeartRate
+###  https://w3id.org/wearpghdprovo#restingHeartRate
 wearpghdprovo:restingHeartRate rdf:type owl:DatatypeProperty ;
                                rdfs:subPropertyOf wearpghdprovo:vitalsProperty ;
                                rdfs:domain wearpghdprovo:VitalSign ;
+                               rdfs:range rdfs:Literal ;
                                rdfs:comment "Resting heart rate is a measurement of how many times the person’s heart beats per minute when completely at rest." ;
                                rdfs:label "resting heart rate" ;
                                wearpghdprovo:propertySource "fitbit" .
 
 
-###  https://w3id.org/wearpghdprovo/sedentary
+###  https://w3id.org/wearpghdprovo#sedentary
 wearpghdprovo:sedentary rdf:type owl:DatatypeProperty ;
                         owl:equivalentProperty wearpghdprovo:sedentaryMinutes ;
                         rdfs:subPropertyOf wearpghdprovo:dailyActivityProperty ;
                         rdfs:domain wearpghdprovo:DailyActivity ;
+                        rdfs:range rdfs:Literal ;
                         rdfs:comment "Duration of sedentary activities. Activities with  a Metabolic Equivalents (MET) value of less than 1.5" ;
                         rdfs:label "sedentary" .
 
 
-###  https://w3id.org/wearpghdprovo/sedentaryMinutes
+###  https://w3id.org/wearpghdprovo#sedentaryMinutes
 wearpghdprovo:sedentaryMinutes rdf:type owl:DatatypeProperty ;
                                rdfs:subPropertyOf wearpghdprovo:dailyActivityProperty ;
                                rdfs:domain wearpghdprovo:DailyActivity ;
+                               rdfs:range rdfs:Literal ;
                                rdfs:comment "Duration of sedentary activities. Activities with  a Metabolic Equivalents (MET) value of less than 1.5" ;
                                rdfs:label "sedentary minutes" ;
                                wearpghdprovo:propertySource "fitbit" .
 
 
-###  https://w3id.org/wearpghdprovo/sleepDate
+###  https://w3id.org/wearpghdprovo#sleepDate
 wearpghdprovo:sleepDate rdf:type owl:DatatypeProperty ;
                         rdfs:subPropertyOf wearpghdprovo:sleepProperty ;
                         rdfs:domain wearpghdprovo:Sleep ;
+                        rdfs:range rdfs:Literal ;
                         rdfs:comment "The date the sleep was logged." ;
                         rdfs:label "sleep date" .
 
 
-###  https://w3id.org/wearpghdprovo/sleepDuration
+###  https://w3id.org/wearpghdprovo#sleepDuration
 wearpghdprovo:sleepDuration rdf:type owl:DatatypeProperty ;
                             rdfs:subPropertyOf wearpghdprovo:sleepProperty ;
                             rdfs:domain wearpghdprovo:Sleep ;
+                            rdfs:range rdfs:Literal ;
                             rdfs:comment "Length of the sleep." ;
                             rdfs:label "sleep duration" .
 
 
-###  https://w3id.org/wearpghdprovo/sleepEfficiency
+###  https://w3id.org/wearpghdprovo#sleepEfficiency
 wearpghdprovo:sleepEfficiency rdf:type owl:DatatypeProperty ;
                               owl:equivalentProperty wearpghdprovo:sleep_efficiency ;
                               rdfs:subPropertyOf wearpghdprovo:sleepProperty ;
                               rdfs:domain wearpghdprovo:Sleep ;
+                              rdfs:range rdfs:Literal ;
                               rdfs:comment "A relative measurement of the time spent asleep to the total time spent in bed." ;
                               rdfs:label "sleep efficiency" .
 
 
-###  https://w3id.org/wearpghdprovo/sleepLatency
+###  https://w3id.org/wearpghdprovo#sleepLatency
 wearpghdprovo:sleepLatency rdf:type owl:DatatypeProperty ;
                            owl:equivalentProperty wearpghdprovo:sleep_latency ;
                            rdfs:subPropertyOf wearpghdprovo:sleepProperty ;
                            rdfs:domain wearpghdprovo:Sleep ;
+                           rdfs:range rdfs:Literal ;
                            rdfs:comment "The total number of minutes before the user falls asleep. Amount of time, usually recorded in minutes, between going to bed and falling asleep." ;
                            rdfs:label "sleep latency" .
 
 
-###  https://w3id.org/wearpghdprovo/sleepProperty
+###  https://w3id.org/wearpghdprovo#sleepProperty
 wearpghdprovo:sleepProperty rdf:type owl:DatatypeProperty .
 
 
-###  https://w3id.org/wearpghdprovo/sleep_efficiency
+###  https://w3id.org/wearpghdprovo#sleep_efficiency
 wearpghdprovo:sleep_efficiency rdf:type owl:DatatypeProperty ;
                                rdfs:subPropertyOf wearpghdprovo:sleepProperty ;
                                rdfs:domain wearpghdprovo:Sleep ;
+                               rdfs:range rdfs:Literal ;
                                rdfs:comment "A relative measurement of the time spent asleep to the total time spent in bed." ;
                                rdfs:label "sleep efficiency" ;
                                wearpghdprovo:propertySource "withings" .
 
 
-###  https://w3id.org/wearpghdprovo/sleep_latency
+###  https://w3id.org/wearpghdprovo#sleep_latency
 wearpghdprovo:sleep_latency rdf:type owl:DatatypeProperty ;
                             rdfs:subPropertyOf wearpghdprovo:sleepProperty ;
                             rdfs:domain wearpghdprovo:Sleep ;
+                            rdfs:range rdfs:Literal ;
                             rdfs:comment "The total number of minutes before the user falls asleep. Amount of time, usually recorded in minutes, between going to bed and falling asleep." ;
                             rdfs:label "sleep latency" ;
                             wearpghdprovo:propertySource "withings" .
 
 
-###  https://w3id.org/wearpghdprovo/soft
+###  https://w3id.org/wearpghdprovo#soft
 wearpghdprovo:soft rdf:type owl:DatatypeProperty ;
                    rdfs:subPropertyOf wearpghdprovo:dailyActivityProperty ;
                    rdfs:domain wearpghdprovo:DailyActivity ;
+                   rdfs:range rdfs:Literal ;
                    rdfs:comment "Duration of light activities. Activities with a Metabolic Equivalents (MET) value of 1.5 - 3.0" ;
                    rdfs:label "soft" .
 
 
-###  https://w3id.org/wearpghdprovo/startTime
+###  https://w3id.org/wearpghdprovo#startTime
 wearpghdprovo:startTime rdf:type owl:DatatypeProperty ;
                         owl:equivalentProperty wearpghdprovo:startdate ;
                         rdfs:subPropertyOf wearpghdprovo:sleepProperty ;
                         rdfs:domain wearpghdprovo:Sleep ;
+                        rdfs:range rdfs:Literal ;
                         rdfs:comment "Time the sleep log begins. Also as \"sleep time\" Measurement of the time at which sleep begins." ;
                         rdfs:label "start time" ;
                         wearpghdprovo:propertySource "fitbit" .
 
 
-###  https://w3id.org/wearpghdprovo/startdate
+###  https://w3id.org/wearpghdprovo#startdate
 wearpghdprovo:startdate rdf:type owl:DatatypeProperty ;
                         rdfs:subPropertyOf wearpghdprovo:sleepProperty ;
                         rdfs:domain wearpghdprovo:Sleep ;
+                        rdfs:range rdfs:Literal ;
                         rdfs:comment "Time the sleep log begins. Also as \"sleep time\" Measurement of the time at which sleep begins." ;
                         rdfs:label "start date" ;
                         wearpghdprovo:propertySource "withings" .
 
 
-###  https://w3id.org/wearpghdprovo/steps
+###  https://w3id.org/wearpghdprovo#steps
 wearpghdprovo:steps rdf:type owl:DatatypeProperty ;
                     rdfs:subPropertyOf wearpghdprovo:dailyActivityProperty ;
                     rdfs:domain wearpghdprovo:DailyActivity ;
+                    rdfs:range rdfs:Literal ;
                     rdfs:comment "Total steps count for the day." ;
                     rdfs:label "steps" ;
                     wearpghdprovo:propertySource "fitbit" ,
                                                  "withings" .
 
 
-###  https://w3id.org/wearpghdprovo/totalCalories
+###  https://w3id.org/wearpghdprovo#systolic_blood_pressure
+wearpghdprovo:systolic_blood_pressure rdf:type owl:DatatypeProperty ;
+                                      rdfs:subPropertyOf wearpghdprovo:vitalsProperty ;
+                                      rdfs:domain wearpghdprovo:VitalSign ;
+                                      rdfs:range rdfs:Literal ;
+                                      rdfs:comment "Systolic Blood pressure measured in millimeters of mercury (mmHg)." ;
+                                      rdfs:label "systolic blood pressure" .
+
+
+###  https://w3id.org/wearpghdprovo#totalCalories
 wearpghdprovo:totalCalories rdf:type owl:DatatypeProperty ;
                             rdfs:subPropertyOf wearpghdprovo:dailyActivityProperty ;
                             rdfs:domain wearpghdprovo:DailyActivity ;
+                            rdfs:range rdfs:Literal ;
                             rdfs:comment "Total calories burned. Obtained by adding active calories and passive calories" ;
                             rdfs:label "total calories" ;
                             wearpghdprovo:propertySource "withings" .
 
 
-###  https://w3id.org/wearpghdprovo/total_sleep_time
+###  https://w3id.org/wearpghdprovo#total_sleep_time
 wearpghdprovo:total_sleep_time rdf:type owl:DatatypeProperty ;
                                rdfs:subPropertyOf wearpghdprovo:sleepProperty ;
                                rdfs:domain wearpghdprovo:Sleep ;
+                               rdfs:range rdfs:Literal ;
                                rdfs:comment "Length of the sleep." ;
                                rdfs:label "total sleep time" ;
                                wearpghdprovo:propertySource "withings" .
 
 
-###  https://w3id.org/wearpghdprovo/veryActive
+###  https://w3id.org/wearpghdprovo#veryActive
 wearpghdprovo:veryActive rdf:type owl:DatatypeProperty ;
                          owl:equivalentProperty wearpghdprovo:veryActiveMinutes ;
                          rdfs:subPropertyOf wearpghdprovo:dailyActivityProperty ;
                          rdfs:domain wearpghdprovo:DailyActivity ;
+                         rdfs:range rdfs:Literal ;
                          rdfs:comment "Duration of very active activities. Activities with a Metabolic Equivalents (MET) value greater than 6.0." ;
                          rdfs:label "very active" .
 
 
-###  https://w3id.org/wearpghdprovo/veryActiveMinutes
+###  https://w3id.org/wearpghdprovo#veryActiveMinutes
 wearpghdprovo:veryActiveMinutes rdf:type owl:DatatypeProperty ;
                                 rdfs:subPropertyOf wearpghdprovo:dailyActivityProperty ;
                                 rdfs:domain wearpghdprovo:DailyActivity ;
+                                rdfs:range rdfs:Literal ;
                                 rdfs:comment "Duration of very active activities. Activities with a Metabolic Equivalents (MET) value greater than 6.0." ;
                                 rdfs:label "very active minutes" ;
                                 wearpghdprovo:propertySource "fitbit" .
 
 
-###  https://w3id.org/wearpghdprovo/vitalsProperty
+###  https://w3id.org/wearpghdprovo#vitalsProperty
 wearpghdprovo:vitalsProperty rdf:type owl:DatatypeProperty .
 
 
-###  https://w3id.org/wearpghdprovo/wake
+###  https://w3id.org/wearpghdprovo#wake
 wearpghdprovo:wake rdf:type owl:DatatypeProperty ;
                    owl:equivalentProperty wearpghdprovo:wakeupduration ;
                    rdfs:subPropertyOf wearpghdprovo:sleepProperty ;
                    rdfs:domain wearpghdprovo:Sleep ;
+                   rdfs:range rdfs:Literal ;
                    rdfs:comment "A measurement of the sum of durations of wakefulness episodes throughout the night, not including the wakefulness before sleep onset." ;
                    rdfs:label "wake" ;
                    wearpghdprovo:propertySource "fitbit" .
 
 
-###  https://w3id.org/wearpghdprovo/wakeupLatency
+###  https://w3id.org/wearpghdprovo#wakeupLatency
 wearpghdprovo:wakeupLatency rdf:type owl:DatatypeProperty ;
                             owl:equivalentProperty wearpghdprovo:wakeup_latency ;
                             rdfs:subPropertyOf wearpghdprovo:sleepProperty ;
                             rdfs:domain wearpghdprovo:Sleep ;
+                            rdfs:range rdfs:Literal ;
                             rdfs:comment "Time spent in bed after waking up." ;
                             rdfs:label "wakeup latency" .
 
 
-###  https://w3id.org/wearpghdprovo/wakeup_latency
+###  https://w3id.org/wearpghdprovo#wakeup_latency
 wearpghdprovo:wakeup_latency rdf:type owl:DatatypeProperty ;
                              rdfs:subPropertyOf wearpghdprovo:sleepProperty ;
                              rdfs:domain wearpghdprovo:Sleep ;
+                             rdfs:range rdfs:Literal ;
                              rdfs:comment "Time spent in bed after waking up." ;
                              rdfs:label "wakeup latency" ;
                              wearpghdprovo:propertySource "withings" .
 
 
-###  https://w3id.org/wearpghdprovo/wakeupduration
+###  https://w3id.org/wearpghdprovo#wakeupduration
 wearpghdprovo:wakeupduration rdf:type owl:DatatypeProperty ;
                              rdfs:subPropertyOf wearpghdprovo:sleepProperty ;
                              rdfs:domain wearpghdprovo:Sleep ;
+                             rdfs:range rdfs:Literal ;
                              rdfs:comment "A measurement of the sum of durations of wakefulness episodes throughout the night, not including the wakefulness before sleep onset." ;
                              rdfs:label "wake up duration" ;
                              wearpghdprovo:propertySource "withings" .
@@ -1107,7 +1199,7 @@ s4wear:Wearable rdf:type owl:Class ;
                 rdfs:label "Wearable device"@en .
 
 
-###  https://w3id.org/pghdprovo/Application
+###  https://w3id.org/pghdprovo#Application
 pghdprovo:Application rdf:type owl:Class ;
                       rdfs:subClassOf prov:Entity ,
                                       [ rdf:type owl:Restriction ;
@@ -1122,13 +1214,14 @@ pghdprovo:Application rdf:type owl:Class ;
                       rdfs:label "Application" .
 
 
-###  https://w3id.org/pghdprovo/ContextualInfo
+###  https://w3id.org/pghdprovo#ContextualInfo
 pghdprovo:ContextualInfo rdf:type owl:Class ;
                          rdfs:subClassOf prov:Entity ;
+                         rdfs:comment "Contextual Information provides to extra details that help explain the measurement, like the environment, device settings, or the activity the person was doing when the data was taken." ;
                          rdfs:label "contextual information" .
 
 
-###  https://w3id.org/pghdprovo/PGHD
+###  https://w3id.org/pghdprovo#PGHD
 pghdprovo:PGHD rdf:type owl:Class ;
                rdfs:subClassOf prov:Entity ,
                                [ rdf:type owl:Restriction ;
@@ -1160,7 +1253,7 @@ pghdprovo:PGHD rdf:type owl:Class ;
                rdfs:label "PGHD" .
 
 
-###  https://w3id.org/pghdprovo/PGHDRequest
+###  https://w3id.org/pghdprovo#PGHDRequest
 pghdprovo:PGHDRequest rdf:type owl:Class ;
                       rdfs:subClassOf prov:Activity ,
                                       [ rdf:type owl:Restriction ;
@@ -1188,7 +1281,7 @@ pghdprovo:PGHDRequest rdf:type owl:Class ;
                       rdfs:label "PGHD Request" .
 
 
-###  https://w3id.org/pghdprovo/Patient
+###  https://w3id.org/pghdprovo#Patient
 pghdprovo:Patient rdf:type owl:Class ;
                   rdfs:subClassOf prov:Person ;
                   rdfs:comment "A person who receives medical attention, care, or treatment, or who is registered with medical professional or institution with the purpose to receive medical care when necessary." ;
@@ -1196,7 +1289,7 @@ pghdprovo:Patient rdf:type owl:Class ;
                   rdfs:label "Patient" .
 
 
-###  https://w3id.org/pghdprovo/PatientRelative
+###  https://w3id.org/pghdprovo#PatientRelative
 pghdprovo:PatientRelative rdf:type owl:Class ;
                           rdfs:subClassOf prov:Person ,
                                           [ rdf:type owl:Restriction ;
@@ -1212,7 +1305,7 @@ pghdprovo:PatientRelative rdf:type owl:Class ;
                           rdfs:label "Patient Relative" .
 
 
-###  https://w3id.org/pghdprovo/Practitioner
+###  https://w3id.org/pghdprovo#Practitioner
 pghdprovo:Practitioner rdf:type owl:Class ;
                        rdfs:subClassOf prov:Person ,
                                        [ rdf:type owl:Restriction ;
@@ -1226,38 +1319,42 @@ pghdprovo:Practitioner rdf:type owl:Class ;
                        rdfs:label "Practitioner" .
 
 
-###  https://w3id.org/pghdprovo/Programme
+###  https://w3id.org/pghdprovo#Programme
 pghdprovo:Programme rdf:type owl:Class ;
                     rdfs:subClassOf pghdprovo:ContextualInfo ;
+                    rdfs:comment "Refers to a health plan or program the person is following, helping to understand the data in relation to their health goals." ;
                     rdfs:label "programme" .
 
 
-###  https://w3id.org/pghdprovo/Protocol
+###  https://w3id.org/pghdprovo#Protocol
 pghdprovo:Protocol rdf:type owl:Class ;
                    rdfs:subClassOf pghdprovo:ContextualInfo ;
+                   rdfs:comment "Describes the steps or rules followed when collecting the data, such as instructions for using a device or following a specific health procedure." ;
                    rdfs:label "protocol" .
 
 
-###  https://w3id.org/pghdprovo/Rating
+###  https://w3id.org/pghdprovo#Rating
 pghdprovo:Rating rdf:type owl:Class ;
                  rdfs:subClassOf pghdprovo:ContextualInfo ;
+                 rdfs:comment "Includes scores or opinions about the measurement, like how good the data is or a personal rating of a health condition." ;
                  rdfs:label "rating" .
 
 
-###  https://w3id.org/pghdprovo/State
+###  https://w3id.org/pghdprovo#State
 pghdprovo:State rdf:type owl:Class ;
                 rdfs:subClassOf pghdprovo:ContextualInfo ;
+                rdfs:comment "Informaion about the person's condition when the data was recorded, such as whether they were resting, active, sleeping, or exercising." ;
                 rdfs:label "state" .
 
 
-###  https://w3id.org/wearpghdprovo/DailyActivity
+###  https://w3id.org/wearpghdprovo#DailyActivity
 wearpghdprovo:DailyActivity rdf:type owl:Class ;
                             rdfs:subClassOf pghdprovo:PGHD ;
                             rdfs:comment "Physical activities carried out during the day." ;
                             rdfs:label "Daily Activity" .
 
 
-###  https://w3id.org/wearpghdprovo/Sleep
+###  https://w3id.org/wearpghdprovo#Sleep
 wearpghdprovo:Sleep rdf:type owl:Class ;
                     rdfs:subClassOf pghdprovo:PGHD ,
                                     [ rdf:type owl:Restriction ;
@@ -1274,9 +1371,10 @@ wearpghdprovo:Sleep rdf:type owl:Class ;
                     rdfs:label "Sleep" .
 
 
-###  https://w3id.org/wearpghdprovo/VitalSign
+###  https://w3id.org/wearpghdprovo#VitalSign
 wearpghdprovo:VitalSign rdf:type owl:Class ;
                         rdfs:subClassOf pghdprovo:PGHD ;
+                        rdfs:comment "Includes important health measurements like heart rate, blood pressure, temperature, and breathing rate, which help assess how healthy a person is." ;
                         rdfs:label "Vital Sign" .
 
 
@@ -1284,20 +1382,13 @@ wearpghdprovo:VitalSign rdf:type owl:Class ;
 #    Individuals
 #################################################################
 
-###  https://w3id.org/pghdprovo/BloodPressure1
-pghdprovo:BloodPressure1 rdf:type owl:NamedIndividual ,
-                                  pghdprovo:PGHD ;
-                         prov:wasAttributedTo pghdprovo:Patient1 ;
-                         pghdprovo:hasContextualInfo pghdprovo:Programme1 .
-
-
-###  https://w3id.org/pghdprovo/ContextualDataInfo1
+###  https://w3id.org/pghdprovo#ContextualDataInfo1
 pghdprovo:ContextualDataInfo1 rdf:type owl:NamedIndividual ,
                                        pghdprovo:ContextualInfo ;
                               pghdprovo:locationOfPatient "" .
 
 
-###  https://w3id.org/pghdprovo/Organisation1
+###  https://w3id.org/pghdprovo#Organisation1
 pghdprovo:Organisation1 rdf:type owl:NamedIndividual ,
                                  prov:Organization ;
                         pghdprovo:orgAddress "" ;
@@ -1306,7 +1397,7 @@ pghdprovo:Organisation1 rdf:type owl:NamedIndividual ,
                         pghdprovo:orgName "" .
 
 
-###  https://w3id.org/pghdprovo/PGHDRequest1
+###  https://w3id.org/pghdprovo#PGHDRequest1
 pghdprovo:PGHDRequest1 rdf:type owl:NamedIndividual ,
                                 pghdprovo:PGHDRequest ;
                        prov:used pghdprovo:application1 ;
@@ -1318,7 +1409,7 @@ pghdprovo:PGHDRequest1 rdf:type owl:NamedIndividual ,
                        pghdprovo:requestId "" .
 
 
-###  https://w3id.org/pghdprovo/Patient1
+###  https://w3id.org/pghdprovo#Patient1
 pghdprovo:Patient1 rdf:type owl:NamedIndividual ,
                             pghdprovo:Patient ;
                    foaf:givenName "" ;
@@ -1327,7 +1418,7 @@ pghdprovo:Patient1 rdf:type owl:NamedIndividual ,
                    pghdprovo:userid "" .
 
 
-###  https://w3id.org/pghdprovo/PatientRelative1
+###  https://w3id.org/pghdprovo#PatientRelative1
 pghdprovo:PatientRelative1 rdf:type owl:NamedIndividual ,
                                     pghdprovo:PatientRelative ;
                            prov:actedOnBehalfOf pghdprovo:Patient1 ;
@@ -1338,7 +1429,7 @@ pghdprovo:PatientRelative1 rdf:type owl:NamedIndividual ,
                            pghdprovo:userid "" .
 
 
-###  https://w3id.org/pghdprovo/Practitioner1
+###  https://w3id.org/pghdprovo#Practitioner1
 pghdprovo:Practitioner1 rdf:type owl:NamedIndividual ,
                                  pghdprovo:Practitioner ;
                         pghdprovo:isAStaffOf pghdprovo:Organisation1 ;
@@ -1349,46 +1440,46 @@ pghdprovo:Practitioner1 rdf:type owl:NamedIndividual ,
                         pghdprovo:userid "" .
 
 
-###  https://w3id.org/pghdprovo/Programme1
+###  https://w3id.org/pghdprovo#Programme1
 pghdprovo:Programme1 rdf:type owl:NamedIndividual ,
                               pghdprovo:Programme ;
                      pghdprovo:programmeName "" .
 
 
-###  https://w3id.org/pghdprovo/Protocol1
+###  https://w3id.org/pghdprovo#Protocol1
 pghdprovo:Protocol1 rdf:type owl:NamedIndividual ,
                              pghdprovo:Protocol ;
                     pghdprovo:bodySite "" .
 
 
-###  https://w3id.org/pghdprovo/Rating1
+###  https://w3id.org/pghdprovo#Rating1
 pghdprovo:Rating1 rdf:type owl:NamedIndividual ,
                            pghdprovo:Rating ;
                   pghdprovo:ratingOrgName "" ;
                   pghdprovo:ratingScore "" .
 
 
-###  https://w3id.org/pghdprovo/State1
+###  https://w3id.org/pghdprovo#State1
 pghdprovo:State1 rdf:type owl:NamedIndividual ,
                           pghdprovo:State ;
                  pghdprovo:exerciseState "" ;
                  pghdprovo:posture "" .
 
 
-###  https://w3id.org/pghdprovo/State2
+###  https://w3id.org/pghdprovo#State2
 pghdprovo:State2 rdf:type owl:NamedIndividual ,
                           pghdprovo:State ;
                  pghdprovo:posture "" .
 
 
-###  https://w3id.org/pghdprovo/application1
+###  https://w3id.org/pghdprovo#application1
 pghdprovo:application1 rdf:type owl:NamedIndividual ,
                                 pghdprovo:Application ;
                        prov:wasAttributedTo pghdprovo:Practitioner1 ;
                        pghdprovo:appName "" .
 
 
-###  https://w3id.org/wearpghdprovo/ActivityLevel1
+###  https://w3id.org/wearpghdprovo#ActivityLevel1
 wearpghdprovo:ActivityLevel1 rdf:type owl:NamedIndividual ,
                                       wearpghdprovo:DailyActivity ;
                              wearpghdprovo:fairlyActive "" ;
@@ -1397,11 +1488,19 @@ wearpghdprovo:ActivityLevel1 rdf:type owl:NamedIndividual ,
                              wearpghdprovo:veryActive "" .
 
 
-###  https://w3id.org/wearpghdprovo/DailyActivity1
+###  https://w3id.org/wearpghdprovo#DailyActivity1
 wearpghdprovo:DailyActivity1 rdf:type owl:NamedIndividual ,
                                       wearpghdprovo:DailyActivity ;
+                             prov:wasAttributedTo pghdprovo:Patient1 ;
                              prov:wasDerivedFrom wearpghdprovo:FitbitWearable ;
+                             pghdprovo:hasContextualInfo pghdprovo:Programme1 ,
+                                                         pghdprovo:Protocol1 ,
+                                                         pghdprovo:Rating1 ,
+                                                         pghdprovo:State1 ;
+                             pghdprovo:wasCollectedBy pghdprovo:Patient1 ;
                              wearpghdprovo:hasLevel wearpghdprovo:ActivityLevel1 ;
+                             dc:identifier "" ;
+                             pghdprovo:dataSource ""^^rdfs:Literal ;
                              wearpghdprovo:activityCalories "" ;
                              wearpghdprovo:caloriesOut "" ;
                              wearpghdprovo:elevation "" ;
@@ -1410,17 +1509,25 @@ wearpghdprovo:DailyActivity1 rdf:type owl:NamedIndividual ,
                              wearpghdprovo:totalCalories "" .
 
 
-###  https://w3id.org/wearpghdprovo/FitbitWearable
+###  https://w3id.org/wearpghdprovo#FitbitWearable
 wearpghdprovo:FitbitWearable rdf:type owl:NamedIndividual ,
                                       s4wear:Wearable ;
                              pghdprovo:deviceModel "" ;
                              pghdprovo:deviceName "" .
 
 
-###  https://w3id.org/wearpghdprovo/Sleep1
+###  https://w3id.org/wearpghdprovo#Sleep1
 wearpghdprovo:Sleep1 rdf:type owl:NamedIndividual ,
                               wearpghdprovo:Sleep ;
+                     prov:wasAttributedTo pghdprovo:Patient1 ;
                      prov:wasDerivedFrom wearpghdprovo:FitbitWearable ;
+                     pghdprovo:hasContextualInfo pghdprovo:Programme1 ,
+                                                 pghdprovo:Protocol1 ,
+                                                 pghdprovo:Rating1 ,
+                                                 pghdprovo:State1 ;
+                     pghdprovo:wasCollectedBy pghdprovo:Patient1 ;
+                     dc:identifier "" ;
+                     pghdprovo:dataSource ""^^rdfs:Literal ;
                      wearpghdprovo:asleepDuration "" ;
                      wearpghdprovo:endTime "" ;
                      wearpghdprovo:sleepDate "" ;
@@ -1429,6 +1536,23 @@ wearpghdprovo:Sleep1 rdf:type owl:NamedIndividual ,
                      wearpghdprovo:sleepLatency "" ;
                      wearpghdprovo:startTime "" ;
                      wearpghdprovo:wakeupLatency "" .
+
+
+###  https://w3id.org/wearpghdprovo#Steps1
+wearpghdprovo:Steps1 rdf:type owl:NamedIndividual ,
+                              wearpghdprovo:DailyActivity ;
+                     prov:wasAttributedTo pghdprovo:Patient1 ;
+                     prov:wasDerivedFrom wearpghdprovo:FitbitWearable ;
+                     pghdprovo:hasContextualInfo pghdprovo:Programme1 ,
+                                                 pghdprovo:Protocol1 ,
+                                                 pghdprovo:Rating1 ,
+                                                 pghdprovo:State1 ;
+                     pghdprovo:wasCollectedBy pghdprovo:Patient1 ;
+                     dc:identifier "" ;
+                     pghdprovo:dataSource ""^^rdfs:Literal ;
+                     pghdprovo:name ""^^rdfs:Literal ;
+                     pghdprovo:unit ""^^rdfs:Literal ;
+                     pghdprovo:value ""^^rdfs:Literal .
 
 
 #################################################################
