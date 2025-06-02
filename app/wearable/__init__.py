@@ -262,6 +262,7 @@ def process_and_send_data(identity, prepared_data, request_data, other_data=None
     pghdprovo = Namespace("https://w3id.org/pghdprovo#")
     wearpghdprovo = Namespace("https://w3id.org/wearpghdprovo#")
     prov = Namespace("http://www.w3.org/ns/prov#")
+    dc = Namespace("http://purl.org/dc/elements/1.1/")
     result = {}
     
     g = Graph()
@@ -290,6 +291,8 @@ def process_and_send_data(identity, prepared_data, request_data, other_data=None
         for data_set in prepared_data:
             instance = unique_id()
             new_g.add((instance, RDF.type, pghdprovo.PGHD))
+            new_g.add((instance, RDF.type, pghdprovo.PGHD))
+            new_g.add((instance, dc.identifier, Literal(get_entity_name(instance))))
             new_g.add((instance, pghdprovo.name, Literal(data_set["name"])))
             new_g.add((instance, pghdprovo.value, Literal(data_set["value"])))
             new_g.add((instance, pghdprovo.dataSource, Literal(data_set["dataSource"])))
