@@ -20,7 +20,7 @@ from ..utils import store, insert_data_to_triplestore, generate_unique_5_digit, 
 pghdprovo = Namespace("https://w3id.org/pghdprovo#")
 prov = Namespace("http://www.w3.org/ns/prov#")
 foaf = Namespace("http://xmlns.com/foaf/0.1/")
-
+dc = Namespace("http://purl.org/dc/elements/1.1/")
 
 query_header = """
     PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
@@ -367,6 +367,7 @@ def data():
                 new_g.add((instance, RDF.type, pghdprovo.PGHD))
                 
                 # Adding data to instance
+                new_g.add((instance, dc.identifier, Literal(get_entity_name(instance))))
                 new_g.add((instance, pghdprovo.name, Literal(record['name'])))
                 new_g.add((instance, pghdprovo.value, Literal(record['value'])))
                 new_g.add((instance, pghdprovo.dataSource, Literal('IVR - BPM')))
