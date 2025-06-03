@@ -70,7 +70,7 @@ query_header = """
 """
 
 def unique_id():
-    return URIRef("https://w3id.org/wearpghdprovo#" + uuid.uuid4())
+    return URIRef("https://w3id.org/wearpghdprovo#" + str(uuid.uuid4()))
 
 def get_entity_name(uri):
     entity = str(uri).split('#')[-1]
