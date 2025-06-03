@@ -333,8 +333,11 @@ def data():
         
         new_instances = add_metadata_to_graph(new_g, identity)
 
-        patient_instance = new_instances["Patient"]
-
+        if new_instances.get("Patient", None):
+            patient_instance = new_instances["Patient"]
+        if new_instances.get("PGHDRequest", None):
+            request_instance = new_instances["PGHDRequest"]
+        
         for row in sessions_data:
             patient_relative = None
             if not patient_relative and collection_person == "Caregiver":
@@ -392,6 +395,9 @@ def data():
                 else:
                     new_g.add((instance, pghdprovo.wasCollectedBy, patient_instance))
 
+                # Assign the request to data
+                new_g.add((instance, prov.wasGeneratedBy, request_instance))
+                
                 # Add property annotations to instance
                 for s, p, o in g.triples((pghdprovo[record['name']], RDF.type, OWL.DatatypeProperty)):
                     for annoteProp in [RDFS.label, RDFS.comment]:
