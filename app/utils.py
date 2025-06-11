@@ -40,13 +40,18 @@ SMTP_SERVER = os.getenv('SMTP_SERVER')
 SMTP_PASSWORD = os.getenv('SMTP_PASSWORD')
 SMTP_PORT = os.getenv('SMTP_PORT')
 EMAIL_SERVER_URL = os.getenv('EMAIL_SERVER_URL')
+TRIPLESTORE_USER = os.getenv('TRIPLESTORE_USER')
+TRIPLESTORE_PASSWORD = os.getenv('TRIPLESTORE_PASSWORD')
 
 # Create triplestore instance
-query_endpoint = TRIPLESTORE_URL + "/sparql"
-update_endpoint = TRIPLESTORE_URL + "/update"
+auth=(TRIPLESTORE_USER, TRIPLESTORE_PASSWORD)
+
+query_endpoint = TRIPLESTORE_URL
+update_endpoint = TRIPLESTORE_URL
 store = SPARQLUpdateStore(
     query_endpoint=query_endpoint,
-    update_endpoint=update_endpoint
+    update_endpoint=update_endpoint,
+    auth=auth
 )
 
 # RDF Namespaces
@@ -1068,7 +1073,7 @@ def build_fhir_resources(g, request_data):
     print(f"Response: {response.json()}")
     return response.json()
 
-def insert_data_to_triplestore(graph, update_endpoint=update_endpoint):
+def insert_data_to_triplestore(graph, store=store, graph_name=""):
     """
     Insert RDF triples from a graph into a SPARQL endpoint.
 
@@ -1083,18 +1088,38 @@ def insert_data_to_triplestore(graph, update_endpoint=update_endpoint):
     - Exception: If the SPARQL query fails or the response indicates an error.
     """
     # Create a SPARQLWrapper object
-    sparql = SPARQLWrapper(update_endpoint)
-
+    sparql = SPARQLWrapper(store.update_endpoint)
+    auth = store.auth
+    if auth and len(auth) == 2:
+        username, password = auth
+        # Encode credentials in Base64 for Basic Auth header
+        credentials = f"{username}:{password}"
+        encoded_credentials = base64.b64encode(credentials.encode('utf-8')).decode('utf-8')
+        sparql.addCustomHttpHeader('Authorization', f'Basic {encoded_credentials}')
+    else:
+        print("Warning: No authentication provided for SPARQLWrapper. This might fail if the endpoint requires auth.")
+    
     # Serialize the graph to N-Triples
     ntriples_data = graph.serialize(format='nt')
 
     # Define the SPARQL INSERT query
-    insert_query = f"""
-        INSERT DATA {{
-            {ntriples_data}
-        }}
-    """
-
+    if graph_name:
+        graph_iri_object = wearpghdprovo[graph_name]
+        graph_iri = str(graph_iri_object)
+        insert_query = f"""
+            INSERT DATA {{
+                GRAPH <{graph_iri}> {{
+                    {ntriples_data}
+                }}
+            }}
+        """
+    else:
+        insert_query = f"""
+            INSERT DATA {{
+                {ntriples_data}
+            }}
+        """
+    
     # Set the query and execute it
     sparql.setQuery(insert_query)
     sparql.setMethod('POST')  # Use POST for updates

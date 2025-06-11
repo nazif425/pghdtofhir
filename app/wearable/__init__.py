@@ -320,7 +320,7 @@ def process_and_send_data(identity, prepared_data, request_data, other_data=None
             if data_set.get("device_id", None):
                 new_g.add((instance, pghdprovo.deviceId, Literal(data_set.get("device_id", None))))
         # Save to triplestore
-        result["triplestore"] = insert_data_to_triplestore(new_g, store.update_endpoint)
+        result["triplestore"] = insert_data_to_triplestore(new_g, store=store, graph_name="wearable")
         # Build FHIR resources
         result["fhir"] = build_fhir_resources(new_g, request_data)
 
