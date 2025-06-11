@@ -51,9 +51,7 @@ update_endpoint = TRIPLESTORE_URL
 store = SPARQLUpdateStore(
     query_endpoint=query_endpoint,
     update_endpoint=update_endpoint,
-    auth=auth,
-    user=TRIPLESTORE_USER,
-    password=TRIPLESTORE_PASSWORD
+    auth=auth
 )
 
 # RDF Namespaces
@@ -1091,8 +1089,9 @@ def insert_data_to_triplestore(graph, store=store, graph_name=""):
     """
     # Create a SPARQLWrapper object
     sparql = SPARQLWrapper(store.update_endpoint)
-    username = store.user
-    password = store.password
+    username = TRIPLESTORE_USER
+    password = TRIPLESTORE_PASSWORD
+    
     if user and password:
         # Encode credentials in Base64 for Basic Auth header
         credentials = f"{username}:{password}"
