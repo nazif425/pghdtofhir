@@ -1089,12 +1089,10 @@ def insert_data_to_triplestore(graph, store=store, graph_name=""):
     """
     # Create a SPARQLWrapper object
     sparql = SPARQLWrapper(store.update_endpoint)
-    username = TRIPLESTORE_USER
-    password = TRIPLESTORE_PASSWORD
     
-    if user and password:
+    if TRIPLESTORE_USER and TRIPLESTORE_PASSWORD:
         # Encode credentials in Base64 for Basic Auth header
-        credentials = f"{username}:{password}"
+        credentials = f"{TRIPLESTORE_USER}:{TRIPLESTORE_PASSWORD}"
         encoded_credentials = base64.b64encode(credentials.encode('utf-8')).decode('utf-8')
         sparql.addCustomHttpHeader('Authorization', f'Basic {encoded_credentials}')
     else:
