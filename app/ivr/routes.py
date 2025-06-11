@@ -409,7 +409,7 @@ def data():
                     break
         
         # Save to remote tripple store
-        result["triplestore"] = insert_data_to_triplestore(new_g, store.update_endpoint)
+        result["triplestore"] = insert_data_to_triplestore(new_g, store=store, graph_name="IVR")
         # Save to remote fhir server
         result["fhir"] = build_fhir_resources(triple_store, data)
 
