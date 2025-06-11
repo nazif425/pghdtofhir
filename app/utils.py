@@ -44,13 +44,14 @@ TRIPLESTORE_USER = os.getenv('TRIPLESTORE_USER')
 TRIPLESTORE_PASSWORD = os.getenv('TRIPLESTORE_PASSWORD')
 
 # Create triplestore instance
-# auth=(TRIPLESTORE_USER, TRIPLESTORE_PASSWORD)
+ auth=(TRIPLESTORE_USER, TRIPLESTORE_PASSWORD)
 
 query_endpoint = TRIPLESTORE_URL
 update_endpoint = TRIPLESTORE_URL
 store = SPARQLUpdateStore(
     query_endpoint=query_endpoint,
     update_endpoint=update_endpoint,
+    auth=auth,
     user=TRIPLESTORE_USER,
     password=TRIPLESTORE_PASSWORD
 )
