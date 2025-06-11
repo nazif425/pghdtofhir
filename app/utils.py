@@ -44,14 +44,15 @@ TRIPLESTORE_USER = os.getenv('TRIPLESTORE_USER')
 TRIPLESTORE_PASSWORD = os.getenv('TRIPLESTORE_PASSWORD')
 
 # Create triplestore instance
-auth=(TRIPLESTORE_USER, TRIPLESTORE_PASSWORD)
+# auth=(TRIPLESTORE_USER, TRIPLESTORE_PASSWORD)
 
 query_endpoint = TRIPLESTORE_URL
 update_endpoint = TRIPLESTORE_URL
 store = SPARQLUpdateStore(
     query_endpoint=query_endpoint,
     update_endpoint=update_endpoint,
-    auth=auth
+    user=TRIPLESTORE_USER,
+    password=TRIPLESTORE_PASSWORD
 )
 
 # RDF Namespaces
@@ -1089,9 +1090,9 @@ def insert_data_to_triplestore(graph, store=store, graph_name=""):
     """
     # Create a SPARQLWrapper object
     sparql = SPARQLWrapper(store.update_endpoint)
-    auth = store.auth
-    if auth and len(auth) == 2:
-        username, password = auth
+    username = store.user
+    password = store.password
+    if user and password:
         # Encode credentials in Base64 for Basic Auth header
         credentials = f"{username}:{password}"
         encoded_credentials = base64.b64encode(credentials.encode('utf-8')).decode('utf-8')
