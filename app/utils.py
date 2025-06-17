@@ -333,7 +333,7 @@ def add_metadata_to_graph(new_g, identity, other_data=None):
 
     meta_data = {
         "pghdprovo:Patient":{
-            "givenName": identity.patient.name,
+            "name": identity.patient.name,
             "birthday":identity.patient.birthday,
             "gender":identity.patient.gender,
             "userid":identity.patient.user_id,
@@ -341,7 +341,7 @@ def add_metadata_to_graph(new_g, identity, other_data=None):
             "address":identity.patient.address
         },
         "pghdprovo:Practitioner":{
-            "givenName":identity.practitioner.name,
+            "name":identity.practitioner.name,
             "birthday":identity.practitioner.birthday,
             "gender":identity.practitioner.gender,
             "userid": identity.practitioner.user_id,
